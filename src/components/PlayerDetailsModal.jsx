@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { PLAYSTYLES, TOP_LEAGUES } from '../constants';
-import { searchLeagues } from '../services/footballApi';
+import { searchLeagues, searchTeams, searchCountries, getFlagUrl } from '../services/footballApi';
 import SavedProgressionsModal from './SavedProgressionsModal';
 
 const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEditMode = false, settings }) => {
@@ -23,6 +23,18 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
     const [comparisonContext, setComparisonContext] = useState('all');
     const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
     const filterDropdownRef = useRef(null);
+
+    // Autocomplete State
+    const [clubResults, setClubResults] = useState([]);
+    const [countryResults, setCountryResults] = useState([]);
+    const [isSearchingClub, setIsSearchingClub] = useState(false);
+    const [isSearchingCountry, setIsSearchingCountry] = useState(false);
+    const [showClubResults, setShowClubResults] = useState(false);
+    const [showCountryResults, setShowCountryResults] = useState(false);
+    const clubSearchTimeout = useRef(null);
+    const countrySearchTimeout = useRef(null);
+    const latestClubSearchId = useRef(0);
+    const latestCountrySearchId = useRef(0);
 
     // Fetch League Logos on mount
     useEffect(() => {
@@ -94,6 +106,104 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
         setFormData(prev => ({
             ...prev,
             [name]: name === 'rating' || name === 'goals' || name === 'assists' || name === 'matches' ? Number(value) : value
+        }));
+
+        if (name === 'club') {
+            if (clubSearchTimeout.current) clearTimeout(clubSearchTimeout.current);
+            clubSearchTimeout.current = setTimeout(() => handleClubSearch(value), 400);
+        }
+
+        if (name === 'nationality') {
+            if (countrySearchTimeout.current) clearTimeout(countrySearchTimeout.current);
+            countrySearchTimeout.current = setTimeout(() => handleCountrySearch(value), 300);
+        }
+    };
+
+    const handleClubSearch = async (query) => {
+        if (query.length < 2) {
+            setClubResults([]);
+            setShowClubResults(false);
+            return;
+        }
+
+        const currentId = ++latestClubSearchId.current;
+        setIsSearchingClub(true);
+        setShowClubResults(true);
+        setClubResults([]);
+
+        try {
+            const clubs = await searchTeams(query);
+            if (currentId === latestClubSearchId.current) {
+                setClubResults(clubs ? clubs.slice(0, 5) : []);
+            }
+        } catch (err) {
+            console.error('Club Search Error:', err);
+        } finally {
+            if (currentId === latestClubSearchId.current) {
+                setIsSearchingClub(false);
+            }
+        }
+    };
+
+    const handleCountrySearch = async (query) => {
+        if (query.length < 2) {
+            setCountryResults([]);
+            setShowCountryResults(false);
+            return;
+        }
+
+        const currentId = ++latestCountrySearchId.current;
+        setIsSearchingCountry(true);
+        setShowCountryResults(true);
+        setCountryResults([]);
+
+        try {
+            const countries = await searchCountries(query);
+            if (currentId === latestCountrySearchId.current) {
+                setCountryResults(countries ? countries.slice(0, 5) : []);
+            }
+        } catch (err) {
+            console.error('Country Search Error:', err);
+        } finally {
+            if (currentId === latestCountrySearchId.current) {
+                setIsSearchingCountry(false);
+            }
+        }
+    };
+
+    const handleSelectClub = async (club) => {
+        setShowClubResults(false);
+        setFormData(prev => ({
+            ...prev,
+            club: club.strTeam,
+            league: club.strLeague || prev.league,
+            logos: {
+                ...prev.logos,
+                club: club.strBadge || '',
+                league: club.strLeagueBadge || prev.logos.league
+            }
+        }));
+
+        if (club.strLeague && !club.strLeagueBadge) {
+            const leagueInfo = await searchLeagues(club.strLeague);
+            if (leagueInfo?.strBadge) {
+                setFormData(prev => ({
+                    ...prev,
+                    logos: { ...prev.logos, league: leagueInfo.strBadge }
+                }));
+            }
+        }
+    };
+
+    const handleSelectCountry = (country) => {
+        setShowCountryResults(false);
+        setFormData(prev => ({
+            ...prev,
+            nationality: country.name,
+            logos: {
+                ...prev.logos,
+                country: getFlagUrl(country.name)
+            }
         }));
     };
 
@@ -503,13 +613,47 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-1">
+                                    <div className="space-y-1 relative">
                                         <label className="text-[10px] font-black uppercase tracking-widest opacity-40">Club</label>
-                                        <input
-                                            type="text" name="club"
-                                            value={formData.club || ''} onChange={handleChange}
-                                            className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:border-ef-accent focus:outline-none transition font-bold text-sm"
-                                        />
+                                        <div className="relative">
+                                            <input
+                                                type="text" name="club"
+                                                value={formData.club || ''} onChange={handleChange}
+                                                onBlur={() => setTimeout(() => setShowClubResults(false), 200)}
+                                                onFocus={() => formData.club && formData.club.length >= 2 && setShowClubResults(true)}
+                                                className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:border-ef-accent focus:outline-none transition font-bold text-sm"
+                                            />
+                                            {isSearchingClub && (
+                                                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                                                    <div className="w-3 h-3 border-2 border-ef-accent border-t-transparent rounded-full animate-spin"></div>
+                                                </div>
+                                            )}
+                                        </div>
+                                        {showClubResults && (
+                                            <div className="absolute z-50 w-full mt-2 bg-[#1a1a1e] border border-white/10 rounded-xl shadow-2xl overflow-hidden max-h-[200px] overflow-y-auto">
+                                                {clubResults.length > 0 ? (
+                                                    clubResults.map(club => (
+                                                        <div
+                                                            key={club.idTeam}
+                                                            onClick={() => handleSelectClub(club)}
+                                                            className="px-4 py-3 hover:bg-white/5 cursor-pointer flex items-center gap-3 transition-colors border-b border-white/5 last:border-0"
+                                                        >
+                                                            <img src={club.strBadge} alt="" className="w-6 h-6 object-contain" />
+                                                            <div className="flex-1 min-w-0">
+                                                                <div className="text-xs font-black text-white truncate">{club.strTeam}</div>
+                                                                <div className="text-[8px] uppercase font-bold opacity-30 truncate">{club.strLeague}</div>
+                                                            </div>
+                                                        </div>
+                                                    ))
+                                                ) : (
+                                                    !isSearchingClub && formData.club.length >= 2 && (
+                                                        <div className="px-4 py-6 text-center text-white/40 text-[10px] font-bold uppercase tracking-widest">
+                                                            No clubs found
+                                                        </div>
+                                                    )
+                                                )}
+                                            </div>
+                                        )}
                                     </div>
                                     <div className="space-y-1 relative" ref={leaguePopupRef}>
                                         <div className="flex justify-between items-center">
@@ -577,9 +721,44 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
                                 </div>
 
                                 <div className="grid grid-cols-3 gap-4">
-                                    <div className="space-y-1">
+                                    <div className="space-y-1 relative">
                                         <label className="text-[10px] font-black uppercase tracking-widest opacity-40">Country</label>
-                                        <input type="text" name="nationality" value={formData.nationality || ''} onChange={handleChange} className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:border-ef-accent focus:outline-none font-bold text-sm" />
+                                        <div className="relative">
+                                            <input
+                                                type="text" name="nationality"
+                                                value={formData.nationality || ''} onChange={handleChange}
+                                                onBlur={() => setTimeout(() => setShowCountryResults(false), 200)}
+                                                onFocus={() => formData.nationality && formData.nationality.length >= 2 && setShowCountryResults(true)}
+                                                className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:border-ef-accent focus:outline-none font-bold text-sm"
+                                            />
+                                            {isSearchingCountry && (
+                                                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                                                    <div className="w-3 h-3 border-2 border-ef-accent border-t-transparent rounded-full animate-spin"></div>
+                                                </div>
+                                            )}
+                                        </div>
+                                        {showCountryResults && (
+                                            <div className="absolute z-50 w-full mt-2 bg-[#1a1a1e] border border-white/10 rounded-xl shadow-2xl overflow-hidden max-h-[200px] overflow-y-auto">
+                                                {countryResults.length > 0 ? (
+                                                    countryResults.map(c => (
+                                                        <div
+                                                            key={c.name}
+                                                            onClick={() => handleSelectCountry(c)}
+                                                            className="px-4 py-3 hover:bg-white/5 cursor-pointer flex items-center gap-3 transition-colors border-b border-white/5 last:border-0"
+                                                        >
+                                                            <img src={getFlagUrl(c.name)} alt="" className="w-6 h-4 object-cover rounded-sm border border-white/10" />
+                                                            <span className="text-xs font-bold text-white">{c.name}</span>
+                                                        </div>
+                                                    ))
+                                                ) : (
+                                                    !isSearchingCountry && formData.nationality && formData.nationality.length >= 2 && (
+                                                        <div className="px-4 py-6 text-center text-white/40 text-[10px] font-bold uppercase tracking-widest">
+                                                            No countries found
+                                                        </div>
+                                                    )
+                                                )}
+                                            </div>
+                                        )}
                                     </div>
                                     <div className="space-y-1">
                                         <label className="text-[10px] font-black uppercase tracking-widest opacity-40">Age</label>

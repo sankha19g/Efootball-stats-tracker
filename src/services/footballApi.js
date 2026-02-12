@@ -102,7 +102,10 @@ export const searchCountries = async (query = '') => {
 
         if (!query) return cachedCountries;
         const search = query.toLowerCase();
-        return cachedCountries.filter(c => c.name.toLowerCase().includes(search));
+        return cachedCountries.filter(c =>
+            (c.name && c.name.toLowerCase().includes(search)) ||
+            (c.name_en && c.name_en.toLowerCase().includes(search))
+        );
     } catch (err) {
         console.error('Error searching countries:', err);
         return [];
@@ -199,7 +202,17 @@ const COUNTRY_CODES = {
     'china pr': 'cn',
     'dr congo': 'cd',
     'côte d\'ivoire': 'ci',
-    'ivory coast': 'ci'
+    'ivory coast': 'ci',
+    'netherlands': 'nl',
+    'holland': 'nl',
+    'germany': 'de',
+    'france': 'fr',
+    'spain': 'es',
+    'italy': 'it',
+    'brazil': 'br',
+    'argentina': 'ar',
+    'portugal': 'pt',
+    'belgium': 'be'
 };
 
 /**
@@ -209,17 +222,11 @@ const COUNTRY_CODES = {
 export const getFlagUrl = (nationality) => {
     if (!nationality) return '';
 
-    // ISO 3166-1 alpha-2 codes are usually the first 2 letters of the country name
-    // But there are many exceptions.
-
     const cleanName = nationality.toLowerCase();
     let code = COUNTRY_CODES[cleanName];
 
     if (!code) {
-        // Fallback: try to guess using first 2 chars (works for fr, de, it, es, br, ar, pt, nl, be, etc.)
-        // But we should be careful.
-        // Better fallback: api.flags with name? 
-        // For now, let's just use the first 2 letters if not in map, but special case the errors if user reports them.
+        // Fallback: try to guess using first 2 chars
         code = cleanName.substring(0, 2);
     }
 

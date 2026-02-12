@@ -32,7 +32,7 @@ const PlayerCard = memo(({ player, isSelectionMode, isSelected, onToggleSelect, 
             )}
 
             {/* Main Image Container */}
-            <div className={`absolute inset-x-0 top-0 overflow-hidden ${settings.cardSize === 'xs' ? 'bottom-0 sm:bottom-12' : 'bottom-12'} transition-all duration-300`}>
+            <div className={`absolute inset-0 transition-all duration-300`}>
                 {player.image ? (
                     <img
                         src={player.image}
@@ -54,11 +54,13 @@ const PlayerCard = memo(({ player, isSelectionMode, isSelected, onToggleSelect, 
             {/* Top Info Overlay (Rating & Position) */}
             <div className="absolute top-2 left-2 sm:top-3 sm:left-3 flex flex-col items-start z-10 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
                 {settings?.showRatings && (
-                    <span className={`text-lg sm:text-2xl font-black text-white leading-none tracking-tighter drop-shadow-lg ${settings.cardSize === 'xs' ? 'hidden sm:block' : settings.cardSize === 'sm' ? 'hidden sm:block' : 'block'}`}>
-                        {player.rating || 0}
-                    </span>
+                    <div className="flex flex-col items-center justify-center bg-black/40 backdrop-blur-md border border-white/10 rounded-lg px-2 py-1 min-w-[40px]">
+                        <span className={`text-lg sm:text-xl font-black text-white leading-none tracking-tighter drop-shadow-lg ${settings.cardSize === 'xs' ? 'hidden sm:block' : settings.cardSize === 'sm' ? 'hidden sm:block' : 'block'}`}>
+                            {player.rating || 0}
+                        </span>
+                        <span className="text-[8px] sm:text-[10px] font-black text-white/80 uppercase tracking-widest leading-none mt-0.5">{player.position}</span>
+                    </div>
                 )}
-                <span className="text-[7px] sm:text-[10px] font-black text-white/80 uppercase tracking-widest leading-none mt-0.5">{player.position}</span>
             </div>
 
             {/* Bottom Content Area */}

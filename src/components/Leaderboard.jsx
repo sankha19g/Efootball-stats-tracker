@@ -14,13 +14,13 @@ const LeaderboardCard = ({ title, players, valueKey, colorClass, suffix = '', is
 
         <ul className="space-y-4 flex-1">
             {players.slice(0, 5).map((player, idx) => {
-                const value = isRatio
-                    ? ((player[valueKey] || 0) / (player.matches || 1)).toFixed(2)
-                    : player[valueKey];
-
-                const displayValue = valueKey === 'totalGA'
+                let rawValue = valueKey === 'totalGA'
                     ? (player.goals || 0) + (player.assists || 0)
-                    : value;
+                    : (player[valueKey] || 0);
+
+                const displayValue = isRatio
+                    ? (rawValue / (player.matches || 1)).toFixed(2)
+                    : rawValue;
 
                 return (
                     <li key={player._id} className="flex items-center gap-4 group/item cursor-pointer" onClick={() => onPlayerClick(player)}>
@@ -138,13 +138,13 @@ const FullListModal = ({ title, players, valueKey, colorClass, suffix, isRatio, 
                 <div className="flex-1 overflow-y-auto custom-scrollbar px-6 pb-8">
                     <ul className="space-y-3">
                         {filteredPlayers.map((player, idx) => {
-                            const value = isRatio
-                                ? ((player[valueKey] || 0) / (player.matches || 1)).toFixed(2)
-                                : player[valueKey];
-
-                            const displayValue = valueKey === 'totalGA'
+                            let rawValue = valueKey === 'totalGA'
                                 ? (player.goals || 0) + (player.assists || 0)
-                                : value;
+                                : (player[valueKey] || 0);
+
+                            const displayValue = isRatio
+                                ? (rawValue / (player.matches || 1)).toFixed(2)
+                                : rawValue;
 
                             return (
                                 <li key={player._id} className="flex items-center gap-4 p-3 rounded-2xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.05] hover:border-white/10 transition-all group/item cursor-pointer" onClick={() => { onPlayerClick(player); onClose(); }}>
