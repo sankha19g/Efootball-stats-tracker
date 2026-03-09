@@ -41,25 +41,23 @@ const allowedOrigins = [
   'http://localhost:3000',
   'https://efootball-8c9c5.web.app',
   'https://efootball-8c9c5.firebaseapp.com',
-  process.env.FRONTEND_URL || 'https://your-app.vercel.app'
+  'https://efootball-stats-tracker.vercel.app'
 ];
 
-const isLocalhostOrigin = (origin) => {
-  try {
-    const { hostname } = new URL(origin);
-    return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1';
-  } catch {
-    return false;
-  }
+const isAllowedOrigin = (origin) => {
+  if (!origin) return true;
+  if (allowedOrigins.includes(origin)) return true;
+  if (origin.includes('localhost') || origin.includes('127.0.0.1')) return true;
+  if (origin.endsWith('.vercel.app') || origin.endsWith('.web.app')) return true;
+  return false;
 };
 
 app.use(cors({
   origin: function (origin, callback) {
-    // Allow requests with no origin (mobile apps, Postman, etc.)
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) !== -1 || isLocalhostOrigin(origin)) {
+    if (isAllowedOrigin(origin)) {
       callback(null, true);
     } else {
+      console.warn('CORS blocked origin:', origin);
       callback(new Error('Not allowed by CORS'));
     }
   },
