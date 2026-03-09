@@ -18,6 +18,7 @@ const ScrapeDataModal = ({ isOpen, onClose, onScrapeSuccess }) => {
         onClose();
     }
 
+
     const handleScrape = async () => {
         if (!url) {
             setError('Please enter a PESDB URL');
@@ -36,11 +37,12 @@ const ScrapeDataModal = ({ isOpen, onClose, onScrapeSuccess }) => {
                 body: JSON.stringify({ url })
             });
 
-            const data = await response.json();
-
             if (!response.ok) {
+                const data = await response.json();
                 throw new Error(data.error || 'Failed to scrape data');
             }
+
+            const data = await response.json();
 
             console.log('Scrape successful:', data);
 
