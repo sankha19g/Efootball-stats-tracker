@@ -1,0 +1,80 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  @apply bg-ef-dark text-white font-sans;
+  background-image: radial-gradient(circle at 50% 0%, #1e293b 0%, #0f172a 100%);
+}
+
+.glass {
+  @apply bg-white/5 backdrop-blur-lg border border-white/10;
+}
+
+
+/* Custom Scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  background-color: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 9999px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+.no-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+/* Stylish Scrollbar */
+.stylish-scrollbar::-webkit-scrollbar {
+  width: 6px !important;
+  display: block !important;
+}
+
+.stylish-scrollbar::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2) !important;
+  border-radius: 10px !important;
+}
+
+.stylish-scrollbar::-webkit-scrollbar-thumb {
+  background: #00ff88 !important; /* Pure EF-Accent Green */
+  border-radius: 10px !important;
+  border: 2px solid transparent !important;
+  background-clip: content-box !important;
+}
+
+.stylish-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #00cc6a !important;
+}
+
+/* Fallback for Firefox */
+.stylish-scrollbar {
+  scrollbar-width: thin !important;
+  scrollbar-color: #00ff88 rgba(0, 0, 0, 0.2) !important;
+}
+@keyframes pulse-slow {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(0.98); }
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+@keyframes pulse-ef {
+  0%, 100% { opacity: 1; filter: drop-shadow(0 0 2px rgba(0, 255, 136, 0.4)); }
+  50% { opacity: 0.6; filter: drop-shadow(0 0 5px rgba(0, 255, 136, 0.8)); }
+}
+
+.pulse-ef {
+  animation: pulse-ef 2s ease-in-out infinite;
+}
