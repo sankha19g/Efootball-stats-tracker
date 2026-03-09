@@ -9,11 +9,51 @@ import {
     getDocs,
     query,
     orderBy,
-    arrayUnion
+    arrayUnion,
+    setDoc,
+    getDoc,
+    where,
+    limit as firestoreLimit
 } from 'firebase/firestore';
 
 const PLAYERS_COLLECTION = 'players';
+const GLOBAL_DB_COLLECTION = 'global_database';
 const IMGBB_API_KEY = import.meta.env.VITE_IMGBB_API_KEY;
+
+export const saveToGlobalDatabase = async (players) => {
+    if (!players || players.length === 0) return;
+
+    // We use setDoc with player.id as the document ID to prevent duplicates
+    const promises = players.map(async (p) => {
+        const docRef = doc(db, GLOBAL_DB_COLLECTION, String(p.id));
+        const cleanPlayer = JSON.parse(JSON.stringify(p));
+        return setDoc(docRef, {
+            ...cleanPlayer,
+            lastUpdated: new Date().toISOString()
+        }, { merge: true });
+    });
+
+    await Promise.all(promises);
+};
+
+export const searchGlobalFirestore = async (nameQuery) => {
+    if (!nameQuery || nameQuery.length < 2) return [];
+
+    try {
+        const q = query(
+            collection(db, GLOBAL_DB_COLLECTION),
+            where('search_name', '>=', nameQuery.toLowerCase()),
+            where('search_name', '<=', nameQuery.toLowerCase() + '\uf8ff'),
+            firestoreLimit(20)
+        );
+
+        const snapshot = await getDocs(q);
+        return snapshot.docs.map(doc => doc.data());
+    } catch (err) {
+        console.error("Global Firestore search error:", err);
+        return [];
+    }
+};
 
 export const getPlayers = async (userId) => {
     if (!userId) return [];

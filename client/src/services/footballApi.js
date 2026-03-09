@@ -1,3 +1,5 @@
+import { searchGlobalFirestore } from './playerService';
+
 // Client-side search implementation (No backend server required)
 // This service loads the large player database ONLY when needed.
 
@@ -9,19 +11,46 @@ export const invalidatePlayerCache = () => {
     cachedPlayers = null;
 };
 
+// Helper for diacritic-insensitive search
+export const normalizeString = (str) => {
+    return str ? str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase() : "";
+};
+
 // Helper to load players data lazily
-const loadPlayers = async () => {
-    if (cachedPlayers) return cachedPlayers;
+const loadPlayers = async (searchQuery = '') => {
+    if (cachedPlayers && !searchQuery) return cachedPlayers;
+
     try {
-        // Add timestamp query param to force a fresh fetch from the server 
-        const response = await fetch(`/data/pesdb_players.json?t=${new Date().getTime()}`);
-        if (!response.ok) throw new Error('Failed to load player database');
-        cachedPlayers = await response.json();
-        console.log(`✅ Loaded ${cachedPlayers.length} players locally`);
-        return cachedPlayers;
+        let players = [];
+
+        // 1. Load from static JSON (cached)
+        if (!cachedPlayers) {
+            const response = await fetch(`/data/pesdb_players.json?t=${new Date().getTime()}`);
+            if (response.ok) {
+                cachedPlayers = await response.json();
+                console.log(`✅ Loaded ${cachedPlayers.length} players locally`);
+            } else {
+                cachedPlayers = [];
+            }
+        }
+        players = [...cachedPlayers];
+
+        // 2. If there's a search query, also fetch from Community Database (Firestore)
+        if (searchQuery && searchQuery.length >= 2) {
+            const communityPlayers = await searchGlobalFirestore(searchQuery);
+            if (communityPlayers.length > 0) {
+                // Merge and deduplicate (Firestore players override JSON if same ID)
+                const mergedMap = new Map();
+                players.forEach(p => mergedMap.set(String(p.id), p));
+                communityPlayers.forEach(p => mergedMap.set(String(p.id), p));
+                players = Array.from(mergedMap.values());
+            }
+        }
+
+        return players;
     } catch (err) {
         console.error('Error loading players:', err);
-        return [];
+        return cachedPlayers || [];
     }
 };
 
@@ -40,11 +69,6 @@ const loadLeagues = async () => {
     }
 };
 
-// Helper for diacritic-insensitive search
-export const normalizeString = (str) => {
-    return str ? str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase() : "";
-};
-
 /**
  * Search for players by name (Client-side DB)
  * @param {string} name 
@@ -52,7 +76,7 @@ export const normalizeString = (str) => {
  */
 export const searchPlayers = async (name, filters = {}) => {
     try {
-        const allPlayers = await loadPlayers();
+        const allPlayers = await loadPlayers(name);
         let results = [...allPlayers];
 
         // Search Filter
@@ -108,9 +132,6 @@ export const searchPlayers = async (name, filters = {}) => {
  */
 export const getDatabasePlayers = async (params = {}) => {
     try {
-        const allPlayers = await loadPlayers();
-        let results = [...allPlayers];
-
         const {
             q = '',
             position,
@@ -121,6 +142,9 @@ export const getDatabasePlayers = async (params = {}) => {
             page = 1,
             limit = 50
         } = params;
+
+        const allPlayers = await loadPlayers(q);
+        let results = [...allPlayers];
 
         // Search Filter
         if (q && q.length >= 2) {

@@ -1,58 +1,57 @@
 import { useState } from 'react';
 import API_URL from '../config/api';
+import { saveToGlobalDatabase } from '../services/playerService';
 
 const ScrapeDataModal = ({ isOpen, onClose, onScrapeSuccess }) => {
     const [url, setUrl] = useState('');
     const [isScraping, setIsScraping] = useState(false);
     const [error, setError] = useState('');
-    const [scrapedPlayers, setScrapedPlayers] = useState(null); // Will store the array of players once done
+    const [scrapedPlayers, setScrapedPlayers] = useState(null);
     const [stats, setStats] = useState({ added: 0, updated: 0 });
 
     if (!isOpen) return null;
 
     const handleClose = () => {
-        // Reset state on close
         setUrl('');
         setScrapedPlayers(null);
         setError('');
         onClose();
-    }
-
+    };
 
     const handleScrape = async () => {
-        if (!url) {
-            setError('Please enter a PESDB URL');
-            return;
-        }
-
-        setError('');
+        if (!url) return;
         setIsScraping(true);
-
+        setError('');
         try {
-            const response = await fetch(`${API_URL}/api/scrape`, {
+            const res = await fetch(`${API_URL}/api/scrape`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ url })
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ urls: url })
             });
 
-            if (!response.ok) {
-                const data = await response.json();
-                throw new Error(data.error || 'Failed to scrape data');
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({}));
+                throw new Error(errData.error || `Server error: ${res.status}`);
             }
 
-            const data = await response.json();
+            const data = await res.json();
 
-            console.log('Scrape successful:', data);
+            // Save to Community/Global Database if we found players
+            if (data.players && data.players.length > 0) {
+                try {
+                    await saveToGlobalDatabase(data.players);
+                } catch (saveErr) {
+                    console.error("Firestore global save failed:", saveErr);
+                }
+            }
 
-            // Set stats and show confirmation list
-            setStats({ added: data.added, updated: data.updated });
             setScrapedPlayers(data.players || []);
-
-            // Call success callback immediately so parent knows to refresh the background list 
-            // but we keep modal open to show the confirmation list
-            onScrapeSuccess && onScrapeSuccess(data);
+            setStats({
+                added: data.added || 0,
+                updated: data.updated || 0
+            });
+            setError('');
+            if (onScrapeSuccess) onScrapeSuccess(data);
         } catch (err) {
             console.error('Error during scraping:', err);
             setError(err.message || 'An error occurred while scraping data.');
@@ -65,7 +64,6 @@ const ScrapeDataModal = ({ isOpen, onClose, onScrapeSuccess }) => {
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={handleClose} />
 
-            {/* Conditional max-width based on state (wide for table, normal for input) */}
             <div className={`relative w-full ${scrapedPlayers ? 'max-w-4xl' : 'max-w-md'} bg-[#1a1f26] border border-white/10 rounded-2xl p-6 shadow-2xl animate-fade-in-up transition-all duration-300`}>
                 <button
                     onClick={handleClose}
@@ -75,7 +73,6 @@ const ScrapeDataModal = ({ isOpen, onClose, onScrapeSuccess }) => {
                 </button>
 
                 {!scrapedPlayers ? (
-                    // ---------------- INPUT VIEW ----------------
                     <>
                         <h2 className="text-xl font-black uppercase text-ef-accent tracking-wider mb-2">Scrape PESDB Data</h2>
                         <p className="text-xs text-white/50 mb-6">
@@ -104,10 +101,7 @@ const ScrapeDataModal = ({ isOpen, onClose, onScrapeSuccess }) => {
                                 </button>
                                 <button
                                     onClick={handleScrape}
-                                    className={`px-5 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest text-ef-dark bg-ef-accent transition-all flex items-center gap-2 ${isScraping
-                                        ? 'opacity-70 cursor-wait'
-                                        : 'hover:scale-105 active:scale-95 shadow-[0_0_15px_rgba(0,255,136,0.2)] hover:shadow-[0_0_20px_rgba(0,255,136,0.4)]'
-                                        }`}
+                                    className={`px-5 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest text-ef-dark bg-ef-accent transition-all flex items-center gap-2 ${isScraping ? 'opacity-70 cursor-wait' : 'hover:scale-105 active:scale-95'}`}
                                     disabled={isScraping}
                                 >
                                     {isScraping ? (
@@ -125,18 +119,14 @@ const ScrapeDataModal = ({ isOpen, onClose, onScrapeSuccess }) => {
                         </div>
                     </>
                 ) : (
-                    // ---------------- CONFIRMATION LIST VIEW ----------------
                     <div className="flex flex-col h-[70vh]">
                         <div className="flex justify-between items-end mb-4 pr-8">
                             <div>
-                                <h2 className="text-xl font-black uppercase text-ef-accent tracking-wider mb-1">Import Successful</h2>
+                                <h2 className="text-xl font-black uppercase text-ef-accent tracking-wider mb-1">Scrape Successful</h2>
                                 <p className="text-xs text-white/50">
-                                    Added <strong className="text-white">{stats.added}</strong> new players, updated <strong className="text-white">{stats.updated}</strong> players.
+                                    Found <strong className="text-white">{scrapedPlayers.length}</strong> players.
                                 </p>
                             </div>
-                            <span className="text-[10px] font-bold opacity-40 uppercase tracking-widest">
-                                {scrapedPlayers.length} Total Extracted
-                            </span>
                         </div>
 
                         <div className="flex-1 overflow-auto border border-white/10 rounded-xl bg-black/40 relative">
@@ -148,60 +138,45 @@ const ScrapeDataModal = ({ isOpen, onClose, onScrapeSuccess }) => {
                                         <th className="px-4 py-3 font-bold w-16 text-center">Pos</th>
                                         <th className="px-4 py-3 font-bold">Playstyle</th>
                                         <th className="px-4 py-3 font-bold">Club</th>
-                                        <th className="px-4 py-3 font-bold">Nation</th>
-                                        <th className="px-4 py-3 font-bold">Card Type</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-white/5">
-                                    {scrapedPlayers.map((p, idx) => (
-                                        <tr key={p.id || idx} className="hover:bg-white/5 transition-colors">
-                                            <td className="px-4 py-2 text-center">
-                                                <div className="w-8 h-8 rounded-full overflow-hidden border border-white/10 bg-white/5 inline-block relative">
-                                                    <img src={p.image} alt={p.name} className="w-full h-full object-cover object-top scale-110" loading="lazy" />
-                                                </div>
-                                            </td>
-                                            <td className="px-4 py-2 font-black text-white">{p.name}</td>
-                                            <td className="px-4 py-2 text-center">
-                                                <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-ef-accent/20 text-ef-accent uppercase border border-ef-accent/20">
-                                                    {p.position}
-                                                </span>
-                                            </td>
-                                            <td className="px-4 py-2 text-white/50 text-[10px] font-bold uppercase truncate max-w-[100px]" title={p.playstyle}>
-                                                {p.playstyle}
-                                            </td>
-                                            <td className="px-4 py-2 text-white/70 truncate max-w-[150px]" title={p.club_original || p.club}>
-                                                {p.club_original || p.club}
-                                            </td>
-                                            <td className="px-4 py-2 text-white/70">
-                                                <div className="flex items-center gap-2">
-                                                    {p.nationality_flag_url && <img src={p.nationality_flag_url} className="w-4 h-3 rounded-[1px]" alt="" />}
-                                                    {p.nationality}
+                                    {scrapedPlayers.map((player, idx) => (
+                                        <tr key={player.id || idx} className="hover:bg-white/5 transition-colors group">
+                                            <td className="px-4 py-2">
+                                                <div className="w-10 h-14 rounded-lg overflow-hidden border border-white/10 bg-black/20">
+                                                    <img src={player.image} alt="" className="w-full h-full object-cover object-top" />
                                                 </div>
                                             </td>
                                             <td className="px-4 py-2">
-                                                <span className="text-[9px] font-black text-white/50 bg-black/40 px-2 py-1 rounded inline-block">
-                                                    {p.card_type}
-                                                </span>
+                                                <div className="font-black uppercase text-sm">{player.name}</div>
+                                                <div className="text-[10px] opacity-40">{player.nationality}</div>
+                                            </td>
+                                            <td className="px-4 py-2 text-center">
+                                                <span className="bg-ef-accent text-ef-dark px-1.5 py-0.5 rounded text-[10px] font-black">{player.position}</span>
+                                            </td>
+                                            <td className="px-4 py-2 text-white/60 font-medium italic">{player.playstyle}</td>
+                                            <td className="px-4 py-2">
+                                                <div className="flex items-center gap-2">
+                                                    {player.club_badge_url && <img src={player.club_badge_url} className="w-4 h-4 object-contain" alt="" />}
+                                                    <span className="opacity-80">{player.club_original || player.club}</span>
+                                                </div>
                                             </td>
                                         </tr>
                                     ))}
-                                    {scrapedPlayers.length === 0 && (
-                                        <tr>
-                                            <td colSpan="7" className="px-4 py-8 text-center text-white/30 uppercase font-bold text-[10px] tracking-widest">
-                                                No players extracted.
-                                            </td>
-                                        </tr>
-                                    )}
                                 </tbody>
                             </table>
                         </div>
 
-                        <div className="flex justify-end mt-4">
+                        <div className="mt-6 flex justify-between items-center bg-[#1a1f26]">
+                            <p className="text-[10px] text-white/30 uppercase font-bold max-w-sm">
+                                Players have been saved to the community database and are now searchable in the explorer.
+                            </p>
                             <button
                                 onClick={handleClose}
-                                className="px-6 py-3 rounded-xl font-black text-xs uppercase tracking-widest text-ef-dark bg-ef-accent transition-all hover:scale-105 active:scale-95 shadow-[0_0_15px_rgba(0,255,136,0.2)]"
+                                className="px-8 py-3 rounded-xl bg-ef-accent text-ef-dark font-black text-xs uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-[0_0_20px_rgba(0,255,136,0.3)]"
                             >
-                                Done
+                                Finish
                             </button>
                         </div>
                     </div>
