@@ -139,15 +139,15 @@ async function scrapePesdb(url) {
 router.post('/', async (req, res) => {
     try {
         const { url, urls } = req.body;
-        let targetUrls = urls;
+        let inputUrls = urls || url || [];
 
-        // Fallback for single url string or newline-separated string
-        if (!targetUrls) {
-            if (typeof url === 'string') {
-                targetUrls = url.split('\n');
-            } else {
-                targetUrls = [];
-            }
+        // Ensure we have an array
+        let targetUrls = [];
+        if (Array.isArray(inputUrls)) {
+            targetUrls = inputUrls;
+        } else if (typeof inputUrls === 'string') {
+            // Split by newline or comma
+            targetUrls = inputUrls.split(/[\n,]/).map(u => u.trim()).filter(u => u);
         }
 
         targetUrls = targetUrls.map(u => u.trim()).filter(u => u && u.includes('pesdb.net'));
