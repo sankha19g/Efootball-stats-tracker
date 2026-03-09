@@ -178,39 +178,46 @@ router.post('/', async (req, res) => {
 
         console.log(`[Scraper] Scraped ${scrapedPlayers.length} players. Updating local DB...`);
 
-        // Update server DB
-        let currentPlayers = [];
-        if (fs.existsSync(dataPathServer)) {
-            currentPlayers = JSON.parse(fs.readFileSync(dataPathServer, 'utf-8'));
-        }
-
         let newCount = 0;
         let updateCount = 0;
 
-        scrapedPlayers.forEach(p => {
-            const index = currentPlayers.findIndex(existing => existing.id === p.id);
-            if (index !== -1) {
-                // Update existing
-                currentPlayers[index] = { ...currentPlayers[index], ...p };
-                updateCount++;
-            } else {
-                // Prepend to show up first
-                currentPlayers.unshift(p);
-                newCount++;
+        try {
+            // Update server DB
+            let currentPlayers = [];
+            if (fs.existsSync(dataPathServer)) {
+                currentPlayers = JSON.parse(fs.readFileSync(dataPathServer, 'utf-8'));
             }
-        });
 
-        // Write to Server Data
-        fs.writeFileSync(dataPathServer, JSON.stringify(currentPlayers, null, 2));
+            scrapedPlayers.forEach(p => {
+                const index = currentPlayers.findIndex(existing => existing.id === p.id);
+                if (index !== -1) {
+                    // Update existing
+                    currentPlayers[index] = { ...currentPlayers[index], ...p };
+                    updateCount++;
+                } else {
+                    // Prepend to show up first
+                    currentPlayers.unshift(p);
+                    newCount++;
+                }
+            });
 
-        // Write to Client Public Data
-        if (fs.existsSync(path.dirname(dataPathClient))) {
-            fs.writeFileSync(dataPathClient, JSON.stringify(currentPlayers, null, 2));
+            // Write to Server Data (if possible)
+            fs.writeFileSync(dataPathServer, JSON.stringify(currentPlayers, null, 2));
+
+            // Write to Client Public Data (if possible)
+            if (fs.existsSync(path.dirname(dataPathClient))) {
+                fs.writeFileSync(dataPathClient, JSON.stringify(currentPlayers, null, 2));
+            }
+        } catch (fsError) {
+            console.warn('[Scraper] Could not save to local filesystem (likely Vercel/Read-only):', fsError.message);
+            // On Vercel, we can't save to the JSON, so all scraped players are considered "new" for the current response
+            newCount = scrapedPlayers.length;
+            updateCount = 0;
         }
 
         return res.json({
             success: true,
-            message: `Scraped successfully. Added ${newCount} new players, updated ${updateCount}.`,
+            message: `Scraped successfully. ${newCount} players returned.`,
             added: newCount,
             updated: updateCount,
             players: scrapedPlayers
