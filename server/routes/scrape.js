@@ -139,18 +139,27 @@ async function scrapePesdb(url) {
 router.post('/', async (req, res) => {
     try {
         const { url, urls } = req.body;
-        let inputUrls = urls || url || [];
+        console.log('[Scraper] Received request with body keys:', Object.keys(req.body || {}));
 
-        // Ensure we have an array
+        let inputUrls = urls || url || [];
         let targetUrls = [];
+
         if (Array.isArray(inputUrls)) {
-            targetUrls = inputUrls;
+            targetUrls = [...inputUrls];
         } else if (typeof inputUrls === 'string') {
-            // Split by newline or comma
             targetUrls = inputUrls.split(/[\n,]/).map(u => u.trim()).filter(u => u);
+        } else if (inputUrls) {
+            // If it's some other non-null value, try to convert to array
+            targetUrls = [String(inputUrls)];
         }
 
-        targetUrls = targetUrls.map(u => u.trim()).filter(u => u && u.includes('pesdb.net'));
+        // Final safety check to ensure it's still an array and contains strings
+        if (!Array.isArray(targetUrls)) {
+            console.error('[Scraper] targetUrls is not an array:', typeof targetUrls);
+            targetUrls = [];
+        }
+
+        targetUrls = targetUrls.map(u => String(u).trim()).filter(u => u && u.includes('pesdb.net'));
 
         if (targetUrls.length === 0) {
             return res.status(400).json({ error: 'Please provide at least one valid PESDB URL.' });
