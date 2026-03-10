@@ -11,11 +11,13 @@ const ScrapeDataModal = ({ isOpen, onClose, onScrapeSuccess }) => {
 
     if (!isOpen) return null;
 
-    const handleClose = () => {
+    const handleClose = (e) => {
+        if (e) e.stopPropagation();
+        console.log('[ScrapeModal] handleClose triggered');
         setUrl('');
         setScrapedPlayers(null);
         setError('');
-        onClose();
+        if (onClose) onClose();
     };
 
     const handleScrape = async () => {
@@ -61,13 +63,19 @@ const ScrapeDataModal = ({ isOpen, onClose, onScrapeSuccess }) => {
     };
 
     return (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={handleClose} />
+        <div className="fixed inset-0 z-[300] flex items-center justify-center p-4" onClick={handleClose}>
+            {/* Backdrop */}
+            <div className="absolute inset-0 bg-black/90 backdrop-blur-md" />
 
-            <div className={`relative w-full ${scrapedPlayers ? 'max-w-4xl' : 'max-w-md'} bg-[#1a1f26] border border-white/10 rounded-2xl p-6 shadow-2xl animate-fade-in-up transition-all duration-300`}>
+            {/* Modal Content */}
+            <div
+                className={`relative z-10 w-full ${scrapedPlayers ? 'max-w-5xl' : 'max-w-md'} bg-[#1a1f26] border border-white/10 rounded-2xl p-6 shadow-2xl animate-fade-in-up transition-all duration-300 overflow-hidden flex flex-col`}
+                onClick={(e) => e.stopPropagation()}
+            >
+                {/* Close X Button */}
                 <button
                     onClick={handleClose}
-                    className="absolute top-4 right-4 text-white/40 hover:text-white transition-colors p-2"
+                    className="absolute top-4 right-4 text-white/40 hover:text-white transition-colors p-2 z-20"
                 >
                     ✕
                 </button>
@@ -83,7 +91,7 @@ const ScrapeDataModal = ({ isOpen, onClose, onScrapeSuccess }) => {
                             <div>
                                 <textarea
                                     placeholder={`https://pesdb.net/pes2022/?featured=1\nhttps://pesdb.net/pes2022/?epic=2`}
-                                    className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-ef-accent/50 text-white placeholder:text-white/20 font-mono resize-none h-32 leading-relaxed"
+                                    className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-ef-accent/50 text-white placeholder:text-white/20 font-mono resize-none h-48 leading-relaxed"
                                     value={url}
                                     onChange={(e) => setUrl(e.target.value)}
                                     disabled={isScraping}
@@ -119,17 +127,15 @@ const ScrapeDataModal = ({ isOpen, onClose, onScrapeSuccess }) => {
                         </div>
                     </>
                 ) : (
-                    <div className="flex flex-col h-[70vh]">
-                        <div className="flex justify-between items-end mb-4 pr-8">
-                            <div>
-                                <h2 className="text-xl font-black uppercase text-ef-accent tracking-wider mb-1">Scrape Successful</h2>
-                                <p className="text-xs text-white/50">
-                                    Found <strong className="text-white">{scrapedPlayers.length}</strong> players.
-                                </p>
-                            </div>
+                    <div className="flex flex-col h-[75vh]">
+                        <div className="mb-4 pr-8">
+                            <h2 className="text-xl font-black uppercase text-ef-accent tracking-wider mb-1">Scrape Successful</h2>
+                            <p className="text-xs text-white/50">
+                                Found <strong className="text-white">{scrapedPlayers.length}</strong> players. They are now in the Global Database.
+                            </p>
                         </div>
 
-                        <div className="flex-1 overflow-auto border border-white/10 rounded-xl bg-black/40 relative">
+                        <div className="flex-1 overflow-y-auto border border-white/10 rounded-xl bg-black/40 relative custom-scrollbar">
                             <table className="w-full text-left text-xs whitespace-nowrap">
                                 <thead className="sticky top-0 bg-[#0a0f16] border-b border-white/10 z-10 text-[9px] uppercase tracking-widest text-white/40">
                                     <tr>
@@ -143,8 +149,8 @@ const ScrapeDataModal = ({ isOpen, onClose, onScrapeSuccess }) => {
                                 <tbody className="divide-y divide-white/5">
                                     {scrapedPlayers.map((player, idx) => (
                                         <tr key={player.id || idx} className="hover:bg-white/5 transition-colors group">
-                                            <td className="px-4 py-2">
-                                                <div className="w-10 h-14 rounded-lg overflow-hidden border border-white/10 bg-black/20">
+                                            <td className="px-4 py-2 text-center">
+                                                <div className="w-10 h-14 mx-auto rounded-lg overflow-hidden border border-white/10 bg-black/20">
                                                     <img src={player.image} alt="" className="w-full h-full object-cover object-top" />
                                                 </div>
                                             </td>
@@ -168,13 +174,13 @@ const ScrapeDataModal = ({ isOpen, onClose, onScrapeSuccess }) => {
                             </table>
                         </div>
 
-                        <div className="mt-6 flex justify-between items-center bg-[#1a1f26]">
-                            <p className="text-[10px] text-white/30 uppercase font-bold max-w-sm">
-                                Players have been saved to the community database and are now searchable in the explorer.
+                        <div className="mt-6 flex justify-between items-center pt-4 border-t border-white/5">
+                            <p className="text-[10px] text-white/30 uppercase font-black tracking-widest max-w-sm">
+                                Community Database Updated
                             </p>
                             <button
                                 onClick={handleClose}
-                                className="px-8 py-3 rounded-xl bg-ef-accent text-ef-dark font-black text-xs uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-[0_0_20px_rgba(0,255,136,0.3)]"
+                                className="px-10 py-4 rounded-xl bg-ef-accent text-ef-dark font-black text-xs uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-[0_0_30px_rgba(0,255,136,0.3)] cursor-pointer"
                             >
                                 Finish
                             </button>

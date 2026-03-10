@@ -1,14 +1,16 @@
-import { searchGlobalFirestore } from './playerService';
+import { searchGlobalFirestore, getRecentGlobalPlayers } from './playerService';
 
 // Client-side search implementation (No backend server required)
 // This service loads the large player database ONLY when needed.
 
 let cachedPlayers = null;
+let cachedGlobalPlayers = null;
 let cachedLeagues = null;
 
 // Expose a method to invalidate cache after scraping
 export const invalidatePlayerCache = () => {
     cachedPlayers = null;
+    cachedGlobalPlayers = null;
 };
 
 // Helper for diacritic-insensitive search
@@ -18,8 +20,6 @@ export const normalizeString = (str) => {
 
 // Helper to load players data lazily
 const loadPlayers = async (searchQuery = '') => {
-    if (cachedPlayers && !searchQuery) return cachedPlayers;
-
     try {
         let players = [];
 
@@ -35,11 +35,30 @@ const loadPlayers = async (searchQuery = '') => {
         }
         players = [...cachedPlayers];
 
-        // 2. If there's a search query, also fetch from Community Database (Firestore)
+        // 2. Load the Most Recent Global players if not done yet
+        if (!cachedGlobalPlayers) {
+            console.log("Fetching recent global players from Firestore...");
+            cachedGlobalPlayers = await getRecentGlobalPlayers(100);
+        }
+
+        // Merge global players with JSON players (Prepend global ones so they show up first)
+        if (cachedGlobalPlayers && cachedGlobalPlayers.length > 0) {
+            const mergedMap = new Map();
+            // Add local players first
+            players.forEach(p => mergedMap.set(String(p.id), p));
+            // Overwrite/Prepend global players
+            cachedGlobalPlayers.forEach(p => mergedMap.set(String(p.id), p));
+
+            // Reconstruct array: Global first, then Local (not in Global)
+            const globalIds = new Set(cachedGlobalPlayers.map(p => String(p.id)));
+            const localOnly = players.filter(p => !globalIds.has(String(p.id)));
+            players = [...cachedGlobalPlayers, ...localOnly];
+        }
+
+        // 3. If there's a specific search query, fetch more matches from Firestore
         if (searchQuery && searchQuery.length >= 2) {
             const communityPlayers = await searchGlobalFirestore(searchQuery);
             if (communityPlayers.length > 0) {
-                // Merge and deduplicate (Firestore players override JSON if same ID)
                 const mergedMap = new Map();
                 players.forEach(p => mergedMap.set(String(p.id), p));
                 communityPlayers.forEach(p => mergedMap.set(String(p.id), p));

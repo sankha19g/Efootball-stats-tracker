@@ -1315,25 +1315,36 @@ function App() {
                         <span className="hidden md:inline ml-3">Bulk Edit</span>
                       </button>
                     )}
-                    <button
-                      onClick={() => {
-                        if (isSelectionMode) {
-                          if (selectedIds.size > 0) {
-                            handleBulkDelete();
-                          } else {
-                            setIsSelectionMode(false);
-                            setSelectedIds(new Set());
-                          }
-                        } else {
-                          setIsSelectionMode(true);
-                        }
-                      }}
-                      className={`flex items-center justify-center px-4 md:px-6 py-3 md:py-4 rounded-xl md:rounded-2xl font-black uppercase tracking-widest text-[10px] md:text-xs transition-all border shadow-xl ${isSelectionMode ? (selectedIds.size > 0 ? 'bg-red-500 text-white border-red-500' : 'bg-white/20 text-white border-white/30') : 'bg-white/5 text-white/60 border-white/10 hover:bg-white/10'}`}
-                    >
-                      <span>{isSelectionMode ? (selectedIds.size > 0 ? '🗑️' : '✕') : '✓'}</span>
-                      <span className="hidden md:inline ml-3">{isSelectionMode ? (selectedIds.size > 0 ? `Del (${selectedIds.size})` : 'Cancel') : 'Select'}</span>
-                      <span className="md:hidden ml-1">{isSelectionMode && selectedIds.size > 0 && selectedIds.size}</span>
-                    </button>
+                    {/* Delete button - only shows when players are selected */}
+                    {isSelectionMode && selectedIds.size > 0 && (
+                      <button
+                        onClick={() => handleBulkDelete()}
+                        className="flex items-center justify-center px-4 md:px-6 py-3 md:py-4 rounded-xl md:rounded-2xl font-black uppercase tracking-widest text-[10px] md:text-xs transition-all border shadow-xl bg-red-500 text-white border-red-500 hover:bg-red-600 active:scale-95"
+                      >
+                        <span>🗑️</span>
+                        <span className="hidden md:inline ml-3">Del ({selectedIds.size})</span>
+                        <span className="md:hidden ml-1">{selectedIds.size}</span>
+                      </button>
+                    )}
+                    {/* Cancel button - shows in selection mode */}
+                    {isSelectionMode ? (
+                      <button
+                        onClick={() => { setIsSelectionMode(false); setSelectedIds(new Set()); }}
+                        className="flex items-center justify-center px-4 md:px-6 py-3 md:py-4 rounded-xl md:rounded-2xl font-black uppercase tracking-widest text-[10px] md:text-xs transition-all border shadow-xl bg-white/10 text-white/60 border-white/20 hover:bg-white/20 hover:text-white active:scale-95"
+                        title="Cancel Selection"
+                      >
+                        <span>✕</span>
+                        <span className="hidden md:inline ml-2">Cancel</span>
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => setIsSelectionMode(true)}
+                        className="flex items-center justify-center px-4 md:px-6 py-3 md:py-4 rounded-xl md:rounded-2xl font-black uppercase tracking-widest text-[10px] md:text-xs transition-all border shadow-xl bg-white/5 text-white/60 border-white/10 hover:bg-white/10"
+                      >
+                        <span>✓</span>
+                        <span className="hidden md:inline ml-3">Select</span>
+                      </button>
+                    )}
                   </div>
                 )}
               </div>

@@ -20,13 +20,7 @@ const SidebarNav = ({ view, setView, setShowAddPlayer, setShowDatabase, setShowS
             primary: false,
             desc: 'Input stats manually'
         },
-        {
-            label: 'Squad Builder',
-            icon: '📋',
-            onClick: () => { setView('squad-builder'); setIsOpen(false); },
-            secondary: true,
-            desc: 'Plan your formation'
-        },
+
         {
             label: 'My Profile Statistics',
             icon: '📊',
@@ -62,13 +56,7 @@ const SidebarNav = ({ view, setView, setShowAddPlayer, setShowDatabase, setShowS
             secondary: true,
             desc: 'View collected logos'
         },
-        {
-            label: 'Social',
-            icon: '🌐',
-            onClick: () => { setShowSocial(true); setIsOpen(false); },
-            secondary: true,
-            desc: 'Community & socials'
-        },
+
         {
             label: 'Settings',
             icon: '⚙️',

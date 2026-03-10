@@ -55,6 +55,22 @@ export const searchGlobalFirestore = async (nameQuery) => {
     }
 };
 
+export const getRecentGlobalPlayers = async (limitNum = 50) => {
+    try {
+        const q = query(
+            collection(db, GLOBAL_DB_COLLECTION),
+            orderBy('lastUpdated', 'desc'),
+            firestoreLimit(limitNum)
+        );
+
+        const snapshot = await getDocs(q);
+        return snapshot.docs.map(doc => doc.data());
+    } catch (err) {
+        console.error("Error fetching recent global players:", err);
+        return [];
+    }
+};
+
 export const getPlayers = async (userId) => {
     if (!userId) return [];
     const q = query(collection(db, `users/${userId}/${PLAYERS_COLLECTION}`), orderBy('createdAt', 'desc'));
