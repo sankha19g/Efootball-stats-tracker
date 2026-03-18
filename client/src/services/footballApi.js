@@ -360,3 +360,28 @@ export const getFlagUrl = (nationality) => {
     return `https://flagcdn.com/w40/${nationality.substring(0, 2).toLowerCase()}.png`;
 };
 
+/**
+ * Scrape player details from PESDB via backend
+ * @param {string} url - PESDB Player URL
+ */
+export const scrapePlayer = async (url) => {
+    try {
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+        const response = await fetch(`${apiUrl}/api/scrape`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url })
+        });
+
+        if (!response.ok) {
+            const err = await response.json();
+            throw new Error(err.error || 'Scraping failed');
+        }
+
+        const data = await response.json();
+        return data.players?.[0] || null;
+    } catch (err) {
+        console.error('Scrape API Error:', err);
+        throw err;
+    }
+};

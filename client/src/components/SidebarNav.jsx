@@ -7,6 +7,13 @@ const SidebarNav = ({ view, setView, setShowAddPlayer, setShowDatabase, setShowS
 
     const menuItems = [
         {
+            label: 'Quick Stats Update',
+            icon: '⚡',
+            onClick: () => { setView('quick-stats'); setIsOpen(false); },
+            primary: true,
+            desc: 'Bulk update match stats'
+        },
+        {
             label: 'Add Player from DB',
             icon: '📂',
             onClick: () => { setShowDatabase(true); setIsOpen(false); },
@@ -102,8 +109,8 @@ const SidebarNav = ({ view, setView, setShowAddPlayer, setShowDatabase, setShowS
                 <div className={`
                     absolute inset-y-0 left-0 w-[280px] sm:w-80 bg-[#0a0a0c] border-r border-white/10 
                     transform transition-transform duration-300 cubic-bezier(0.16, 1, 0.3, 1)
-                    ${isOpen ? 'translate-x-0' : '-translate-x-full'}
-                    flex flex-col shadow-[20px_0_60px_rgba(0,0,0,0.5)]
+                    ${isOpen ? 'translate-x-0 shadow-[20px_0_60px_rgba(0,0,0,0.5)]' : '-translate-x-full shadow-none'}
+                    flex flex-col
                 `}>
                     {/* Header with User Info */}
                     <div className="p-6 sm:p-8 border-b border-white/5">

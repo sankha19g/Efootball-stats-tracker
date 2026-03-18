@@ -19,8 +19,126 @@ const countryCodeMap = {
     'Scotland': 'GB-SCT', 'Croatia': 'HR', 'Serbia': 'RS', 'Switzerland': 'CH'
 };
 
+async function scrapeSinglePlayer(url) {
+    console.log('[Scraper] Fetching Single Player URL:', url);
+    const { data } = await axios.get(url, {
+        headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        },
+        timeout: 10000
+    });
+
+    const $ = cheerio.load(data);
+    const idMatch = url.match(/id=(\d+)/);
+    const id = idMatch ? idMatch[1] : '';
+
+    if (!id) throw new Error('Could not extract player ID from URL');
+
+    const player = {
+        id,
+        name: '',
+        image: '',
+        nationality: '',
+        club: '',
+        league: 'Other',
+        position: '',
+        card_type: 'Normal',
+        playstyle: 'None',
+        rating: 0,
+        skills: []
+    };
+
+    // Extract basic info from table.player
+    $('table.player th').each((idx, th) => {
+        const headerText = $(th).text().trim().toLowerCase();
+        const nextTd = $(th).next('td');
+        const val = nextTd.text().trim();
+
+        if (headerText.includes('player name')) player.name = val;
+        if (headerText.includes('nationality')) player.nationality = val;
+        if (headerText.includes('team name')) player.club = val;
+        if (headerText.includes('league')) player.league = val;
+        if (headerText.includes('position')) player.position = val;
+        if (headerText.includes('overall rating')) player.rating = parseInt(val) || 0;
+        
+        if (headerText.includes('playing style')) {
+            const nextRowText = $(th).parent().next('tr').find('td').text().trim();
+            if (nextRowText) player.playstyle = nextRowText;
+        }
+
+        if (headerText.includes('player skills')) {
+            $(th).parent().nextAll('tr').each((j, row) => {
+                if ($(row).find('th').length > 0) return false;
+                const skill = $(row).find('td').text().trim();
+                if (skill && player.skills.length < 10) {
+                    player.skills.push(skill);
+                }
+            });
+        }
+    });
+
+    // Fallback for skills/playstyle if not found in the loop above
+    if (player.skills.length === 0) {
+        $('th').each((i, el) => {
+            const txt = $(el).text().trim().toLowerCase();
+            if (txt.includes('player skills')) {
+                $(el).parent().nextAll('tr').each((j, row) => {
+                    if ($(row).find('th').length > 0) return false;
+                    const skill = $(row).find('td').text().trim();
+                    if (skill && player.skills.length < 10) {
+                        player.skills.push(skill);
+                    }
+                });
+            }
+        });
+    }
+
+    // If name is still empty, try to get it from the page title or another header
+    if (!player.name) {
+        player.name = $('h1').first().text().split('-')[0].trim() || 'Unknown Player';
+    }
+
+    // Image extraction
+    $('img').each((i, img) => {
+        const src = $(img).attr('src');
+        if (src && src.includes('img/card/')) {
+            let realImageUrl = src;
+            if (!realImageUrl.startsWith('http')) {
+                realImageUrl = realImageUrl.replace(/^\.\//, '');
+                if (!realImageUrl.startsWith('/')) {
+                    realImageUrl = '/' + realImageUrl;
+                }
+                realImageUrl = 'https://pesdb.net' + realImageUrl;
+            }
+            player.image = realImageUrl;
+            return false;
+        }
+    });
+
+    // Nationality Flag
+    const nationalityLower = (player.nationality || '').toLowerCase();
+    const countryEntry = Object.entries(countryCodeMap).find(([name]) => name.toLowerCase() === nationalityLower);
+    const cc = countryEntry ? countryEntry[1] : null;
+    player.nationality_flag_url = cc ? `https://flagsapi.com/${cc}/flat/64.png` : '';
+
+    // Card Type Inference
+    if (id.length >= 14) player.card_type = 'Featured';
+    if (url.includes('epic=')) player.card_type = 'Epic';
+    if (url.includes('featured=')) player.card_type = 'Featured';
+
+    player.search_name = player.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+    return player;
+}
+
 async function scrapePesdb(url) {
-    console.log('[Scraper] Fetching URL:', url);
+    // If it's a detail page, use the single player scraper
+    if (url.includes('id=') && !url.includes('all=') && !url.includes('featured=') && !url.includes('epic=')) {
+        const player = await scrapeSinglePlayer(url);
+        return [player];
+    }
+
+    console.log('[Scraper] Fetching List URL:', url);
     const { data } = await axios.get(url, {
         headers: {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -81,60 +199,72 @@ async function scrapePesdb(url) {
         }
     });
 
-    console.log(`[Scraper] Found ${scrapedPlayers.length} players. Fetching details for each (Playstyles & Leagues) in batches...`);
+    console.log(`[Scraper] Found ${scrapedPlayers.length} players. Fetching details...`);
+ 
+     const BATCH_SIZE = 5;
+     for (let i = 0; i < scrapedPlayers.length; i += BATCH_SIZE) {
+         const batch = scrapedPlayers.slice(i, i + BATCH_SIZE);
+         await Promise.all(batch.map(async (player) => {
+             try {
+                 const detailUrl = `https://pesdb.net/efootball/?id=${player.id}`;
+                 const { data: detailData } = await axios.get(detailUrl, {
+                     headers: {
+                         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                     },
+                     timeout: 8000
+                 });
+                 const detail$ = cheerio.load(detailData);
+ 
+                 detail$('table.player th').each((idx, th) => {
+                     const headerText = detail$(th).text().trim().toLowerCase();
+ 
+                     if (headerText.includes('playing style')) {
+                         player.playstyle = detail$(th).parent().next('tr').find('td').text().trim() || 'None';
+                     }
+ 
+                     if (headerText.includes('league')) {
+                         player.league = detail$(th).next('td').text().trim() || 'Other';
+                     }
+                 });
 
-    // Concurrently fetch player detail pages in small batches to avoid rate limiting or timeouts
-    const BATCH_SIZE = 5;
-    for (let i = 0; i < scrapedPlayers.length; i += BATCH_SIZE) {
-        const batch = scrapedPlayers.slice(i, i + BATCH_SIZE);
-        await Promise.all(batch.map(async (player) => {
-            try {
-                const detailUrl = `https://pesdb.net/pes2022/?id=${player.id}`;
-                const { data: detailData } = await axios.get(detailUrl, {
-                    headers: {
-                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                    },
-                    timeout: 8000 // 8s timeout for detail pages
-                });
-                const detail$ = cheerio.load(detailData);
-
-                detail$('table.player th').each((idx, th) => {
-                    const headerText = detail$(th).text().trim();
-
-                    if (headerText === 'Playing Style') {
-                        player.playstyle = detail$(th).parent().next('tr').text().trim() || 'None';
-                    }
-
-                    if (headerText === 'League:') {
-                        player.league = detail$(th).next('td').text().trim() || 'Other';
-                    }
-                });
-
-                // Extract accurate image directly from their detailed page, overriding the guess
-                detail$('img').each((i, img) => {
-                    const src = detail$(img).attr('src');
-                    if (src && src.includes('img/card/')) {
-                        let realImageUrl = src;
-                        if (!realImageUrl.startsWith('http')) {
-                            realImageUrl = realImageUrl.replace(/^\.\//, '');
-                            if (!realImageUrl.startsWith('/')) {
-                                realImageUrl = '/' + realImageUrl;
+                 // Extract Skills in batch fetch
+                 detail$('th').each((i, el) => {
+                    if (detail$(el).text().trim().toLowerCase().includes('player skills')) {
+                        detail$(el).parent().nextAll('tr').each((j, row) => {
+                            if (detail$(row).find('th').length > 0) return false;
+                            const skill = detail$(row).find('td').text().trim();
+                            if (skill && player.skills.length < 10) {
+                                player.skills.push(skill);
                             }
-                            realImageUrl = 'https://pesdb.net' + realImageUrl;
-                        }
-                        player.image = realImageUrl;
-                        return false;
+                        });
                     }
-                });
-            } catch (err) {
-                console.error(`[Scraper] Warning: Failed to fetch detail for ${player.name}:`, err.message);
-            }
-        }));
-        console.log(`[Scraper] Finished batch ${Math.floor(i / BATCH_SIZE) + 1} (${Math.min(i + BATCH_SIZE, scrapedPlayers.length)}/${scrapedPlayers.length})`);
-    }
+                 });
+ 
+                 // Extract accurate image
+                 detail$('img').each((i, img) => {
+                     const src = detail$(img).attr('src');
+                     if (src && src.includes('img/card/')) {
+                         let realImageUrl = src;
+                         if (!realImageUrl.startsWith('http')) {
+                             realImageUrl = realImageUrl.replace(/^\.\//, '');
+                             if (!realImageUrl.startsWith('/')) {
+                                 realImageUrl = '/' + realImageUrl;
+                             }
+                             realImageUrl = 'https://pesdb.net' + realImageUrl;
+                         }
+                         player.image = realImageUrl;
+                         return false;
+                     }
+                 });
+             } catch (err) {
+                 console.error(`[Scraper] Warning: Failed to fetch detail for ${player.name}:`, err.message);
+             }
+         }));
+     }
 
     return scrapedPlayers;
 }
+
 
 router.post('/', async (req, res) => {
     try {

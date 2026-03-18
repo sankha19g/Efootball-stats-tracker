@@ -148,12 +148,14 @@ const MiniPlayerCard = ({ player, activePositions, includeSecondary }) => {
 const FullListModal = ({ title, players, valueKey, colorClass, suffix, isRatio, onClose, onPlayerClick, activePositions, includeSecondary }) => {
     const [search, setSearch] = useState('');
 
-    const filteredPlayers = players.filter(p => {
-        const normalizedQuery = normalizeString(search);
-        return normalizeString(p.name).includes(normalizedQuery) ||
-            normalizeString(p.position).includes(normalizedQuery) ||
-            (p.tags && p.tags.some(tag => normalizeString(tag).includes(normalizedQuery)));
-    });
+    const filteredPlayers = players
+        .map((p, index) => ({ ...p, rank: index + 1 }))
+        .filter(p => {
+            const normalizedQuery = normalizeString(search);
+            return normalizeString(p.name).includes(normalizedQuery) ||
+                normalizeString(p.position).includes(normalizedQuery) ||
+                (p.tags && p.tags.some(tag => normalizeString(tag).includes(normalizedQuery)));
+        });
 
     return (
         <div className="fixed inset-0 bg-black/95 backdrop-blur-xl z-[100] flex items-center justify-center p-4 md:p-8 animate-fade-in">
@@ -184,7 +186,7 @@ const FullListModal = ({ title, players, valueKey, colorClass, suffix, isRatio, 
                 {/* List Body */}
                 <div className="flex-1 overflow-y-auto custom-scrollbar px-6 pb-8">
                     <ul className="space-y-3">
-                        {filteredPlayers.map((player, idx) => {
+                        {filteredPlayers.map((player) => {
                             let rawValue = valueKey === 'totalGA'
                                 ? (player.goals || 0) + (player.assists || 0)
                                 : (player[valueKey] || 0);
@@ -197,7 +199,7 @@ const FullListModal = ({ title, players, valueKey, colorClass, suffix, isRatio, 
 
                             return (
                                 <li key={player._id} className="flex items-center gap-4 p-3 rounded-2xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.05] hover:border-white/10 transition-all group/item cursor-pointer" onClick={() => { onPlayerClick(player); onClose(); }}>
-                                    <span className="font-mono text-base opacity-20 w-8 shrink-0">{idx + 1}</span>
+                                    <span className="font-mono text-base opacity-20 w-8 shrink-0">{player.rank}</span>
 
                                     {/* Mini Card Visual */}
                                     <MiniPlayerCard player={player} activePositions={activePositions} includeSecondary={includeSecondary} />

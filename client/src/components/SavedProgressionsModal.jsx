@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { POSITIONS } from '../constants';
 
 const ALL_SKILLS = [
     "Acrobatic Finishing", "Chip Shot Control", "Dipping Shot", "First-time Shot", "Heading", "Knuckle Shot", "Long-Range Curler", "Long-Range Shooting", "Rising Shot", "Outside Curler",
@@ -272,7 +273,7 @@ const SavedProgressionsModal = ({ player, onClose, onUpdatePlayer, settings, sho
                                                 onChange={e => setNewBuild({ ...newBuild, position: e.target.value })}
                                                 className="w-full bg-black/20 border border-white/10 rounded p-2 focus:border-ef-accent outline-none text-white"
                                             >
-                                                {['CF', 'SS', 'LWF', 'RWF', 'LMF', 'RMF', 'CMF', 'DMF', 'LB', 'RB', 'CB', 'GK'].map(p => (
+                                                {POSITIONS.map(p => (
                                                     <option key={p} value={p} className="text-black font-bold">{p}</option>
                                                 ))}
                                             </select>

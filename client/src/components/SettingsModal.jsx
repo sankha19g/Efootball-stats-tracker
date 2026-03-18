@@ -3,7 +3,7 @@ import { lookupPlaystyles, updatePlayerPlaystyle } from '../services/playerServi
 import { STAT_OPTIONS } from '../constants';
 
 const SettingsModal = ({ onClose, settings, setSettings, user, players, setPlayers }) => {
-    const sizeMap = ['xs', 'sm', 'md', 'lg'];
+    const sizeMap = ['mini', 'xs', 'sm', 'md', 'lg'];
     const [activeTab, setActiveTab] = useState('card'); // 'general', 'card', 'branding', 'maintenance'
     const [isDragging, setIsDragging] = useState(false);
     const [isFixing, setIsFixing] = useState(false);
@@ -110,21 +110,21 @@ const SettingsModal = ({ onClose, settings, setSettings, user, players, setPlaye
 
     return (
         <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-[120] p-4 animate-fade-in backdrop-blur-md">
-            <div className="bg-[#0b0f1a] border border-white/10 rounded-[2rem] w-full max-w-[640px] h-[480px] shadow-2xl animate-slide-up overflow-hidden flex flex-col sm:flex-row">
+            <div className="bg-[#0b0f1a] border border-white/10 rounded-[2rem] w-full max-w-[640px] h-[85vh] sm:h-[520px] shadow-2xl animate-slide-up overflow-hidden flex flex-col sm:flex-row">
 
                 {/* Sidebar Navigation */}
-                <div className="w-full sm:w-[220px] bg-black/20 border-b sm:border-b-0 sm:border-r border-white/5 flex flex-col">
-                    <div className="p-6">
-                        <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-white/30 mb-6">Preferences</h2>
-                        <nav className="space-y-1">
+                <div className="w-full sm:w-[220px] shrink-0 bg-black/20 border-b sm:border-b-0 sm:border-r border-white/5 flex flex-col">
+                    <div className="p-4 sm:p-6 pb-2 sm:pb-6">
+                        <h2 className="hidden sm:block text-[10px] font-black uppercase tracking-[0.3em] text-white/30 mb-6">Preferences</h2>
+                        <nav className="flex sm:flex-col gap-2 overflow-x-auto no-scrollbar snap-x pb-2 sm:pb-0">
                             {tabs.map(tab => (
                                 <button
                                     key={tab.id}
                                     onClick={() => setActiveTab(tab.id)}
-                                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all group ${activeTab === tab.id ? 'bg-ef-accent/10 border border-ef-accent/20 text-ef-accent' : 'text-white/40 hover:text-white hover:bg-white/5 border border-transparent'}`}
+                                    className={`shrink-0 snap-start w-auto sm:w-full flex items-center gap-2 sm:gap-3 px-4 py-2.5 sm:px-4 sm:py-3 rounded-xl transition-all group ${activeTab === tab.id ? 'bg-ef-accent/10 border border-ef-accent/20 text-ef-accent' : 'text-white/40 bg-white/5 sm:bg-transparent hover:text-white hover:bg-white/10 sm:hover:bg-white/5 border border-white/5 sm:border-transparent'}`}
                                 >
-                                    <span className={`text-sm ${activeTab === tab.id ? 'opacity-100' : 'opacity-40 group-hover:opacity-100'}`}>{tab.icon}</span>
-                                    <span className="text-[10px] font-black uppercase tracking-widest text-left leading-tight">{tab.label}</span>
+                                    <span className={`text-base sm:text-sm ${activeTab === tab.id ? 'opacity-100' : 'opacity-40 group-hover:opacity-100'}`}>{tab.icon}</span>
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-left leading-tight whitespace-nowrap">{tab.label}</span>
                                 </button>
                             ))}
                         </nav>
@@ -253,13 +253,13 @@ const SettingsModal = ({ onClose, settings, setSettings, user, players, setPlaye
                                             <span className="px-2 py-1 bg-ef-accent text-ef-dark text-[10px] font-black rounded uppercase">{settings.cardSize}</span>
                                         </div>
                                         <input
-                                            type="range" min="0" max="3" step="1"
+                                            type="range" min="0" max="4" step="1"
                                             value={currentIndex}
                                             onChange={handleSliderChange}
                                             className="w-full h-1.5 bg-white/10 rounded-lg appearance-none cursor-pointer accent-ef-accent"
                                         />
-                                        <div className="grid grid-cols-4 gap-2">
-                                            {['TINY', 'SMALL', 'NORMAL', 'LARGE'].map((label, i) => (
+                                        <div className="grid grid-cols-5 gap-2">
+                                            {['BOX', 'TINY', 'SMALL', 'NORMAL', 'LARGE'].map((label, i) => (
                                                 <span key={label} className={`text-[8px] font-black text-center tracking-widest transition-opacity ${i === currentIndex ? 'text-ef-accent' : 'opacity-20 text-white'}`}>
                                                     {label}
                                                 </span>

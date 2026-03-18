@@ -14,7 +14,7 @@ import {
 import { getApps, addApp, deleteApp } from './services/miscService';
 import { getSquads, saveSquad, deleteSquad } from './services/squadService';
 import { searchTeams, searchLeagues, normalizeString } from './services/footballApi';
-import { PLAYSTYLES } from './constants';
+import { PLAYSTYLES, ALL_SKILLS, PLAYER_SKILLS, SPECIAL_SKILLS } from './constants';
 
 // Lazy Load Heavy Components
 const SidebarNav = lazy(() => import('./components/SidebarNav'));
@@ -27,7 +27,7 @@ const LoginModal = lazy(() => import('./components/LoginModal'));
 const SettingsModal = lazy(() => import('./components/SettingsModal'));
 const AppsDrawer = lazy(() => import('./components/AppsDrawer'));
 const DatabasePlayerList = lazy(() => import('./components/DatabasePlayerList'));
-const QuickUpdateModal = lazy(() => import('./components/QuickUpdateModal'));
+const QuickStatsView = lazy(() => import('./components/QuickUpdateModal'));
 const SquadBuilder = lazy(() => import('./components/SquadBuilder'));
 const ProfileStatsModal = lazy(() => import('./components/ProfileStatsModal'));
 const RemainderModal = lazy(() => import('./components/RemainderModal'));
@@ -51,6 +51,7 @@ function App() {
   const [showRemainder, setShowRemainder] = useState(false);
   const [showSocial, setShowSocial] = useState(false);
   const [showBrochure, setShowBrochure] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
   // App Preferences
   const [settings, setSettings] = useState(() => {
@@ -66,6 +67,8 @@ function App() {
       showNationBadge: true,
       customStatSlots: ['matches', 'goals', 'assists'],
       highPerf: false,
+      enablePagination: false,
+      itemsPerPage: 40,
       activeSquadId: null,
       appLogo: ''
     };
@@ -155,6 +158,56 @@ function App() {
           console.error("Error fetching user data:", err);
         } finally {
           setLoading(false);
+          
+          // Background sync for missing skills
+          setPlayers(currentPlayers => {
+            const playersMissingSkills = currentPlayers.filter(p => 
+              (!p.skills || p.skills.length === 0) && (p.pesdb_id || p.playerId)
+            );
+            
+            if (playersMissingSkills.length > 0) {
+              const syncMissingSkills = async () => {
+                try {
+                  const idsToFetch = playersMissingSkills.map(p => p.pesdb_id || p.playerId);
+                  const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+                  const res = await fetch(`${baseUrl}/api/skills/bulk`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ pesdbIds: idsToFetch })
+                  });
+                  
+                  if (res.ok) {
+                    const bulkResults = await res.json();
+                    const updatedPlayersDict = {};
+                    
+                    await Promise.all(playersMissingSkills.map(async p => {
+                        const idCheck = p.pesdb_id || p.playerId;
+                        if (bulkResults[idCheck] && bulkResults[idCheck].length > 0) {
+                           const cleanSkills = bulkResults[idCheck].map(s => s?.trim()).filter(s => s && s !== '');
+                           try {
+                             await updatePlayer(user.uid, p._id, { skills: cleanSkills });
+                             updatedPlayersDict[p._id] = cleanSkills;
+                           } catch (updateErr) {
+                             console.error(`Failed to background save skills for ${p.name}`, updateErr);
+                           }
+                        }
+                    }));
+                    
+                    if (Object.keys(updatedPlayersDict).length > 0) {
+                       setPlayers(prev => prev.map(p => 
+                          updatedPlayersDict[p._id] ? { ...p, skills: updatedPlayersDict[p._id] } : p
+                       ));
+                       console.log(`✅ Background synced skills for ${Object.keys(updatedPlayersDict).length} players`);
+                    }
+                  }
+                } catch (e) {
+                  console.error("Background skills sync failed:", e);
+                }
+              };
+              syncMissingSkills();
+            }
+            return currentPlayers;
+          });
         }
       }
     };
@@ -210,7 +263,9 @@ function App() {
   const [filterLeague, setFilterLeague] = useState('');
   const [filterClub, setFilterClub] = useState('');
   const [filterNationality, setFilterNationality] = useState('');
+  const [filterRating, setFilterRating] = useState('');
   const [filterPlaystyle, setFilterPlaystyle] = useState('All');
+  const [filterSkill, setFilterSkill] = useState('All');
   const [includeSecondary, setIncludeSecondary] = useState(false);
 
   // Custom Dialog State
@@ -257,11 +312,11 @@ function App() {
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [showBulkEdit, setShowBulkEdit] = useState(false);
-  const [showQuickUpdate, setShowQuickUpdate] = useState(false);
   const [bulkEditData, setBulkEditData] = useState({
     playstyle: '',
     cardType: '',
     club: '',
+    league: '',
     nationality: '',
     rating: '',
     age: '',
@@ -316,6 +371,7 @@ function App() {
     club: '',
     league: '',
     country: '',
+    skill: '',
     cardTypes: [],
     playstyles: [],
     minGames: 100,
@@ -700,6 +756,7 @@ function App() {
         playstyle: '',
         cardType: '',
         club: '',
+        league: '',
         nationality: '',
         rating: '',
         age: '',
@@ -864,6 +921,24 @@ function App() {
   // Search State
   const [searchQuery, setSearchQuery] = useState('');
 
+  // Reset pagination when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [
+    searchQuery,
+    filterPos,
+    filterType,
+    filterInactive,
+    filterMissing,
+    filterLeague,
+    filterClub,
+    filterNationality,
+    filterRating,
+    filterPlaystyle,
+    filterSkill,
+    sortBy
+  ]);
+
   // Filter & Sort Logic
   const getProcessedPlayers = () => {
     let result = [...players];
@@ -908,8 +983,27 @@ function App() {
     if (filterNationality) {
       result = result.filter(p => p.nationality?.toLowerCase().includes(filterNationality.toLowerCase()));
     }
+    if (filterRating) {
+      result = result.filter(p => p.rating && p.rating.toString() === filterRating.toString());
+    }
     if (filterPlaystyle !== 'All') {
       result = result.filter(p => p.playstyle === filterPlaystyle);
+    }
+    if (filterSkill !== 'All') {
+      const target = filterSkill.toLowerCase().trim();
+      result = result.filter(p => {
+        const check = (arr) => {
+          if (!arr) return false;
+          const skillsArray = Array.isArray(arr) ? arr : [arr];
+          
+          if (filterSkill === 'Any Special Skill') {
+            return skillsArray.some(s => SPECIAL_SKILLS.includes(s));
+          }
+          
+          return skillsArray.some(s => s?.toString().toLowerCase().trim() === target);
+        };
+        return check(p.skills) || check(p.additionalSkills);
+      });
     }
 
     // Missing Details Filter
@@ -917,7 +1011,7 @@ function App() {
       if (filterMissing === 'Missing Picture') {
         result = result.filter(p => !p.image || p.image === '');
       } else if (filterMissing === 'Missing Player ID') {
-        result = result.filter(p => !p.playerId);
+        result = result.filter(p => !p.pesdb_id && !p.playerId);
       } else if (filterMissing === 'Missing Playstyle') {
         result = result.filter(p => !p.playstyle || p.playstyle === 'None');
       } else if (filterMissing === 'Missing Card Type') {
@@ -938,6 +1032,22 @@ function App() {
         result = result.filter(p => !p.tags || p.tags.length === 0);
       } else if (filterMissing === 'Missing Foot') {
         result = result.filter(p => !p.strongFoot || p.strongFoot === '');
+      } else if (filterMissing === 'No Skills Found') {
+        result = result.filter(p => {
+          const hasSkills = p.skills && p.skills.filter(s => s && s.trim() !== '').length > 0;
+          return !hasSkills;
+        });
+      } else if (filterMissing === 'No Additional Skills') {
+        result = result.filter(p => {
+          if (!p.additionalSkills) return true;
+          const realAdditional = p.additionalSkills.filter(s => s && s.trim() !== '');
+          return realAdditional.length === 0;
+        });
+      } else if (filterMissing === 'Incomplete Additional Skills') {
+        result = result.filter(p => {
+          const filled = (p.additionalSkills || []).filter(s => s && s.trim() !== '').length;
+          return filled > 0 && filled < 5;
+        });
       }
     }
 
@@ -998,7 +1108,7 @@ function App() {
         setStartInEditMode(false); // Reset mode
       } else {
         // If keeping open, update local state to reflect changes
-        setSelectedPlayer(updatesToSave);
+        setSelectedPlayer(prev => ({ ...prev, ...updatesToSave }));
       }
 
       if (imageUploadFailed) {
@@ -1253,7 +1363,7 @@ function App() {
                 {/* Quick Update Button */}
                 {user && (
                   <button
-                    onClick={() => setShowQuickUpdate(true)}
+                    onClick={() => setView('quick-stats')}
                     className="flex flex-col items-center justify-center px-4 md:px-6 py-1.5 md:py-2 bg-ef-accent border border-ef-accent/20 rounded-xl md:rounded-2xl shadow-xl hover:scale-105 active:scale-95 transition-all text-ef-dark group"
                     title="Quickly update player stats"
                   >
@@ -1430,7 +1540,9 @@ function App() {
                       className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm font-bold text-white outline-none focus:border-ef-blue/40 transition-all placeholder:text-white/10"
                     />
                   </div>
+                </div>
 
+                <div className="grid grid-cols-2 gap-4">
                   <div className="relative">
                     <label className="block text-[10px] font-black uppercase tracking-widest opacity-30 mb-2">Change Club Name</label>
                     <div className="relative">
@@ -1454,6 +1566,18 @@ function App() {
                         </div>
                       )}
                     </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-black uppercase tracking-widest opacity-30 mb-2">Change League</label>
+                    <input
+                      type="text"
+                      placeholder="Enter league..."
+                      list="bulk-league-list"
+                      value={bulkEditData.league}
+                      onChange={(e) => setBulkEditData(prev => ({ ...prev, league: e.target.value }))}
+                      className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm font-bold text-white outline-none focus:border-ef-blue/40 transition-all placeholder:text-white/10"
+                    />
                   </div>
                 </div>
 
@@ -1756,7 +1880,9 @@ function App() {
                       setFilterLeague('');
                       setFilterClub('');
                       setFilterNationality('');
+                      setFilterRating('');
                       setFilterPlaystyle('All');
+                      setFilterSkill('All');
                       setFilterMissing('All');
                       setIncludeSecondary(false);
                     }}
@@ -1834,6 +1960,18 @@ function App() {
                         className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-2.5 text-xs font-bold text-white outline-none focus:border-ef-accent/40 transition-all uppercase placeholder:text-white/10"
                       />
                     </div>
+                    <div>
+                      <label className="block text-[10px] font-black uppercase tracking-widest opacity-30 mb-2">Rating</label>
+                      <input
+                        type="number"
+                        placeholder="Exact rating..."
+                        value={filterRating}
+                        onChange={(e) => setFilterRating(e.target.value)}
+                        className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-2.5 text-xs font-bold text-white outline-none focus:border-ef-accent/40 transition-all placeholder:text-white/10"
+                        min="1"
+                        max="150"
+                      />
+                    </div>
                   </div>
                   <div className="space-y-4">
                     <div>
@@ -1852,12 +1990,35 @@ function App() {
                       <select
                         value={filterPlaystyle}
                         onChange={(e) => setFilterPlaystyle(e.target.value)}
-                        className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-2.5 text-xs font-bold text-white outline-none focus:border-ef-accent/40 transition-all"
+                        className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-2.5 text-xs font-bold text-white outline-none focus:border-ef-accent/40 transition-all font-outfit"
                       >
                         <option value="All" className="text-black">All Styles</option>
                         {PLAYSTYLES.map(style => (
                           <option key={style} value={style} className="text-black">{style}</option>
                         ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-black uppercase tracking-widest opacity-30 mb-2">Skill Filter</label>
+                      <select
+                        value={filterSkill}
+                        onChange={(e) => setFilterSkill(e.target.value)}
+                        className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-2.5 text-xs font-bold text-white outline-none focus:border-ef-accent/40 transition-all font-outfit"
+                      >
+                        <option value="All" className="text-black">All Skills</option>
+                        <option value="Any Special Skill" className="text-black font-black">✨ Any Special Skill</option>
+                        
+                        <optgroup label="Special Skills" className="text-black bg-white/5">
+                          {SPECIAL_SKILLS.map(skill => (
+                            <option key={skill} value={skill} className="text-black">{skill}</option>
+                          ))}
+                        </optgroup>
+                        
+                        <optgroup label="Standard Skills" className="text-black bg-white/5">
+                          {PLAYER_SKILLS.map(skill => (
+                            <option key={skill} value={skill} className="text-black">{skill}</option>
+                          ))}
+                        </optgroup>
                       </select>
                     </div>
                   </div>
@@ -1892,6 +2053,35 @@ function App() {
                   </button>
                 </div>
 
+                <div className="mt-6 pt-6 border-t border-white/5">
+                  <label className="block text-xs font-black uppercase tracking-widest opacity-40 mb-3">Performance</label>
+                  <button
+                    onClick={() => {
+                      setSettings(prev => ({ ...prev, enablePagination: !prev.enablePagination }));
+                      setCurrentPage(1);
+                    }}
+                    className={`w-full py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all border ${settings.enablePagination ? 'bg-ef-blue border-ef-blue text-white shadow-lg' : 'bg-white/5 border-white/10 text-white/40 hover:bg-white/10 hover:text-white'}`}
+                  >
+                    {settings.enablePagination ? '📖 Pagination Enabled' : '📜 Infinite Scroll Mode'}
+                  </button>
+                  {settings.enablePagination && (
+                    <div className="mt-3 flex items-center justify-between px-1">
+                      <span className="text-[10px] font-black uppercase tracking-widest opacity-30">Per Page:</span>
+                      <div className="flex gap-1">
+                        {[20, 40, 80].map(size => (
+                          <button
+                            key={size}
+                            onClick={() => setSettings(prev => ({ ...prev, itemsPerPage: size }))}
+                            className={`w-8 h-8 rounded-lg text-[10px] font-black transition-all border ${settings.itemsPerPage === size ? 'bg-ef-blue border-ef-blue text-white' : 'bg-white/5 border-white/10 text-white/40 hover:text-white'}`}
+                          >
+                            {size}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
                 <div className="mt-6">
                   <label className="block text-xs font-black uppercase tracking-widest opacity-40 mb-3">Missing Details</label>
                   <select
@@ -1912,6 +2102,9 @@ function App() {
                     <option value="Missing Height" className="text-black">Missing Height</option>
                     <option value="Missing Tags" className="text-black">Missing Tags</option>
                     <option value="Missing Foot" className="text-black">Missing Foot</option>
+                    <option value="No Skills Found" className="text-black">No Skills Found</option>
+                    <option value="No Additional Skills" className="text-black">No Additional Skills (0/5)</option>
+                    <option value="Incomplete Additional Skills" className="text-black">Incomplete Additional Skills (1–4/5)</option>
                   </select>
                 </div>
               </div>
@@ -2057,30 +2250,108 @@ function App() {
             ) : (
               <>
                 {view === 'list' && (
-                  <div className={`grid ${settings.cardSize === 'xs' ? 'grid-cols-5 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-1' :
-                    settings.cardSize === 'sm' ? 'grid-cols-4 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-2 md:gap-3' :
-                      settings.cardSize === 'md' ? 'grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-4' :
-                        'grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6'
-                    } ${settings.highPerf ? '![animation:none]' : ''}`}>
-                    {processedPlayers.map(player => (
-                      <div key={player._id} onClick={() => !isSelectionMode && setSelectedPlayer(player)}>
-                        <PlayerCard
-                          player={player}
-                          players={players}
-                          isSelectionMode={isSelectionMode}
-                          isSelected={selectedIds.has(player._id)}
-                          onToggleSelect={handleToggleSelect}
-                          settings={settings}
-                          secondaryMatch={includeSecondary && filterPos !== 'All' && player.secondaryPosition?.toUpperCase().includes(filterPos.toUpperCase()) && player.position !== filterPos ? filterPos : null}
-                        />
-                      </div>
-                    ))}
-                    {processedPlayers.length === 0 && (
-                      <div className="col-span-full text-center py-20 opacity-30 border-2 border-dashed border-white/10 rounded-xl">
-                        {user ? 'No players found. Add your first card!' : 'Please login to view your squad.'}
+                  <>
+                    <div className={`grid ${settings.cardSize === 'mini' ? 'grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-3 md:gap-4' :
+                      settings.cardSize === 'xs' ? 'grid-cols-5 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-1' :
+                      settings.cardSize === 'sm' ? 'grid-cols-4 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-2 md:gap-3' :
+                        settings.cardSize === 'md' ? 'grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-4' :
+                          'grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6'
+                      } ${settings.highPerf ? '![animation:none]' : ''}`}>
+                      {(settings.enablePagination
+                        ? processedPlayers.slice((currentPage - 1) * settings.itemsPerPage, currentPage * settings.itemsPerPage)
+                        : processedPlayers
+                      ).map(player => (
+                        <div key={player._id} onClick={() => !isSelectionMode && setSelectedPlayer(player)}>
+                          <PlayerCard
+                            player={player}
+                            players={players}
+                            isSelectionMode={isSelectionMode}
+                            isSelected={selectedIds.has(player._id)}
+                            onToggleSelect={handleToggleSelect}
+                            settings={settings}
+                            secondaryMatch={includeSecondary && filterPos !== 'All' && player.secondaryPosition?.toUpperCase().includes(filterPos.toUpperCase()) && player.position !== filterPos ? filterPos : null}
+                          />
+                        </div>
+                      ))}
+                      {processedPlayers.length === 0 && (
+                        <div className="col-span-full text-center py-20 opacity-30 border-2 border-dashed border-white/10 rounded-xl">
+                          {user ? 'No players found. Add your first card!' : 'Please login to view your squad.'}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Pagination Controls */}
+                    {settings.enablePagination && processedPlayers.length > settings.itemsPerPage && (
+                      <div className="mt-12 flex flex-col items-center gap-6 pb-12">
+                        <div className="flex items-center gap-2">
+                          <button
+                            disabled={currentPage === 1}
+                            onClick={() => {
+                              setCurrentPage(p => Math.max(1, p - 1));
+                              window.scrollTo({ top: 0, behavior: 'smooth' });
+                            }}
+                            className={`w-12 h-12 rounded-2xl flex items-center justify-center border transition-all ${currentPage === 1 ? 'opacity-10 border-white/5 cursor-not-allowed' : 'bg-white/5 border-white/10 text-white hover:bg-ef-blue hover:text-white hover:border-ef-blue hover:scale-105 active:scale-95 shadow-xl'}`}
+                          >
+                            <span className="text-xl">←</span>
+                          </button>
+
+                          <div className="flex items-center gap-1.5 px-4 h-12 bg-white/5 border border-white/10 rounded-2xl shadow-xl">
+                            {(() => {
+                              const totalPages = Math.ceil(processedPlayers.length / settings.itemsPerPage);
+                              const pages = [];
+                              let start = Math.max(1, currentPage - 1);
+                              let end = Math.min(totalPages, start + 2);
+                              if (end === totalPages) start = Math.max(1, end - 2);
+
+                              for (let i = start; i <= end; i++) {
+                                pages.push(
+                                  <button
+                                    key={i}
+                                    onClick={() => {
+                                      setCurrentPage(i);
+                                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                                    }}
+                                    className={`w-9 h-9 rounded-xl text-xs font-black transition-all ${currentPage === i ? 'bg-ef-blue text-white shadow-lg' : 'text-white/30 hover:text-white hover:bg-white/5'}`}
+                                  >
+                                    {i}
+                                  </button>
+                                );
+                              }
+                              return pages;
+                            })()}
+                            {Math.ceil(processedPlayers.length / settings.itemsPerPage) > 3 && currentPage < Math.ceil(processedPlayers.length / settings.itemsPerPage) - 1 && (
+                              <>
+                                <span className="text-white/10 px-1 italic text-[10px]">..</span>
+                                <button
+                                  onClick={() => {
+                                    setCurrentPage(Math.ceil(processedPlayers.length / settings.itemsPerPage));
+                                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                                  }}
+                                  className={`w-9 h-9 rounded-xl text-xs font-black text-white/30 hover:text-white hover:bg-white/5 transition-all`}
+                                >
+                                  {Math.ceil(processedPlayers.length / settings.itemsPerPage)}
+                                </button>
+                              </>
+                            )}
+                          </div>
+
+                          <button
+                            disabled={currentPage === Math.ceil(processedPlayers.length / settings.itemsPerPage)}
+                            onClick={() => {
+                              setCurrentPage(p => Math.min(Math.ceil(processedPlayers.length / settings.itemsPerPage), p + 1));
+                              window.scrollTo({ top: 0, behavior: 'smooth' });
+                            }}
+                            className={`w-12 h-12 rounded-2xl flex items-center justify-center border transition-all ${currentPage === Math.ceil(processedPlayers.length / settings.itemsPerPage) ? 'opacity-10 border-white/5 cursor-not-allowed' : 'bg-white/5 border-white/10 text-white hover:bg-ef-blue hover:text-white hover:border-ef-blue hover:scale-105 active:scale-95 shadow-xl'}`}
+                          >
+                            <span className="text-xl">→</span>
+                          </button>
+                        </div>
+                        <p className="text-[10px] font-black uppercase tracking-[0.4em] opacity-20">
+                          Showing {(currentPage - 1) * settings.itemsPerPage + 1} - {Math.min(currentPage * settings.itemsPerPage, processedPlayers.length)} of {processedPlayers.length} Players
+                        </p>
                       </div>
                     )}
-                  </div>
+                  </>
                 )}
 
                 {view === 'leaderboard' && (
@@ -2185,6 +2456,29 @@ function App() {
                                 className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm font-bold text-white outline-none focus:border-ef-accent transition-all"
                               />
                             </div>
+                            <div>
+                              <label className="block text-xs font-black uppercase tracking-widest opacity-40 mb-2">Skill</label>
+                              <select
+                                value={lbFilters.skill}
+                                onChange={(e) => setLbFilters({ ...lbFilters, skill: e.target.value })}
+                                className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm font-bold text-white outline-none focus:border-ef-accent transition-all"
+                              >
+                                <option value="" className="text-white/40 italic">-- Any Skill --</option>
+                                <option value="Any Special Skill" className="bg-ef-dark text-ef-accent font-black">✨ Any Special Skill</option>
+                                
+                                <optgroup label="Special Skills" className="bg-ef-dark text-white/50">
+                                  {SPECIAL_SKILLS.map(s => (
+                                    <option key={s} value={s} className="bg-ef-dark text-white">{s}</option>
+                                  ))}
+                                </optgroup>
+                                
+                                <optgroup label="Standard Skills" className="bg-ef-dark text-white/50">
+                                  {PLAYER_SKILLS.map(s => (
+                                    <option key={s} value={s} className="bg-ef-dark text-white">{s}</option>
+                                  ))}
+                                </optgroup>
+                              </select>
+                            </div>
                             <div className="md:col-span-2">
                               <label className="block text-[10px] font-black uppercase tracking-[0.2em] opacity-40 mb-3">Card Types</label>
                               <div className="flex flex-wrap gap-2">
@@ -2282,10 +2576,14 @@ function App() {
                         const matchesClub = !lbFilters.club || normalizeString(p.club).includes(normalizeString(lbFilters.club));
                         const matchesLeague = !lbFilters.league || normalizeString(p.league).includes(normalizeString(lbFilters.league));
                         const matchesCountry = !lbFilters.country || normalizeString(p.nationality).includes(normalizeString(lbFilters.country));
+                        const matchesSkill = !lbFilters.skill || 
+                          (lbFilters.skill === 'Any Special Skill' 
+                            ? ((p.skills && p.skills.some(s => SPECIAL_SKILLS.includes(s))) || (p.additionalSkills && p.additionalSkills.some(s => SPECIAL_SKILLS.includes(s))))
+                            : ((p.skills && p.skills.includes(lbFilters.skill)) || (p.additionalSkills && p.additionalSkills.includes(lbFilters.skill))));
                         const matchesType = lbFilters.cardTypes.length === 0 || lbFilters.cardTypes.includes(p.cardType);
                         const matchesStyle = lbFilters.playstyles.length === 0 || lbFilters.playstyles.includes(p.playstyle);
                         const matchesMinGames = (p.matches || 0) >= lbFilters.minGames;
-                        return matchesPos && matchesClub && matchesLeague && matchesCountry && matchesType && matchesStyle && matchesMinGames;
+                        return matchesPos && matchesClub && matchesLeague && matchesCountry && matchesSkill && matchesType && matchesStyle && matchesMinGames;
                       })}
                       onPlayerClick={setSelectedPlayer}
                       activePositions={lbFilters.positions}
@@ -2333,13 +2631,13 @@ function App() {
           />
         )}
 
-        {showQuickUpdate && (
-          <QuickUpdateModal
+        {view === 'quick-stats' && (
+          <QuickStatsView
             players={players}
             user={user}
             activeSquad={activeSquad}
             onUpdate={(id, updates) => handleUpdatePlayer(id, updates, false)}
-            onClose={() => setShowQuickUpdate(false)}
+            onClose={() => setView('list')}
           />
         )}
         {showRemainder && (

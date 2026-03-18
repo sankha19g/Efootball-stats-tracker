@@ -1,11 +1,13 @@
 import { useState, useMemo, useEffect } from 'react';
 import { PLAYSTYLES } from '../constants';
 
-const QuickUpdateModal = ({ players, onUpdate, onClose, user, activeSquad }) => {
+const QuickStatsView = ({ players, onUpdate, onClose, user, activeSquad }) => {
     const [search, setSearch] = useState('');
     const [isManualMode, setIsManualMode] = useState(false);
     const [isRatingsUnlocked, setIsRatingsUnlocked] = useState(false);
     const [filterInactive, setFilterInactive] = useState(false);
+    const [filterSpecialChars, setFilterSpecialChars] = useState(false);
+    const [sortBy, setSortBy] = useState('rating');
     const [showMy11, setShowMy11] = useState(false);
     const [activePage, setActivePage] = useState(0); // 0: Stats, 1: NOT USED, 2: Photo Upload
     const [activeFilters, setActiveFilters] = useState({
@@ -17,6 +19,7 @@ const QuickUpdateModal = ({ players, onUpdate, onClose, user, activeSquad }) => 
         playstyle: ''
     });
     const [searchRating, setSearchRating] = useState('');
+    const [editingPlayerId, setEditingPlayerId] = useState(null);
 
     const categories = useMemo(() => {
         return {
@@ -57,6 +60,10 @@ const QuickUpdateModal = ({ players, onUpdate, onClose, user, activeSquad }) => 
             result = result.filter(p => (p.matches || 0) === 0);
         }
 
+        if (filterSpecialChars) {
+            result = result.filter(p => /[^\x00-\x7F]/.test(p.name));
+        }
+
         if (activeFilters.position) result = result.filter(p => p.position === activeFilters.position);
         if (activeFilters.club) result = result.filter(p => p.club === activeFilters.club);
         if (activeFilters.league) result = result.filter(p => p.league === activeFilters.league);
@@ -64,8 +71,14 @@ const QuickUpdateModal = ({ players, onUpdate, onClose, user, activeSquad }) => 
         if (activeFilters.cardType) result = result.filter(p => p.cardType === activeFilters.cardType);
         if (activeFilters.playstyle) result = result.filter(p => p.playstyle === activeFilters.playstyle);
 
+        result.sort((a, b) => {
+            if (sortBy === 'rating') return (b.rating || 0) - (a.rating || 0);
+            if (sortBy === 'name') return (a.name || '').localeCompare(b.name || '');
+            return 0;
+        });
+
         return result;
-    }, [players, search, searchRating, filterInactive, activeFilters, showMy11, my11Ids]);
+    }, [players, search, searchRating, filterInactive, filterSpecialChars, activeFilters, showMy11, my11Ids, sortBy]);
 
     const handleStep = (player, field, delta) => {
         const newValue = Math.max(0, (player[field] || 0) + delta);
@@ -79,31 +92,38 @@ const QuickUpdateModal = ({ players, onUpdate, onClose, user, activeSquad }) => 
     };
 
     return (
-        <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-[1100] p-0 md:p-4 animate-fade-in backdrop-blur-xl">
-            <div className="w-full max-w-7xl h-full md:h-[85vh] bg-[#0a0a0c] md:rounded-3xl border border-white/10 shadow-2xl overflow-hidden flex relative">
+        <div className="min-h-screen bg-[#0a0a0c] flex animate-fade-in fixed inset-0 z-[2000]">
+            <div className="w-full h-full bg-[#0a0a0c] overflow-hidden flex relative">
 
                 {/* Sidebar Navigation */}
                 <div className="w-16 md:w-20 bg-white/5 border-r border-white/5 flex flex-col items-center py-6 gap-6 z-20">
                     <button
-                        onClick={() => setActivePage(0)}
+                        onClick={() => { setActivePage(0); setEditingPlayerId(null); }}
                         className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${activePage === 0 ? 'bg-ef-accent text-ef-dark shadow-lg shadow-ef-accent/20 scale-110' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
                         title="Match Stats & Ratings"
                     >
                         <span className="text-xl">📊</span>
                     </button>
                     <button
-                        onClick={() => setActivePage(2)}
+                        onClick={() => { setActivePage(2); setEditingPlayerId(null); }}
                         className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${activePage === 2 ? 'bg-purple-500 text-white shadow-lg shadow-purple-500/20 scale-110' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
                         title="Photo Upload"
                     >
                         <span className="text-xl">📸</span>
                     </button>
                     <button
-                        onClick={() => setActivePage(3)}
+                        onClick={() => { setActivePage(3); setEditingPlayerId(null); }}
                         className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${activePage === 3 ? 'bg-ef-blue text-ef-dark shadow-lg shadow-ef-blue/20 scale-110' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
                         title="Secondary Positions"
                     >
                         <span className="text-xl">🏃‍♂️</span>
+                    </button>
+                    <button
+                        onClick={() => { setActivePage(4); setEditingPlayerId(null); }}
+                        className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${activePage === 4 ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/20 scale-110' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
+                        title="Rename"
+                    >
+                        <span className="text-xl">✏️</span>
                     </button>
                 </div>
 
@@ -113,41 +133,64 @@ const QuickUpdateModal = ({ players, onUpdate, onClose, user, activeSquad }) => 
                     {/* Header */}
                     <div className="p-6 border-b border-white/5 bg-white/5 flex flex-col gap-4">
                         <div className="flex justify-between items-center">
-                            <div>
-                                <h3 className="text-xl font-black bg-gradient-to-r from-ef-accent to-ef-blue bg-clip-text text-transparent uppercase italic tracking-tighter">
-                                    Quick Stats Update
-                                </h3>
-                                <div className="flex items-center gap-2 mt-1">
-                                    <p className="text-[10px] font-black uppercase tracking-widest opacity-40">Update match details instantly</p>
-                                    <button
-                                        onClick={() => setFilterInactive(!filterInactive)}
-                                        className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded border transition-all ${filterInactive ? 'bg-ef-accent/20 border-ef-accent text-ef-accent' : 'bg-white/5 border-white/10 text-white/40 hover:text-white'}`}
-                                        title="Show only players with 0 games"
-                                    >
-                                        {filterInactive ? '🎯 Inactive Only' : 'All Players'}
-                                    </button>
-                                    <span className="w-1 h-1 rounded-full bg-white/20"></span>
-                                    <button
-                                        onClick={() => setIsManualMode(!isManualMode)}
-                                        className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded border transition-all ${isManualMode ? 'bg-ef-blue/20 border-ef-blue text-ef-blue' : 'bg-white/5 border-white/10 text-white/40 hover:text-white'}`}
-                                    >
-                                        {isManualMode ? '⌨️ Manual' : '🖱️ Arrow'}
-                                    </button>
-                                    <span className="w-1 h-1 rounded-full bg-white/20"></span>
-                                    <button
-                                        onClick={() => setIsRatingsUnlocked(!isRatingsUnlocked)}
-                                        className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded border transition-all ${isRatingsUnlocked ? 'bg-yellow-500/20 border-yellow-500 text-yellow-500' : 'bg-white/5 border-white/10 text-white/40 hover:text-white'}`}
-                                    >
-                                        {isRatingsUnlocked ? '🔓 Ratings' : '🔒 Ratings'}
-                                    </button>
-                                    <span className="w-1 h-1 rounded-full bg-white/20"></span>
-                                    <button
-                                        onClick={() => setShowMy11(!showMy11)}
-                                        className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded border transition-all ${showMy11 ? 'bg-[#00FF88]/20 border-[#00FF88] text-[#00FF88]' : 'bg-white/5 border-white/10 text-white/40 hover:text-white'}`}
-                                        title="Show only players in your active formation"
-                                    >
-                                        {showMy11 ? '⭐ MY 11' : 'ALL'}
-                                    </button>
+                            <div className="flex items-center gap-4">
+                                <button
+                                    onClick={onClose}
+                                    className="p-3 bg-white/5 hover:bg-white/10 text-white/40 hover:text-white rounded-xl transition-all flex items-center justify-center border border-white/10 group"
+                                    title="Go back to list"
+                                >
+                                    <span className="text-xl group-hover:-translate-x-1 transition-transform">←</span>
+                                </button>
+                                <div>
+                                    <h3 className="text-xl font-black bg-gradient-to-r from-ef-accent to-ef-blue bg-clip-text text-transparent uppercase italic tracking-tighter">
+                                        Quick Stats Update
+                                    </h3>
+                                    <div className="flex items-center gap-2 mt-1">
+                                        <p className="text-[10px] font-black uppercase tracking-widest opacity-40">Update match details instantly</p>
+                                        <select
+                                            value={showMy11 ? 'my11' : filterSpecialChars ? 'special' : filterInactive ? 'inactive' : 'all'}
+                                            onChange={(e) => {
+                                                const val = e.target.value;
+                                                setShowMy11(val === 'my11');
+                                                setFilterSpecialChars(val === 'special');
+                                                setFilterInactive(val === 'inactive');
+                                            }}
+                                            className="text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded border transition-all bg-[#0a0a0c] border-white/10 text-white/70 hover:text-white outline-none cursor-pointer appearance-none text-center"
+                                            title="Filter Players"
+                                        >
+                                            <option value="all">👥 ALL PLAYERS</option>
+                                            <option value="inactive">🎯 0 GAMES</option>
+                                            <option value="special">✨ SPECIAL CHARS</option>
+                                            <option value="my11">⭐ MY 11</option>
+                                        </select>
+                                        <span className="w-1 h-1 rounded-full bg-white/20"></span>
+                                        <button
+                                            onClick={() => setIsManualMode(!isManualMode)}
+                                            className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded border transition-all ${isManualMode ? 'bg-ef-blue/20 border-ef-blue text-ef-blue' : 'bg-white/5 border-white/10 text-white/40 hover:text-white'}`}
+                                        >
+                                            {isManualMode ? '⌨️ Manual' : '🖱️ Arrow'}
+                                        </button>
+                                        <span className="w-1 h-1 rounded-full bg-white/20"></span>
+                                        <button
+                                            onClick={() => setIsRatingsUnlocked(!isRatingsUnlocked)}
+                                            className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded border transition-all ${isRatingsUnlocked ? 'bg-yellow-500/20 border-yellow-500 text-yellow-500' : 'bg-white/5 border-white/10 text-white/40 hover:text-white'}`}
+                                        >
+                                            {isRatingsUnlocked ? '🔓 Ratings' : '🔒 Ratings'}
+                                        </button>
+                                        <span className="w-1 h-1 rounded-full bg-white/20"></span>
+                                        <div className="flex items-center gap-1.5">
+                                            <span className="text-[7px] font-black uppercase tracking-widest opacity-40 leading-none">Sort:</span>
+                                            <select
+                                                value={sortBy}
+                                                onChange={(e) => setSortBy(e.target.value)}
+                                                className="text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded border transition-all bg-[#0a0a0c] border-white/10 text-white/70 hover:text-white outline-none cursor-pointer appearance-none text-center"
+                                                title="Sort Players"
+                                            >
+                                                <option value="rating">🔽 Rating</option>
+                                                <option value="name">🅰️ Name</option>
+                                            </select>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                             <button
@@ -240,72 +283,104 @@ const QuickUpdateModal = ({ players, onUpdate, onClose, user, activeSquad }) => 
                                         <p className="text-xs font-black uppercase tracking-widest">No players found</p>
                                     </div>
                                 ) : (
-                                    filteredPlayers.map(player => (
-                                        <div key={player._id} className="group bg-white/5 hover:bg-white/10 border border-white/5 rounded-2xl p-3 flex items-center justify-between gap-4 transition-all hover:border-white/10">
-                                            {/* Photo & Basic Info */}
-                                            <div className="flex items-center gap-3 w-1/4 min-w-0">
-                                                <div className="w-12 h-12 flex-shrink-0 rounded-xl overflow-hidden border border-white/10 bg-black/40">
-                                                    <img src={player.image} alt="" className="w-full h-full object-cover object-top" />
-                                                </div>
-                                                <div className="truncate">
-                                                    <h4 className="text-sm font-black text-white truncate uppercase tracking-tight">{player.name}</h4>
-                                                    <div className="flex items-center gap-1 opacity-30 uppercase tracking-widest text-[9px] font-bold truncate">
-                                                        <span>{player.position}</span>
-                                                        <span>•</span>
-                                                        <span className="truncate">{player.club}</span>
-                                                        {player.playstyle && player.playstyle !== 'None' && (
-                                                            <>
-                                                                <span>•</span>
-                                                                <span className="text-ef-accent/60 lowercase italic">{player.playstyle}</span>
-                                                            </>
-                                                        )}
+                                    filteredPlayers.map(player => {
+                                        const isEditing = editingPlayerId === player._id;
+                                        return (
+                                            <div key={player._id} className={`group bg-white/5 hover:bg-white/10 border border-white/5 rounded-2xl p-[3px] flex items-center justify-between gap-4 transition-all hover:border-white/10 ${isEditing ? 'bg-white/10 border-ef-accent/30' : ''}`}>
+                                                {/* Photo & Basic Info */}
+                                                <div className="flex items-center gap-3 w-1/4 min-w-0">
+                                                    <div className="w-10 h-10 md:w-12 md:h-12 flex-shrink-0 rounded-xl overflow-hidden border border-white/10 bg-black/40">
+                                                        <img src={player.image} alt="" className="w-full h-full object-cover object-top" />
+                                                    </div>
+                                                    <div className="truncate">
+                                                        <h4 className="text-xs md:text-sm font-black text-white truncate uppercase tracking-tight">{player.name}</h4>
+                                                        <div className="flex items-center gap-1 opacity-30 uppercase tracking-widest text-[8px] md:text-[9px] font-bold truncate">
+                                                            <span>{player.position}</span>
+                                                            <span className="hidden md:inline">•</span>
+                                                            <span className="truncate hidden md:inline">{player.club}</span>
+                                                        </div>
                                                     </div>
                                                 </div>
-                                            </div>
 
-                                            {/* Combined Controls */}
-                                            <div className="flex-1 flex items-center justify-end gap-2 md:gap-4">
-                                                <StatControl
-                                                    label="OVR"
-                                                    value={player.rating || 0}
-                                                    isManual={isManualMode}
-                                                    isDisabled={!isRatingsUnlocked}
-                                                    onUp={() => handleStep(player, 'rating', 1)}
-                                                    onDown={() => handleStep(player, 'rating', -1)}
-                                                    onManual={(val) => handleManualUpdate(player, 'rating', val)}
-                                                    color="ef-accent"
-                                                />
-                                                <div className="w-px h-8 bg-white/5 mx-2 hidden md:block"></div>
-                                                <StatControl
-                                                    label="MT"
-                                                    value={player.matches || 0}
-                                                    isManual={isManualMode}
-                                                    onUp={() => handleStep(player, 'matches', 1)}
-                                                    onDown={() => handleStep(player, 'matches', -1)}
-                                                    onManual={(val) => handleManualUpdate(player, 'matches', val)}
-                                                    color="white"
-                                                />
-                                                <StatControl
-                                                    label="GL"
-                                                    value={player.goals || 0}
-                                                    isManual={isManualMode}
-                                                    onUp={() => handleStep(player, 'goals', 1)}
-                                                    onDown={() => handleStep(player, 'goals', -1)}
-                                                    onManual={(val) => handleManualUpdate(player, 'goals', val)}
-                                                    color="ef-accent"
-                                                />
-                                                <StatControl
-                                                    label="AS"
-                                                    value={player.assists || 0}
-                                                    isManual={isManualMode}
-                                                    onUp={() => handleStep(player, 'assists', 1)}
-                                                    onDown={() => handleStep(player, 'assists', -1)}
-                                                    onManual={(val) => handleManualUpdate(player, 'assists', val)}
-                                                    color="ef-blue"
-                                                />
+                                                {/* Combined Controls or Display */}
+                                                <div className="flex-1 flex items-center justify-end gap-2 md:gap-4">
+                                                    {isEditing ? (
+                                                        <>
+                                                            <StatControl
+                                                                label="OVR"
+                                                                value={player.rating || 0}
+                                                                isManual={isManualMode}
+                                                                isDisabled={!isRatingsUnlocked}
+                                                                onUp={() => handleStep(player, 'rating', 1)}
+                                                                onDown={() => handleStep(player, 'rating', -1)}
+                                                                onManual={(val) => handleManualUpdate(player, 'rating', val)}
+                                                                color="ef-accent"
+                                                            />
+                                                            <div className="w-px h-8 bg-white/5 mx-1 hidden md:block"></div>
+                                                            <StatControl
+                                                                label="MT"
+                                                                value={player.matches || 0}
+                                                                isManual={isManualMode}
+                                                                onUp={() => handleStep(player, 'matches', 1)}
+                                                                onDown={() => handleStep(player, 'matches', -1)}
+                                                                onManual={(val) => handleManualUpdate(player, 'matches', val)}
+                                                                color="white"
+                                                            />
+                                                            <StatControl
+                                                                label="GL"
+                                                                value={player.goals || 0}
+                                                                isManual={isManualMode}
+                                                                onUp={() => handleStep(player, 'goals', 1)}
+                                                                onDown={() => handleStep(player, 'goals', -1)}
+                                                                onManual={(val) => handleManualUpdate(player, 'goals', val)}
+                                                                color="ef-accent"
+                                                            />
+                                                            <StatControl
+                                                                label="AS"
+                                                                value={player.assists || 0}
+                                                                isManual={isManualMode}
+                                                                onUp={() => handleStep(player, 'assists', 1)}
+                                                                onDown={() => handleStep(player, 'assists', -1)}
+                                                                onManual={(val) => handleManualUpdate(player, 'assists', val)}
+                                                                color="ef-blue"
+                                                            />
+                                                            <button
+                                                                onClick={() => setEditingPlayerId(null)}
+                                                                className="ml-2 w-8 h-8 rounded-lg bg-green-500/20 text-green-500 hover:bg-green-500 hover:text-white transition-all flex items-center justify-center font-black text-xs"
+                                                            >✓</button>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <div className="flex items-center gap-2 md:gap-6 text-[10px] md:text-sm font-black whitespace-nowrap overflow-hidden">
+                                                                <div className="flex flex-col items-center min-w-[30px] md:min-w-[40px]">
+                                                                    <span className="text-[7px] md:text-[8px] opacity-20 uppercase tracking-tighter">OVR</span>
+                                                                    <span className="text-ef-accent">{player.rating || 0}</span>
+                                                                </div>
+                                                                <div className="flex flex-col items-center min-w-[30px] md:min-w-[40px]">
+                                                                    <span className="text-[7px] md:text-[8px] opacity-20 uppercase tracking-tighter">MT</span>
+                                                                    <span className="text-white/60">{player.matches || 0}</span>
+                                                                </div>
+                                                                <div className="flex flex-col items-center min-w-[30px] md:min-w-[40px]">
+                                                                    <span className="text-[7px] md:text-[8px] opacity-20 uppercase tracking-tighter">GL</span>
+                                                                    <span className="text-ef-accent/60">{player.goals || 0}</span>
+                                                                </div>
+                                                                <div className="flex flex-col items-center min-w-[30px] md:min-w-[40px]">
+                                                                    <span className="text-[7px] md:text-[8px] opacity-20 uppercase tracking-tighter">AS</span>
+                                                                    <span className="text-ef-blue/60">{player.assists || 0}</span>
+                                                                </div>
+                                                            </div>
+                                                            <button
+                                                                onClick={() => setEditingPlayerId(player._id)}
+                                                                className="px-3 md:px-5 py-1.5 md:py-2.5 bg-white/5 border border-white/10 rounded-xl text-[10px] font-black uppercase text-white/40 hover:text-white hover:bg-white/10 hover:border-ef-accent/50 transition-all active:scale-95"
+                                                            >
+                                                                Edit
+                                                            </button>
+                                                        </>
+                                                    )}
+                                                </div>
                                             </div>
-                                        </div>
-                                    ))
+                                        )
+                                    })
                                 )}
                             </div>
                         </div>
@@ -338,7 +413,7 @@ const QuickUpdateModal = ({ players, onUpdate, onClose, user, activeSquad }) => 
                                     </div>
                                 ) : (
                                     filteredPlayers.map(player => (
-                                        <div key={player._id} className="group bg-white/5 hover:bg-white/10 border border-white/5 rounded-2xl p-3 flex items-center justify-between gap-4 transition-all hover:border-white/10">
+                                        <div key={player._id} className="group bg-white/5 hover:bg-white/10 border border-white/5 rounded-2xl p-[3px] flex items-center justify-between gap-4 transition-all hover:border-white/10">
                                             {/* Photo & Info */}
                                             <div className="flex items-center gap-3 w-1/3 min-w-0">
                                                 <div className="w-10 h-10 flex-shrink-0 rounded-lg overflow-hidden border border-white/10 bg-black/40">
@@ -363,6 +438,50 @@ const QuickUpdateModal = ({ players, onUpdate, onClose, user, activeSquad }) => 
                                                     />
                                                     <div className="absolute right-3 top-1/2 -translate-y-1/2 opacity-20 text-[8px] font-black uppercase tracking-widest group-focus-within/input:opacity-0 transition-opacity pointer-events-none">
                                                         SEC POS
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Page 4: Rename Players */}
+                        <div className={`absolute inset-0 flex flex-col transition-all duration-500 transform ${activePage === 4 ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-100 pointer-events-none'}`}>
+                            <div className="flex-1 overflow-y-auto custom-scrollbar p-2 md:p-4 space-y-2">
+                                {filteredPlayers.length === 0 ? (
+                                    <div className="h-60 flex flex-col items-center justify-center opacity-20">
+                                        <span className="text-4xl mb-2">👤</span>
+                                        <p className="text-xs font-black uppercase tracking-widest">No players found</p>
+                                    </div>
+                                ) : (
+                                    filteredPlayers.map(player => (
+                                        <div key={player._id} className="group bg-white/5 hover:bg-white/10 border border-white/5 rounded-2xl p-[3px] flex items-center justify-between gap-4 transition-all hover:border-white/10">
+                                            {/* Photo & Basic Info */}
+                                            <div className="flex items-center gap-3 w-1/3 min-w-0">
+                                                <div className="w-10 h-10 flex-shrink-0 rounded-lg overflow-hidden border border-white/10 bg-black/40">
+                                                    <img src={player.image} alt="" className="w-full h-full object-cover object-top" />
+                                                </div>
+                                                <div className="truncate">
+                                                    <h4 className="text-xs font-black text-white truncate uppercase tracking-tight">{player.name}</h4>
+                                                    <div className="flex items-center gap-1.5 mt-0.5">
+                                                        <span className="text-[8px] opacity-40 font-black uppercase tracking-widest leading-none">{player.position}</span>
+                                                        <span className="text-[9px] opacity-20 font-black">•</span>
+                                                        <span className="text-[9px] opacity-20 font-bold uppercase truncate leading-none">{player.club}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Rename Input */}
+                                            <div className="flex-1 max-w-sm">
+                                                <div className="relative group/input">
+                                                    <RenameInput
+                                                        value={player.name}
+                                                        onUpdate={(val) => onUpdate(player._id, { name: val, search_name: val.toLowerCase().replace(/[^a-z0-9]/g, '') })}
+                                                    />
+                                                    <div className="absolute right-3 top-1/2 -translate-y-1/2 opacity-20 text-[8px] font-black uppercase tracking-widest group-focus-within/input:opacity-0 transition-opacity pointer-events-none">
+                                                        RENAME
                                                     </div>
                                                 </div>
                                             </div>
@@ -613,4 +732,33 @@ const PhotoUploadCard = ({ player, onUpdate }) => {
     );
 };
 
-export default QuickUpdateModal;
+const RenameInput = ({ value, onUpdate }) => {
+    const [localValue, setLocalValue] = useState(value || '');
+
+    useEffect(() => {
+        setLocalValue(value || '');
+    }, [value]);
+
+    const handleCommit = () => {
+        const normalized = localValue.trim();
+        if (normalized && normalized !== (value || '')) {
+            onUpdate(normalized);
+        } else if (!normalized) {
+            setLocalValue(value || '');
+        }
+    };
+
+    return (
+        <input
+            type="text"
+            placeholder="Player Name"
+            value={localValue}
+            onChange={(e) => setLocalValue(e.target.value)}
+            onBlur={handleCommit}
+            onKeyDown={(e) => e.key === 'Enter' && e.target.blur()}
+            className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2 text-xs font-bold text-orange-500 outline-none focus:border-orange-500/40 transition-all placeholder:text-white/5"
+        />
+    );
+};
+
+export default QuickStatsView;

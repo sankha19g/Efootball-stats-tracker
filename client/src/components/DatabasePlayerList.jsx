@@ -24,7 +24,9 @@ const DatabasePlayerList = ({ onAddPlayers, onBack, settings, ownersPlayers = []
     const scrollRef = useRef(null);
 
     // Create a Set of existing player IDs for O(1) lookup
-    const existingPlayerIds = new Set(ownersPlayers.map(p => p.playerId).filter(id => id));
+    const existingPlayerIds = new Set(
+        ownersPlayers.map(p => p.pesdb_id || p.playerId).filter(id => id)
+    );
 
     const fetchPlayers = useCallback(async (currentPage, currentSearch, currentFilters) => {
         setLoading(true);
@@ -92,6 +94,7 @@ const DatabasePlayerList = ({ onAddPlayers, onBack, settings, ownersPlayers = []
             position: p.position,
             playstyle: p.playstyle || 'None',
             cardType: p.card_type || 'Normal',
+            pesdb_id: p.id,
             playerId: p.id,
             rating: 90,
             goals: 0,

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { PLAYSTYLES, TOP_LEAGUES } from '../constants';
+import { PLAYSTYLES, TOP_LEAGUES, SPECIAL_SKILLS, PLAYER_SKILLS, ALL_SKILLS } from '../constants';
 import { searchLeagues, searchTeams, searchCountries, getFlagUrl } from '../services/footballApi';
 import SavedProgressionsModal from './SavedProgressionsModal';
 
@@ -20,7 +20,16 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
     const [tagInput, setTagInput] = useState('');
     const [isLeaguePopupOpen, setIsLeaguePopupOpen] = useState(false);
     const [isRankingDropdownOpen, setIsRankingDropdownOpen] = useState(false);
-    const [modalPage, setModalPage] = useState(0); // 0: Overview, 1: Management
+    const [modalPage, setModalPage] = useState(0); // 0: Overview, 1: Comparison, 2: Skills
+    const [skills, setSkills] = useState(player.skills || []);
+    const [additionalSkills, setAdditionalSkills] = useState(player.additionalSkills || ['', '', '', '', '']);
+    const [activeAdditionalSlot, setActiveAdditionalSlot] = useState(null);
+    const [isSkillsLoading, setIsSkillsLoading] = useState(false);
+    const [skillsError, setSkillsError] = useState(null);
+    const [skillSearch, setSkillSearch] = useState('');
+    const [isEditingSkills, setIsEditingSkills] = useState(false);
+    const [showAddCoreSkill, setShowAddCoreSkill] = useState(false);
+    const [coreSkillSearch, setCoreSkillSearch] = useState('');
     const [leagueLogos, setLeagueLogos] = useState({});
     const [_isLoadingLogos, setIsLoadingLogos] = useState(false);
     const leaguePopupRef = useRef(null);
@@ -106,6 +115,58 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
+    const fetchSkills = async (forceRescrape = false) => {
+        const pesdbId = player.pesdb_id || player.playerId;
+        if (!pesdbId) {
+            setSkillsError("No PESDB ID found for this player.");
+            return;
+        }
+
+        setIsSkillsLoading(true);
+        setSkillsError(null);
+        try {
+            const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+            let data;
+
+            if (forceRescrape && player._id) {
+                // Use the POST endpoint to scrape fresh and save
+                const token = localStorage.getItem('authToken');
+                const response = await fetch(`${baseUrl}/api/players/${player._id}/skills`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!response.ok) throw new Error("Failed to re-scrape skills");
+                data = await response.json();
+            } else {
+                // Use GET endpoint (cached)
+                const response = await fetch(`${baseUrl}/api/skills/${pesdbId}`);
+                if (!response.ok) throw new Error("Failed to fetch skills");
+                data = await response.json();
+            }
+
+            if (data.skills && data.skills.length > 0) {
+                const cleanSkills = data.skills.map(s => s?.trim()).filter(s => s && s !== '');
+                setSkills(cleanSkills);
+                if (player._id && !forceRescrape) {
+                    onUpdate(player._id, { skills: cleanSkills }, false);
+                }
+            } else {
+                setSkillsError("No skills found. The scraper might need adjustment.");
+            }
+        } catch (err) {
+            console.error("Error fetching skills:", err);
+            setSkillsError("Error loading skills. Please try again.");
+        } finally {
+            setIsSkillsLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        if (modalPage === 2 && skills.length === 0 && !isSkillsLoading && !skillsError) {
+            fetchSkills();
+        }
+    }, [modalPage]);
+
     useEffect(() => {
         setFormData({
             ...player,
@@ -116,6 +177,9 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
             strongFoot: player.strongFoot || 'Right',
             secondaryPosition: player.secondaryPosition || ''
         });
+        setSkills(player.skills || []);
+        setAdditionalSkills(player.additionalSkills || ['', '', '', '', '']);
+        setSkillsError(null);
     }, [player]);
 
     const handleAddTag = (e) => {
@@ -138,6 +202,14 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
         let newValue = value;
         if (name === 'secondaryPosition') {
             newValue = value.replace(/,/g, ' ').replace(/\s+/g, ' ');
+        }
+        if (name === 'playerId' || name === 'pesdb_id') {
+            setFormData(prev => ({
+                ...prev,
+                playerId: newValue,
+                pesdb_id: newValue
+            }));
+            return;
         }
         setFormData(prev => ({
             ...prev,
@@ -746,15 +818,15 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
                                     <label className="text-[10px] font-black uppercase tracking-widest opacity-40">Player ID</label>
                                     <div className="relative flex gap-2">
                                         <input
-                                            type="text" name="playerId"
-                                            value={formData.playerId || ''} onChange={handleChange}
+                                            type="text" name="pesdb_id"
+                                            value={formData.pesdb_id || formData.playerId || ''} onChange={handleChange}
                                             className="flex-1 bg-white/5 border border-white/10 rounded-xl p-3 text-white/70 focus:border-ef-accent focus:outline-none transition font-mono text-xs"
                                         />
                                         <button
                                             type="button"
                                             onClick={async () => {
                                                 const text = await navigator.clipboard.readText();
-                                                if (text) setFormData(prev => ({ ...prev, playerId: text }));
+                                                if (text) setFormData(prev => ({ ...prev, playerId: text, pesdb_id: text }));
                                             }}
                                             className="px-4 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95"
                                         >
@@ -1172,18 +1244,23 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
                                 </div>
 
                                 {/* Action Buttons */}
-                                <div className="mt-auto flex gap-3 pt-4">
-                                    <button onClick={() => setShowProgressions(true)} className="flex-1 py-3 rounded-xl bg-white/5 border border-white/10 hover:border-ef-accent/50 hover:bg-white/10 hover:text-ef-accent transition-all font-black text-[9px] tracking-widest uppercase flex items-center justify-center gap-2">
-                                        <span>📊</span> Progressions
-                                    </button>
-                                    <button onClick={() => setIsEditing(true)} className="flex-1 py-3 rounded-xl bg-white/5 border border-white/10 hover:border-ef-accent/50 hover:bg-white/10 hover:text-ef-accent transition-all font-black text-[9px] tracking-widest uppercase flex items-center justify-center gap-2">
+                                <div className="mt-auto flex flex-col gap-3 pt-4">
+                                    <div className="flex gap-3">
+                                        <button onClick={() => setModalPage(2)} className="flex-1 py-3 rounded-xl bg-ef-accent/10 border border-ef-accent/20 hover:bg-ef-accent/20 transition-all font-black text-[9px] tracking-widest uppercase flex items-center justify-center gap-2 text-ef-accent">
+                                            <span>🪄</span> Player Skills
+                                        </button>
+                                        <button onClick={() => setShowProgressions(true)} className="flex-1 py-3 rounded-xl bg-white/5 border border-white/10 hover:border-ef-accent/50 hover:bg-white/10 hover:text-ef-accent transition-all font-black text-[9px] tracking-widest uppercase flex items-center justify-center gap-2">
+                                            <span>📊</span> Progressions
+                                        </button>
+                                    </div>
+                                    <button onClick={() => setIsEditing(true)} className="w-full py-3 rounded-xl bg-white/5 border border-white/10 hover:border-ef-accent/50 hover:bg-white/10 hover:text-ef-accent transition-all font-black text-[9px] tracking-widest uppercase flex items-center justify-center gap-2">
                                         <span>⚡</span> Edit Data
                                     </button>
                                 </div>
                             </div>
 
                             {/* Page 1: Comparison */}
-                            <div className={`flex-1 flex flex-col transition-all duration-500 transform overflow-y-auto no-scrollbar ${modalPage === 1 ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0 pointer-events-none absolute inset-0 p-4 md:p-6'} `}>
+                            <div className={`flex-1 flex flex-col transition-all duration-500 transform overflow-y-auto no-scrollbar ${modalPage === 1 ? 'translate-x-0 opacity-100' : modalPage === 0 ? 'translate-x-full opacity-0 pointer-events-none absolute inset-0 p-4 md:p-6' : '-translate-x-full opacity-0 pointer-events-none absolute inset-0 p-4 md:p-6'} `}>
                                 <div className="flex items-center justify-between mb-6">
                                     <h3 className="text-xl font-black text-white uppercase tracking-tighter flex items-center gap-2">
                                         <span className="text-ef-accent">🆚</span> Compare
@@ -1326,6 +1403,256 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
                                 </div>
                             </div>
 
+                            {/* Page 2: Player Skills */}
+                            <div className={`flex-1 flex flex-col transition-all duration-500 transform overflow-y-auto no-scrollbar ${modalPage === 2 ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0 pointer-events-none absolute inset-0 p-4 md:p-6'} `}>
+                                <div className="flex items-center justify-between mb-4">
+                                    <h3 className="text-xl font-black text-white uppercase tracking-tighter flex items-center gap-2">
+                                        <span className="text-ef-accent">🪄</span> Player Skills
+                                    </h3>
+                                    <div className="flex items-center gap-2">
+                                        {!isSkillsLoading && (
+                                            <>
+                                                {(player.pesdb_id || player.playerId) && (
+                                                    <button
+                                                        onClick={() => fetchSkills(true)}
+                                                        className="px-3 py-1 bg-ef-accent/10 border border-ef-accent/20 rounded-lg text-[9px] font-black uppercase tracking-widest text-ef-accent hover:bg-ef-accent/20 transition-all"
+                                                        title="Force re-scrape from PESDB"
+                                                    >
+                                                        🔄 Re-scrape
+                                                    </button>
+                                                )}
+                                                <button
+                                                    onClick={() => {
+                                                        if (isEditingSkills) {
+                                                            onUpdate(player._id, {
+                                                                skills: skills.map(s => s?.trim()).filter(s => s && s !== ''),
+                                                                additionalSkills: additionalSkills.map(s => s?.trim()).filter(s => s && s !== '')
+                                                            }, false);
+                                                            setShowAddCoreSkill(false);
+                                                            setCoreSkillSearch('');
+                                                        }
+                                                        setIsEditingSkills(e => !e);
+                                                    }}
+                                                    className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border transition-all ${isEditingSkills
+                                                            ? 'bg-ef-accent/20 border-ef-accent/40 text-ef-accent'
+                                                            : 'bg-white/5 border-white/10 text-white/40 hover:text-white hover:bg-white/10'
+                                                        }`}
+                                                >
+                                                    {isEditingSkills ? '✓ Done' : '✏ Edit'}
+                                                </button>
+                                            </>
+                                        )}
+                                        <button onClick={() => setModalPage(0)} className="text-[10px] font-black uppercase tracking-widest text-white/40 hover:text-white transition-colors">
+                                            ✕ Back
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {isSkillsLoading ? (
+                                    <div className="flex flex-col items-center justify-center py-20 gap-4">
+                                        <div className="w-10 h-10 border-4 border-ef-accent border-t-transparent rounded-full animate-spin"></div>
+                                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40 animate-pulse">Scraping skills from PESDB...</span>
+                                    </div>
+                                ) : skillsError ? (
+                                    <div className="flex flex-col items-center justify-center py-20 gap-4 text-center">
+                                        <span className="text-4xl">⚠️</span>
+                                        <p className="text-sm font-bold text-white/60">{skillsError}</p>
+                                        <button onClick={() => fetchSkills(false)} className="px-6 py-2 bg-white/5 border border-white/10 rounded-full text-white/60 text-[10px] font-black uppercase tracking-widest hover:bg-white/10 transition-all">
+                                            Try Again
+                                        </button>
+                                        {(player.pesdb_id || player.playerId) && (
+                                            <button onClick={() => fetchSkills(true)} className="px-6 py-2 bg-ef-accent/10 border border-ef-accent/20 rounded-full text-ef-accent text-[10px] font-black uppercase tracking-widest hover:bg-ef-accent/20 transition-all">
+                                                🔄 Force Re-scrape
+                                            </button>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <div className="grid grid-cols-2 gap-4 flex-1 min-h-0">
+
+                                        {/* ── Left: Core Skills ── */}
+                                        <div className="flex flex-col gap-2 min-h-0">
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <span className="text-[9px] font-black uppercase tracking-widest text-ef-accent">Core Skills</span>
+                                                <div className="h-px bg-white/10 flex-1"></div>
+                                                <span className="text-[9px] font-black text-white/20">{skills.length}</span>
+                                            </div>
+                                            <div className="space-y-1.5 overflow-y-auto pr-1 custom-scrollbar flex-1">
+                                                {skills.length > 0 ? skills.map((skill, i) => {
+                                                    const isSpecial = SPECIAL_SKILLS.includes(skill);
+                                                    return (
+                                                        <div key={i} className={`flex items-center gap-2 px-3 py-2.5 border rounded-xl transition-all group ${isSpecial
+                                                                ? 'bg-red-500/10 border-red-500/30 hover:bg-red-500/20 shadow-[0_0_12px_rgba(239,68,68,0.12)]'
+                                                                : 'bg-white/5 border-white/10 hover:bg-white/8'
+                                                            }`}>
+                                                            <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${isSpecial ? 'bg-red-400 shadow-[0_0_6px_rgba(239,68,68,0.8)]' : 'bg-ef-accent'}`} />
+                                                            <span className={`text-[10px] font-bold uppercase tracking-tight leading-tight flex-1 ${isSpecial ? 'text-red-300' : 'text-white'}`}>{skill}</span>
+                                                            {isEditingSkills ? (
+                                                                <button
+                                                                    onClick={() => {
+                                                                        const next = skills.filter((_, si) => si !== i);
+                                                                        setSkills(next);
+                                                                    }}
+                                                                    className="text-white/20 hover:text-red-400 text-xs leading-none flex-shrink-0 transition-colors active:scale-90"
+                                                                >✕</button>
+                                                            ) : (
+                                                                isSpecial && <span className="ml-auto text-[6px] font-black bg-red-500/20 text-red-400 px-1.5 py-0.5 rounded-full border border-red-500/20 flex-shrink-0">🔥</span>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                }) : (
+                                                    <div className="text-center py-6 opacity-30 text-[9px] uppercase font-black tracking-widest italic">No core skills found</div>
+                                                )}
+
+                                                {/* Add Skill row (edit mode only) */}
+                                                {isEditingSkills && (
+                                                    <div className="relative">
+                                                        <button
+                                                            onClick={() => { setShowAddCoreSkill(s => !s); setCoreSkillSearch(''); }}
+                                                            className="w-full flex items-center gap-2 px-3 py-2.5 border border-dashed border-ef-accent/30 rounded-xl bg-ef-accent/5 hover:bg-ef-accent/10 transition-all text-[10px] font-bold text-ef-accent/60 hover:text-ef-accent"
+                                                        >
+                                                            <span className="text-base leading-none">+</span> Add Skill
+                                                        </button>
+                                                        {showAddCoreSkill && (
+                                                            <div className="absolute bottom-full mb-1 left-0 right-0 bg-[#18181c] border border-white/15 rounded-xl shadow-[0_-10px_40px_rgba(0,0,0,0.7)] z-[80] overflow-hidden">
+                                                                <div className="p-2 border-b border-white/5">
+                                                                    <input
+                                                                        autoFocus
+                                                                        value={coreSkillSearch}
+                                                                        onChange={e => setCoreSkillSearch(e.target.value)}
+                                                                        placeholder="Search all skills..."
+                                                                        className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-[10px] text-white placeholder-white/20 focus:outline-none focus:border-ef-accent/40"
+                                                                        onClick={e => e.stopPropagation()}
+                                                                    />
+                                                                </div>
+                                                                <div className="overflow-y-auto max-h-[160px] custom-scrollbar">
+                                                                    {ALL_SKILLS
+                                                                        .filter(s => !skills.includes(s))
+                                                                        .filter(s => !coreSkillSearch || s.toLowerCase().includes(coreSkillSearch.toLowerCase()))
+                                                                        .map(skill => {
+                                                                            const isSp = SPECIAL_SKILLS.includes(skill);
+                                                                            return (
+                                                                                <button key={skill}
+                                                                                    onClick={() => {
+                                                                                        setSkills(prev => [...prev, skill]);
+                                                                                        setShowAddCoreSkill(false);
+                                                                                        setCoreSkillSearch('');
+                                                                                    }}
+                                                                                    className={`w-full text-left px-3 py-2 text-[10px] font-bold flex items-center gap-2 border-b border-white/5 last:border-0 transition-all ${isSp ? 'text-red-300 hover:bg-red-500/10' : 'text-white/60 hover:text-white hover:bg-white/5'
+                                                                                        }`}>
+                                                                                    <span className={`w-1 h-1 rounded-full flex-shrink-0 ${isSp ? 'bg-red-400' : 'bg-ef-accent/40'}`}></span>
+                                                                                    {skill}
+                                                                                    {isSp && <span className="ml-auto text-[6px] bg-red-500/20 text-red-400 px-1.5 py-0.5 rounded font-black">🔥</span>}
+                                                                                </button>
+                                                                            );
+                                                                        })
+                                                                    }
+                                                                    {ALL_SKILLS.filter(s => !skills.includes(s)).filter(s => !coreSkillSearch || s.toLowerCase().includes(coreSkillSearch.toLowerCase())).length === 0 && (
+                                                                            <div className="px-3 py-4 text-center text-[9px] text-white/30 font-black uppercase tracking-widest">All skills added</div>
+                                                                        )}
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {/* ── Right: Additional Skills ── */}
+                                        <div className="flex flex-col gap-2 min-h-0">
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <span className="text-[9px] font-black uppercase tracking-widest text-blue-400">Additional</span>
+                                                <div className="h-px bg-white/10 flex-1"></div>
+                                                <span className="text-[9px] font-black text-white/20">{additionalSkills.filter(Boolean).length}/5</span>
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                {additionalSkills.map((addedSkill, idx) => (
+                                                    <div key={idx} className="relative">
+                                                        {/* Slot button */}
+                                                        <div
+                                                            onClick={() => { setActiveAdditionalSlot(activeAdditionalSlot === idx ? null : idx); setSkillSearch(''); }}
+                                                            className={`flex items-center gap-2 px-3 py-2.5 border rounded-xl cursor-pointer transition-all group ${addedSkill
+                                                                    ? 'bg-blue-500/10 border-blue-500/30 hover:bg-blue-500/15'
+                                                                    : 'bg-white/3 border-white/10 border-dashed hover:border-blue-400/40 hover:bg-blue-500/5'
+                                                                }`}
+                                                        >
+                                                            <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${addedSkill ? 'bg-blue-400' : 'bg-white/15'}`} />
+                                                            <span className={`text-[10px] font-bold uppercase tracking-tight flex-1 leading-tight ${addedSkill ? 'text-white' : 'text-white/25 italic'
+                                                                }`}>{addedSkill || `Empty Slot ${idx + 1}`}</span>
+                                                            {addedSkill ? (
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        const next = [...additionalSkills];
+                                                                        next[idx] = '';
+                                                                        setAdditionalSkills(next);
+                                                                        setActiveAdditionalSlot(null);
+                                                                        if (player._id) onUpdate(player._id, { additionalSkills: next }, false);
+                                                                    }}
+                                                                    className="text-white/20 hover:text-white text-xs leading-none flex-shrink-0 active:scale-90 transition-all"
+                                                                >✕</button>
+                                                            ) : (
+                                                                <span className="text-[9px] text-white/15">+</span>
+                                                            )}
+                                                        </div>
+
+                                                        {/* Dropdown for this slot */}
+                                                        {activeAdditionalSlot === idx && (
+                                                            <div className="absolute top-full mt-1 left-0 right-0 bg-[#18181c] border border-white/15 rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.7)] z-[70] overflow-hidden">
+                                                                <div className="p-2 border-b border-white/5">
+                                                                    <input
+                                                                        autoFocus
+                                                                        value={skillSearch}
+                                                                        onChange={e => setSkillSearch(e.target.value)}
+                                                                        placeholder="Search skills..."
+                                                                        className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-[10px] text-white placeholder-white/20 focus:outline-none focus:border-blue-400/40"
+                                                                        onClick={e => e.stopPropagation()}
+                                                                    />
+                                                                </div>
+                                                                <div className="overflow-y-auto max-h-[180px] custom-scrollbar">
+                                                                    {PLAYER_SKILLS
+                                                                        .filter(s => !skills.includes(s) && !additionalSkills.includes(s))
+                                                                        .filter(s => !skillSearch || s.toLowerCase().includes(skillSearch.toLowerCase()))
+                                                                        .map(skill => (
+                                                                            <button key={skill} onClick={() => {
+                                                                                const next = [...additionalSkills];
+                                                                                next[idx] = skill;
+                                                                                setAdditionalSkills(next);
+                                                                                setActiveAdditionalSlot(null);
+                                                                                setSkillSearch('');
+                                                                                if (player._id) onUpdate(player._id, { additionalSkills: next }, false);
+                                                                            }}
+                                                                                className="w-full text-left px-3 py-2 text-[10px] font-bold text-white/60 hover:text-white hover:bg-white/5 flex items-center gap-2 border-b border-white/5 last:border-0 transition-all">
+                                                                                <span className="w-1 h-1 rounded-full flex-shrink-0 bg-ef-accent/40"></span>
+                                                                                {skill}
+                                                                            </button>
+                                                                        ))
+                                                                    }
+                                                                    {PLAYER_SKILLS
+                                                                        .filter(s => !skills.includes(s) && !additionalSkills.includes(s))
+                                                                        .filter(s => !skillSearch || s.toLowerCase().includes(skillSearch.toLowerCase()))
+                                                                        .length === 0 && (
+                                                                            <div className="px-3 py-4 text-center text-[9px] text-white/30 font-black uppercase tracking-widest">No skills available</div>
+                                                                        )}
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div className="mt-4 pt-4 border-t border-white/5">
+                                    <button
+                                        onClick={() => setModalPage(0)}
+                                        className="w-full py-3 bg-white/5 border border-white/10 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] text-white hover:bg-white/10 transition-all active:scale-95"
+                                    >
+                                        Back to Overview
+                                    </button>
+                                </div>
+                            </div>
+
 
 
                             {/* Global Arrow Navigation */}
@@ -1340,7 +1667,7 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
 
                             {/* Page Dots Overlay */}
                             <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
-                                {[0, 1].map(i => (
+                                {[0, 1, 2].map(i => (
                                     <div key={i} className={`w-1 h-1 rounded-full transition-all duration-300 ${modalPage === i ? 'bg-ef-accent w-3' : 'bg-white/20'} `} />
                                 ))}
                             </div>

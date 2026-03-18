@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
-import { searchPlayers, getPlayerDetails, getTeamDetails, calculateAge, getPlayerHistory, searchLeagues, getFlagUrl, searchTeams, searchCountries } from '../services/footballApi';
+import { searchPlayers, getPlayerDetails, getTeamDetails, calculateAge, getPlayerHistory, searchLeagues, getFlagUrl, searchTeams, searchCountries, scrapePlayer } from '../services/footballApi';
 
-import { PLAYSTYLES, TOP_LEAGUES } from '../constants';
+import { PLAYSTYLES, TOP_LEAGUES, POSITIONS, CARD_TYPES } from '../constants';
 
 const PlayerForm = ({ onAdd, onClose, hideExternalClose = false }) => {
     const [formData, setFormData] = useState({
@@ -20,7 +20,9 @@ const PlayerForm = ({ onAdd, onClose, hideExternalClose = false }) => {
         image: '',
         age: '',
         strongFoot: 'Right',
+        pesdb_id: '',
         playerId: '',
+        skills: [],
         logos: { club: '', league: '', country: '' }
     });
 
@@ -37,6 +39,8 @@ const PlayerForm = ({ onAdd, onClose, hideExternalClose = false }) => {
     const [isLeaguePopupOpen, setIsLeaguePopupOpen] = useState(false);
     const [leagueLogos, setLeagueLogos] = useState({});
     const [_isLoadingLogos, setIsLoadingLogos] = useState(false);
+    const [pesdbUrl, setPesdbUrl] = useState('');
+    const [isScraping, setIsScraping] = useState(false);
     const searchTimeout = useRef(null);
     const clubSearchTimeout = useRef(null);
     const countrySearchTimeout = useRef(null);
@@ -262,6 +266,14 @@ const PlayerForm = ({ onAdd, onClose, hideExternalClose = false }) => {
         if (name === 'secondaryPosition') {
             newValue = value.replace(/,/g, ' ').replace(/\s+/g, ' ').trim();
         }
+        if (name === 'playerId' || name === 'pesdb_id') {
+            setFormData(prev => ({
+                ...prev,
+                playerId: newValue,
+                pesdb_id: newValue
+            }));
+            return;
+        }
         setFormData(prev => ({
             ...prev,
             [name]: ['rating', 'goals', 'assists', 'matches', 'age', 'height'].includes(name) ? Number(newValue) : newValue
@@ -353,7 +365,9 @@ const PlayerForm = ({ onAdd, onClose, hideExternalClose = false }) => {
                 cardType: version.card_type || prev.cardType,
                 position: details.strPosition || prev.position,
                 secondaryPosition: (details.strSecondaryPosition || '').replace(/,/g, ' '),
+                pesdb_id: version.idPlayer || '',
                 playerId: version.idPlayer || '',
+                skills: details.skills || version.skills || [],
                 logos: {
                     ...prev.logos,
                     club: details.strTeamBadge || version.club_badge_url || prev.logos.club,
@@ -413,16 +427,58 @@ const PlayerForm = ({ onAdd, onClose, hideExternalClose = false }) => {
             image: '',
             age: '',
             strongFoot: 'Right',
+            pesdb_id: '',
             playerId: '',
+            skills: [],
             logos: { club: '', league: '', country: '' }
         });
+    };
+
+    const handleScrape = async () => {
+        if (!pesdbUrl || !pesdbUrl.includes('pesdb.net')) {
+            alert('Please enter a valid PESDB URL');
+            return;
+        }
+
+        setIsScraping(true);
+        try {
+            const player = await scrapePlayer(pesdbUrl);
+            if (player) {
+                setFormData(prev => ({
+                    ...prev,
+                    name: player.name || prev.name,
+                    nationality: player.nationality || prev.nationality,
+                    club: player.club || prev.club,
+                    league: player.league || prev.league,
+                    position: player.position || prev.position,
+                    rating: player.rating || prev.rating,
+                    playstyle: player.playstyle || prev.playstyle,
+                    image: player.image || prev.image,
+                    pesdb_id: player.id || prev.id,
+                    playerId: player.id || prev.id,
+                    cardType: player.card_type || prev.cardType,
+                    skills: player.skills || [],
+                    logos: {
+                        ...prev.logos,
+                        country: player.nationality_flag_url || prev.logos.country
+                    }
+                }));
+                setPesdbUrl(''); // Clear after success
+                alert(`Successfully fetched details for ${player.name || 'player'}!`);
+            }
+        } catch (err) {
+            console.error('Scraping Error:', err);
+            alert('Failed to scrape player: ' + err.message);
+        } finally {
+            setIsScraping(false);
+        }
     };
 
     const handlePasteId = async () => {
         try {
             const text = await navigator.clipboard.readText();
             if (text) {
-                setFormData(prev => ({ ...prev, playerId: text }));
+                setFormData(prev => ({ ...prev, pesdb_id: text, playerId: text }));
             }
         } catch (err) {
             console.error('Failed to read clipboard:', err);
@@ -543,6 +599,36 @@ const PlayerForm = ({ onAdd, onClose, hideExternalClose = false }) => {
                 {/* Top Row Details */}
                 <div className="flex-1 space-y-6">
                     <div className="space-y-4">
+                        <div className="mb-8 p-4 bg-ef-accent/5 border border-ef-accent/20 rounded-2xl">
+                            <label className="block text-[10px] font-black uppercase tracking-widest text-ef-accent mb-2 flex items-center gap-2">
+                                <span>🚀</span> Scrape from PESDB URL
+                            </label>
+                            <div className="flex gap-2">
+                                <input
+                                    type="text"
+                                    placeholder="https://pesdb.net/efootball/?id=..."
+                                    value={pesdbUrl}
+                                    onChange={(e) => setPesdbUrl(e.target.value)}
+                                    className="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 py-2 text-xs text-white/80 focus:outline-none focus:border-ef-accent transition-all"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={handleScrape}
+                                    disabled={isScraping}
+                                    className="px-4 py-2 bg-ef-accent hover:bg-ef-accent-hover text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 disabled:opacity-50 flex items-center gap-2 whitespace-nowrap"
+                                >
+                                    {isScraping ? (
+                                        <>
+                                            <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                            Scraping...
+                                        </>
+                                    ) : (
+                                        'Fetch Data'
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+
                         <div className="relative">
                             <label className="block text-xs font-black uppercase tracking-widest opacity-40 mb-2 whitespace-nowrap">Full Name</label>
                             <div className="relative">
@@ -641,7 +727,7 @@ const PlayerForm = ({ onAdd, onClose, hideExternalClose = false }) => {
                                     value={formData.cardType} onChange={handleChange}
                                     className="w-full bg-[#111114] border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-ef-accent transition-all font-bold text-sm"
                                 >
-                                    {['Normal', 'Legend', 'Epic', 'Featured', 'POTW', 'BigTime', 'ShowTime'].map(type => (
+                                    {CARD_TYPES.map(type => (
                                         <option key={type} value={type} className="bg-ef-dark">{type}</option>
                                     ))}
                                 </select>
@@ -653,7 +739,7 @@ const PlayerForm = ({ onAdd, onClose, hideExternalClose = false }) => {
                                     value={formData.position} onChange={handleChange}
                                     className="w-full bg-[#111114] border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-ef-accent transition-all font-bold text-sm"
                                 >
-                                    {['CF', 'SS', 'LWF', 'RWF', 'LMF', 'RMF', 'AMF', 'CMF', 'DMF', 'LB', 'RB', 'CB', 'GK'].map(pos => (
+                                    {POSITIONS.map(pos => (
                                         <option key={pos} value={pos}>{pos}</option>
                                     ))}
                                 </select>
@@ -689,6 +775,19 @@ const PlayerForm = ({ onAdd, onClose, hideExternalClose = false }) => {
                                     className="w-full bg-[#111114] border border-white/10 rounded-xl px-4 py-3 text-ef-accent focus:outline-none focus:border-ef-accent transition-all font-black text-center text-sm"
                                 />
                             </div>
+
+                            {formData.skills && formData.skills.length > 0 && (
+                                <div className="col-span-2 md:col-span-4 mt-2 p-3 bg-white/5 rounded-2xl border border-white/5">
+                                    <label className="block text-[10px] font-black uppercase tracking-widest opacity-40 mb-2">Fetched Skills ({formData.skills.length})</label>
+                                    <div className="flex flex-wrap gap-1.5">
+                                        {formData.skills.slice(0, 10).map((skill, i) => (
+                                            <span key={i} className="px-2 py-1 bg-ef-accent/10 border border-ef-accent/20 rounded-lg text-[9px] font-bold text-ef-accent uppercase tracking-tighter">
+                                                {skill}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

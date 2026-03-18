@@ -515,8 +515,7 @@ const SquadEditor = ({ squad, players, onSave, onUpdatePlayer, onAddPlayers, onC
     };
 
     return (
-        <div className="fixed inset-0 mt-0 bg-black flex items-center justify-center z-[2000] p-0 animate-fade-in overflow-hidden">
-            <div className="bg-[#0a0a0c] flex flex-col overflow-hidden relative w-full h-full">
+        <div className="bg-[#0a0a0c] flex flex-col overflow-hidden relative w-full h-full flex-1">
 
                 {/* Desktop Navbar (Pro Compact Design) */}
                 <div className="hidden md:flex h-20 bg-black/20 border-b border-white/5 items-center justify-between px-10 relative z-50 backdrop-blur-2xl shrink-0">
@@ -1334,7 +1333,6 @@ const SquadEditor = ({ squad, players, onSave, onUpdatePlayer, onAddPlayers, onC
                     </div>
                 )}
 
-            </div>
         </div>
     );
 };

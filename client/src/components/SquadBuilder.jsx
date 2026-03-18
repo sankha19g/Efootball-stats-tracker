@@ -68,6 +68,21 @@ const SquadBuilder = ({ players, squads, activeSquadId, onSetActive, onDuplicate
         return isArchiveExpanded ? result : result.slice(0, 7);
     }, [displaySquads, searchQuery, sortBy, isArchiveExpanded]);
 
+    if (selectedSquad) {
+        return (
+            <div className="fixed inset-0 z-[100] bg-[#0a0a0c] w-full h-full flex flex-col animate-slide-up">
+                <SquadEditor
+                    squad={selectedSquad}
+                    players={players}
+                    onSave={onSave}
+                    onUpdatePlayer={onUpdatePlayer}
+                    onAddPlayers={onAddPlayers}
+                    onClose={() => setSelectedSquad(null)}
+                />
+            </div>
+        );
+    }
+
     return (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12 animate-fade-in pb-32">
             {/* Header Section */}
@@ -232,17 +247,6 @@ const SquadBuilder = ({ players, squads, activeSquadId, onSetActive, onDuplicate
                 </button>
             </div>
 
-            {/* Strategy Editor Modal */}
-            {selectedSquad && (
-                <SquadEditor
-                    squad={selectedSquad}
-                    players={players}
-                    onSave={onSave}
-                    onUpdatePlayer={onUpdatePlayer}
-                    onAddPlayers={onAddPlayers}
-                    onClose={() => setSelectedSquad(null)}
-                />
-            )}
         </div>
     );
 };

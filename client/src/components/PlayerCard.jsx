@@ -14,6 +14,68 @@ const PlayerCard = memo(({ player, players = [], isSelectionMode, isSelected, on
 
     const isEco = settings?.highPerf;
 
+    if (settings?.cardSize === 'mini') {
+        return (
+            <div
+                onClick={() => isSelectionMode && onToggleSelect(player._id)}
+                className={`group relative overflow-hidden transition-all duration-300 rounded-lg border-2 w-full aspect-[10/9]
+                    ${isSelected ? 'opacity-20 grayscale border-white/5' : `border-ef-accent hover:border-ef-accent hover:scale-105 hover:shadow-[0_0_25px_rgba(0,255,136,0.3)]`}
+                    bg-black/80 cursor-pointer
+                `}
+            >
+                {player.image ? (
+                    <img src={player.image} alt={player.name} className="w-full h-full object-cover object-top relative z-0" loading="lazy" />
+                ) : (
+                    <div className="w-full h-full flex items-center justify-center opacity-10 text-2xl">👤</div>
+                )}
+
+                {/* Rating HUD */}
+                {settings?.showRatings !== false && (
+                    <div className="absolute bottom-0 right-0 z-20 bg-black/95 px-1.5 py-0.5 rounded-tl-[10px] border-l border-t border-white/10">
+                        <span className={`text-[12px] font-black text-[#00FF88] italic leading-none`}>
+                            {player.rating || 0}
+                        </span>
+                    </div>
+                )}
+
+                {/* Position HUD */}
+                <div className="absolute top-0 left-0 z-20 bg-black/95 px-1.5 py-0.5 rounded-br-[10px] border-r border-b border-white/10">
+                    <span className={`text-[10px] font-black text-ef-accent italic uppercase tracking-tighter`}>
+                        {role || player.position}
+                    </span>
+                </div>
+
+                {/* Selection Overlay */}
+                {isSelectionMode && (
+                    <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 rounded-full border-2 flex items-center justify-center z-50 transition-all ${isSelected ? 'bg-ef-accent border-ef-accent scale-110' : 'bg-black/40 border-white/30 truncate'}`}>
+                        {isSelected && <span className="text-ef-dark font-black text-xs">✓</span>}
+                    </div>
+                )}
+                
+                {/* Secondary Position Match Indicator */}
+                {secondaryMatch && !isSelectionMode && (
+                   <div className="absolute top-0 right-0 z-20 bg-black/80 backdrop-blur-md rounded-bl-[10px] border-l border-b border-white/10 shadow-lg px-2 py-0.5">
+                       <span className="text-[10px] font-black text-ef-accent italic uppercase tracking-tighter leading-none pulse-ef">
+                           {secondaryMatch}
+                       </span>
+                   </div>
+                )}
+
+                {/* Optional Club/Nation badges aligned left, right below position if enabled */}
+                {(settings?.showClubBadge !== false || settings?.showNationBadge !== false) && (
+                    <div className="absolute top-6 left-1 z-20 flex flex-col items-center gap-1">
+                        {settings?.showClubBadge !== false && (player.logos?.club || player.club_badge_url) && (
+                            <img src={player.logos?.club || player.club_badge_url} alt="" className="w-4 h-4 object-contain filter drop-shadow-md brightness-110" />
+                        )}
+                        {settings?.showNationBadge !== false && (player.logos?.country || player.nationality_flag_url) && (
+                            <img src={player.logos?.country || player.nationality_flag_url} alt="" className="w-4 h-4 object-contain filter drop-shadow-md brightness-110" />
+                        )}
+                    </div>
+                )}
+            </div>
+        );
+    }
+
     return (
         <div
             onClick={() => isSelectionMode && onToggleSelect(player._id)}

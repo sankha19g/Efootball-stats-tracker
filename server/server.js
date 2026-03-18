@@ -4,6 +4,7 @@ const cors = require('cors');
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const axios = require('axios');
 const User = require('./models/User');
 const authMiddleware = require('./middleware/auth');
 
@@ -30,6 +31,12 @@ try {
     const leaguesData = JSON.parse(fs.readFileSync(leaguesPath, 'utf8'));
     soccerLeagues = leaguesData.countries || leaguesData; // Handle both formats
     console.log(`✅ Loaded ${soccerLeagues.length} leagues from local DB`);
+  }
+
+  const attributesPath = path.join(__dirname, 'data', 'efootball_attributes.json');
+  if (fs.existsSync(attributesPath)) {
+    app.locals.attributes = JSON.parse(fs.readFileSync(attributesPath, 'utf8'));
+    console.log('✅ Loaded eFootball attributes (playstyles, positions, etc.)');
   }
 } catch (err) {
   console.error('❌ Error loading local database:', err);
@@ -77,8 +84,23 @@ app.get('/', (req, res) => {
   res.json({
     status: 'online',
     message: 'eFootball Stats API is running',
-    endpoints: ['/api/players', '/api/auth/verify', '/api/search/players']
+    endpoints: ['/api/players', '/api/auth/verify', '/api/search/players', '/api/attributes']
   });
+});
+
+// Get eFootball Attributes (Playstyles, Positions, Skills)
+app.get('/api/attributes', (req, res) => {
+  if (app.locals.attributes) {
+    res.json(app.locals.attributes);
+  } else {
+    // Fallback if file load failed
+    res.json({
+      playstyles: [],
+      positions: [],
+      cardTypes: [],
+      skills: []
+    });
+  }
 });
 
 // Health check
@@ -516,6 +538,215 @@ app.get('/api/search/countries', (req, res) => {
 
 
 // ============================================
+// SKILLS SCRAPING ROUTES
+// ============================================
+
+const https = require('https');
+const zlib = require('zlib');
+const cheerio = require('cheerio');
+
+async function fetchPlayerPage(pesdbId) {
+  try {
+    const url = `https://efootball-world.com/player/${pesdbId}`;
+    console.log(`📡 [Scraper] Fetching: ${url}`);
+    const response = await axios.get(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.5'
+      },
+      timeout: 10000
+    });
+    return response.data;
+  } catch (err) {
+    if (err.response && err.response.status === 404) {
+      console.warn(`⚠️ [Scraper] Player ${pesdbId} not found on efootball-world.com (404)`);
+      return null;
+    }
+    console.error(`❌ [Scraper] Error fetching player ${pesdbId}:`, err.message);
+    throw err;
+  }
+}
+
+const STAT_LABELS = new Set(['SHT','PAS','DRI','DEX','LBS','AER','DEF','GK1']);
+
+function parseSkillsFromHtml(html) {
+  const $ = cheerio.load(html);
+  const skills = [];
+  let inSkillSection = false;
+
+  // More targeted selector for skills section
+  // Usually skills are in a specific div or after a specific header
+  $('*').each((i, el) => {
+    const $el = $(el);
+    if ($el.children().length > 0) return; // Only check leaf nodes
+    
+    const text = $el.text().trim();
+    if (!text || text.length > 50) return;
+
+    if (text === 'Player Skills') {
+      inSkillSection = true;
+      return;
+    }
+
+    if (inSkillSection) {
+      // If we hit the next major section or a stat label, stop
+      if (text === 'AI Playing Styles' || text === 'Playing Style' || STAT_LABELS.has(text)) {
+        inSkillSection = false;
+        return;
+      }
+      
+      // Basic validation for skill names (avoiding empty or clearly wrong text)
+      if (text && text.length > 2 && !text.includes(':')) {
+        skills.push(text);
+      }
+    }
+  });
+
+  return skills;
+}
+
+async function scrapeSkillsFromPesdb(pesdbId) {
+  try {
+    const html = await fetchPlayerPage(pesdbId);
+    if (!html) return [];
+    const skills = parseSkillsFromHtml(html);
+    console.log(`📝 [Scraper] Parsed ${skills.length} skills for ID ${pesdbId}`);
+    return skills;
+  } catch (err) {
+     console.error(`❌ [Scraper] Scrape failed for ${pesdbId}:`, err.message);
+     return [];
+  }
+}
+
+// GET /api/skills/:pesdbId — get skills from local DB or scrape if not found
+app.get('/api/skills/:pesdbId', async (req, res) => {
+  try {
+    const pesdbId = req.params.pesdbId;
+    
+    // 1. Check local DB first
+    // Use loose comparison and check multiple potential ID fields
+    const localPlayer = pesdbPlayers.find(p => 
+      String(p.id) === String(pesdbId) || 
+      String(p.pesdb_id) === String(pesdbId) || 
+      String(p.playerId) === String(pesdbId)
+    );
+    
+    if (localPlayer && localPlayer.skills && localPlayer.skills.length > 0) {
+      console.log(`✅ [GET /api/skills] Found ${localPlayer.skills.length} skills for ${pesdbId} (${localPlayer.name}) in local DB`);
+      return res.json({ pesdb_id: pesdbId, skills: localPlayer.skills, source: 'local' });
+    }
+
+    // 2. If not found or no skills, scrape
+    console.log(`🔍 Skills not in local DB for ${pesdbId}, scraping...`);
+    const skills = await scrapeSkillsFromPesdb(pesdbId);
+    res.json({ pesdb_id: pesdbId, skills, source: 'scraped' });
+  } catch (err) {
+    console.error('[GET /api/skills] Error:', err.message);
+    res.status(500).json({ error: 'Failed to retrieve skills: ' + err.message });
+  }
+});
+
+// POST /api/skills/bulk — get skills directly from local DB for multiple players without scraping
+app.post('/api/skills/bulk', async (req, res) => {
+  try {
+    const { pesdbIds } = req.body;
+    if (!Array.isArray(pesdbIds)) return res.status(400).json({ error: 'Array of pesdbIds required' });
+
+    const results = {};
+    for (const pesdbId of pesdbIds) {
+      if (!pesdbId) continue;
+      const localPlayer = pesdbPlayers.find(p => 
+        String(p.id) === String(pesdbId) || 
+        String(p.pesdb_id) === String(pesdbId) || 
+        String(p.playerId) === String(pesdbId)
+      );
+      
+      if (localPlayer && localPlayer.skills && localPlayer.skills.length > 0) {
+        results[pesdbId] = localPlayer.skills;
+      }
+    }
+    
+    res.json(results);
+  } catch (err) {
+    console.error('[POST /api/skills/bulk] Error:', err.message);
+    res.status(500).json({ error: 'Failed to retrieve bulk skills: ' + err.message });
+  }
+});
+
+// POST /api/players/:id/skills — scrape & save skills for a squad player
+app.post('/api/players/:id/skills', authMiddleware, async (req, res) => {
+  try {
+    const user = await User.findById(req.userId);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    const playerIndex = user.players.findIndex(p => p._id.toString() === req.params.id);
+    if (playerIndex === -1) return res.status(404).json({ error: 'Player not found' });
+
+    const player = user.players[playerIndex];
+    const pesdbId = req.body.pesdb_id || player.pesdb_id;
+
+    if (!pesdbId) {
+      return res.status(400).json({ error: 'No pesdb_id on this player. Provide pesdb_id in the request body.' });
+    }
+
+    const skills = await scrapeSkillsFromPesdb(pesdbId);
+
+    const existing = player.toObject();
+    user.players[playerIndex] = { ...existing, pesdb_id: pesdbId, skills, _id: existing._id };
+    user.markModified('players');
+    await user.save();
+
+    console.log(`[POST /api/players/${req.params.id}/skills] Saved ${skills.length} skills for "${player.name}"`);
+    res.json({ _id: existing._id, name: player.name, pesdb_id: pesdbId, skills });
+  } catch (err) {
+    console.error('[POST /api/players/:id/skills] Error:', err.message);
+    res.status(500).json({ error: 'Failed to scrape/save skills: ' + err.message });
+  }
+});
+
+// POST /api/maintenance/scrape-skills — bulk scrape & save skills for all squad players with pesdb_id
+app.post('/api/maintenance/scrape-skills', authMiddleware, async (req, res) => {
+  try {
+    const users = await User.find({});
+    const DELAY_MS = 600;
+    let totalUpdated = 0;
+    let totalFailed = 0;
+
+    for (const user of users) {
+      const playersWithId = user.players.filter(p => p.pesdb_id);
+      let userModified = false;
+
+      for (const player of playersWithId) {
+        try {
+          const skills = await scrapeSkillsFromPesdb(player.pesdb_id);
+          const idx = user.players.findIndex(p => p._id.toString() === player._id.toString());
+          if (idx !== -1) {
+            user.players[idx].skills = skills;
+            userModified = true;
+            totalUpdated++;
+            console.log(`  ✅ ${player.name}: [${skills.join(', ')}]`);
+          }
+        } catch (err) {
+          totalFailed++;
+          console.error(`  ❌ ${player.name}: ${err.message}`);
+        }
+        await new Promise(r => setTimeout(r, DELAY_MS));
+      }
+
+      if (userModified) {
+        user.markModified('players');
+        await user.save();
+      }
+    }
+
+    res.json({ message: 'Done', totalUpdated, totalFailed });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ============================================
 // REDDIT PROXY ROUTE
 // ============================================
 
@@ -534,7 +765,6 @@ app.get('/api/reddit/:subreddit/:sort', async (req, res) => {
   }
 
   try {
-    const axios = require('axios');
     const url = `https://www.reddit.com/r/${subreddit}/${sort}.json?limit=${limit}&raw_json=1`;
 
     const response = await axios.get(url, {
