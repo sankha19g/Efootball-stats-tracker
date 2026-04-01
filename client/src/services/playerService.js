@@ -36,6 +36,17 @@ export const saveToGlobalDatabase = async (players) => {
     await Promise.all(promises);
 };
 
+export const deleteFromGlobalDatabase = async (playerIds) => {
+    if (!playerIds || playerIds.length === 0) return;
+
+    const promises = playerIds.map(async (id) => {
+        const docRef = doc(db, GLOBAL_DB_COLLECTION, String(id));
+        return deleteDoc(docRef);
+    });
+
+    await Promise.all(promises);
+};
+
 export const searchGlobalFirestore = async (nameQuery) => {
     if (!nameQuery || nameQuery.length < 2) return [];
 
@@ -87,12 +98,13 @@ export const addPlayer = async (userId, player) => {
     // Clean up data before saving (remove undefined)
     const cleanPlayer = JSON.parse(JSON.stringify(player));
 
+    const createdAt = new Date().toISOString();
     const docRef = await addDoc(collection(db, `users/${userId}/${PLAYERS_COLLECTION}`), {
         ...cleanPlayer,
-        createdAt: new Date().toISOString()
+        createdAt
     });
 
-    return { _id: docRef.id, ...cleanPlayer };
+    return { _id: docRef.id, ...cleanPlayer, createdAt };
 };
 
 export const addPlayersBulk = async (userId, playersList) => {
@@ -103,11 +115,12 @@ export const addPlayersBulk = async (userId, playersList) => {
     // Since we are using addDoc, let's just do them in parallel
     const promises = playersList.map(async (player) => {
         const cleanPlayer = JSON.parse(JSON.stringify(player));
+        const createdAt = new Date().toISOString();
         const docRef = await addDoc(collection(db, `users/${userId}/${PLAYERS_COLLECTION}`), {
             ...cleanPlayer,
-            createdAt: new Date().toISOString()
+            createdAt
         });
-        return { _id: docRef.id, ...cleanPlayer };
+        return { _id: docRef.id, ...cleanPlayer, createdAt };
     });
 
     return await Promise.all(promises);

@@ -22,7 +22,10 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
     const [isRankingDropdownOpen, setIsRankingDropdownOpen] = useState(false);
     const [modalPage, setModalPage] = useState(0); // 0: Overview, 1: Comparison, 2: Skills
     const [skills, setSkills] = useState(player.skills || []);
-    const [additionalSkills, setAdditionalSkills] = useState(player.additionalSkills || ['', '', '', '', '']);
+    const [additionalSkills, setAdditionalSkills] = useState(() => {
+        const arr = (player.additionalSkills || []).filter(Boolean);
+        return [...arr, ...Array(5 - arr.length).fill('')];
+    });
     const [activeAdditionalSlot, setActiveAdditionalSlot] = useState(null);
     const [isSkillsLoading, setIsSkillsLoading] = useState(false);
     const [skillsError, setSkillsError] = useState(null);
@@ -178,7 +181,8 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
             secondaryPosition: player.secondaryPosition || ''
         });
         setSkills(player.skills || []);
-        setAdditionalSkills(player.additionalSkills || ['', '', '', '', '']);
+        const paddedAddSkills = (player.additionalSkills || []).filter(Boolean);
+        setAdditionalSkills([...paddedAddSkills, ...Array(5 - paddedAddSkills.length).fill('')]);
         setSkillsError(null);
     }, [player]);
 
@@ -1480,7 +1484,7 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
                                                 {skills.length > 0 ? skills.map((skill, i) => {
                                                     const isSpecial = SPECIAL_SKILLS.includes(skill);
                                                     return (
-                                                        <div key={i} className={`flex items-center gap-2 px-3 py-2.5 border rounded-xl transition-all group ${isSpecial
+                                                        <div key={i} className={`flex items-center gap-2 px-3 py-2.5 h-[30px] border rounded-xl transition-all group ${isSpecial
                                                                 ? 'bg-red-500/10 border-red-500/30 hover:bg-red-500/20 shadow-[0_0_12px_rgba(239,68,68,0.12)]'
                                                                 : 'bg-white/5 border-white/10 hover:bg-white/8'
                                                             }`}>
@@ -1570,7 +1574,7 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
                                                         {/* Slot button */}
                                                         <div
                                                             onClick={() => { setActiveAdditionalSlot(activeAdditionalSlot === idx ? null : idx); setSkillSearch(''); }}
-                                                            className={`flex items-center gap-2 px-3 py-2.5 border rounded-xl cursor-pointer transition-all group ${addedSkill
+                                                            className={`flex items-center gap-2 px-3 py-2.5 h-[30px] border rounded-xl cursor-pointer transition-all group ${addedSkill
                                                                     ? 'bg-blue-500/10 border-blue-500/30 hover:bg-blue-500/15'
                                                                     : 'bg-white/3 border-white/10 border-dashed hover:border-blue-400/40 hover:bg-blue-500/5'
                                                                 }`}
@@ -1586,7 +1590,7 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
                                                                         next[idx] = '';
                                                                         setAdditionalSkills(next);
                                                                         setActiveAdditionalSlot(null);
-                                                                        if (player._id) onUpdate(player._id, { additionalSkills: next }, false);
+                                                                        if (player._id) onUpdate(player._id, { additionalSkills: next.filter(Boolean) }, false);
                                                                     }}
                                                                     className="text-white/20 hover:text-white text-xs leading-none flex-shrink-0 active:scale-90 transition-all"
                                                                 >✕</button>
@@ -1619,7 +1623,7 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
                                                                                 setAdditionalSkills(next);
                                                                                 setActiveAdditionalSlot(null);
                                                                                 setSkillSearch('');
-                                                                                if (player._id) onUpdate(player._id, { additionalSkills: next }, false);
+                                                                                if (player._id) onUpdate(player._id, { additionalSkills: next.filter(Boolean) }, false);
                                                                             }}
                                                                                 className="w-full text-left px-3 py-2 text-[10px] font-bold text-white/60 hover:text-white hover:bg-white/5 flex items-center gap-2 border-b border-white/5 last:border-0 transition-all">
                                                                                 <span className="w-1 h-1 rounded-full flex-shrink-0 bg-ef-accent/40"></span>

@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import API_URL from '../config/api';
-import { saveToGlobalDatabase } from '../services/playerService';
+import { saveToGlobalDatabase, deleteFromGlobalDatabase } from '../services/playerService';
 
 const ScrapeDataModal = ({ isOpen, onClose, onScrapeSuccess }) => {
     const [url, setUrl] = useState('');
     const [isScraping, setIsScraping] = useState(false);
     const [error, setError] = useState('');
     const [scrapedPlayers, setScrapedPlayers] = useState(null);
+    const [isUndoing, setIsUndoing] = useState(false);
     const [stats, setStats] = useState({ added: 0, updated: 0 });
 
     if (!isOpen) return null;
@@ -59,6 +60,31 @@ const ScrapeDataModal = ({ isOpen, onClose, onScrapeSuccess }) => {
             setError(err.message || 'An error occurred while scraping data.');
         } finally {
             setIsScraping(false);
+        }
+    };
+
+    const handleUndoScrape = async () => {
+        if (!scrapedPlayers || scrapedPlayers.length === 0) return;
+
+        const confirmUndo = window.confirm(`Are you sure you want to undo this scrape? All ${scrapedPlayers.length} players will be removed from the global database.`);
+        if (!confirmUndo) return;
+
+        setIsUndoing(true);
+        try {
+            const playerIds = scrapedPlayers.map(p => String(p.id));
+            await deleteFromGlobalDatabase(playerIds);
+            
+            // Clear current view
+            setScrapedPlayers(null);
+            setUrl('');
+            setError('Scrape undone successfully.');
+            
+            if (onScrapeSuccess) onScrapeSuccess({ players: [], added: 0, updated: 0 });
+        } catch (err) {
+            console.error('Undo error:', err);
+            setError('Failed to undo scrape. Some players may still be in the database.');
+        } finally {
+            setIsUndoing(false);
         }
     };
 
@@ -178,12 +204,21 @@ const ScrapeDataModal = ({ isOpen, onClose, onScrapeSuccess }) => {
                             <p className="text-[10px] text-white/30 uppercase font-black tracking-widest max-w-sm">
                                 Community Database Updated
                             </p>
-                            <button
-                                onClick={handleClose}
-                                className="px-10 py-4 rounded-xl bg-ef-accent text-ef-dark font-black text-xs uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-[0_0_30px_rgba(0,255,136,0.3)] cursor-pointer"
-                            >
-                                Finish
-                            </button>
+                            <div className="flex items-center gap-3">
+                                <button
+                                    onClick={handleUndoScrape}
+                                    disabled={isUndoing}
+                                    className="px-6 py-4 rounded-xl border border-red-500/20 bg-red-500/5 text-red-500 font-bold text-xs uppercase tracking-widest hover:bg-red-500/10 transition-all disabled:opacity-50"
+                                >
+                                    {isUndoing ? 'Undoing...' : 'Undo Scrape'}
+                                </button>
+                                <button
+                                    onClick={handleClose}
+                                    className="px-10 py-4 rounded-xl bg-ef-accent text-ef-dark font-black text-xs uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-[0_0_30px_rgba(0,255,136,0.3)] cursor-pointer"
+                                >
+                                    Finish
+                                </button>
+                            </div>
                         </div>
                     </div>
                 )}

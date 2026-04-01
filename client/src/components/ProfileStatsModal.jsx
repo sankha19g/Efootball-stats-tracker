@@ -2,16 +2,53 @@ import React, { useMemo, useState } from 'react';
 
 const ProfileStatsModal = ({ players, onClose }) => {
     const [activeTab, setActiveTab] = useState('cardType');
+    const [searchClub, setSearchClub] = useState('');
+    const [searchNationality, setSearchNationality] = useState('');
+    const [filterLeague, setFilterLeague] = useState('All');
+
+    // Extract unique filter options from players
+    const filterOptions = useMemo(() => {
+        if (!players) return { clubs: [], nationalities: [], leagues: [] };
+        const clubs = new Set();
+        const nationalities = new Set();
+        const leagues = new Set();
+
+        players.forEach(p => {
+            if (p.club) clubs.add(p.club);
+            if (p.nationality) nationalities.add(p.nationality);
+            if (p.league) leagues.add(p.league);
+        });
+
+        return {
+            clubs: Array.from(clubs).sort(),
+            nationalities: Array.from(nationalities).sort(),
+            leagues: Array.from(leagues).sort()
+        };
+    }, [players]);
 
     const stats = useMemo(() => {
         if (!players || players.length === 0) return null;
 
-        const total = players.length;
+        // Apply filters
+        let filteredPlayers = [...players];
+        if (searchClub) {
+            const query = searchClub.toLowerCase();
+            filteredPlayers = filteredPlayers.filter(p => (p.club || '').toLowerCase().includes(query));
+        }
+        if (searchNationality) {
+            const query = searchNationality.toLowerCase();
+            filteredPlayers = filteredPlayers.filter(p => (p.nationality || '').toLowerCase().includes(query));
+        }
+        if (filterLeague !== 'All') filteredPlayers = filteredPlayers.filter(p => p.league === filterLeague);
+
+        const total = filteredPlayers.length;
+        if (total === 0) return { total: 0, cardTypeStats: [], positionStats: [], playstyleStats: [] };
+
         const cardTypes = {};
         const positions = {};
         const playstyles = {};
 
-        players.forEach(p => {
+        filteredPlayers.forEach(p => {
             const type = p.cardType || 'Normal';
             cardTypes[type] = (cardTypes[type] || 0) + 1;
 
@@ -41,7 +78,7 @@ const ProfileStatsModal = ({ players, onClose }) => {
         })).sort((a, b) => b.count - a.count);
 
         return { total, cardTypeStats, positionStats, playstyleStats };
-    }, [players]);
+    }, [players, searchClub, searchNationality, filterLeague]);
 
     if (!stats) return (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[2000] flex items-center justify-center p-4">
@@ -75,6 +112,65 @@ const ProfileStatsModal = ({ players, onClose }) => {
                     >
                         ✕
                     </button>
+                </div>
+
+                {/* Filters */}
+                <div className="px-8 pb-4 grid grid-cols-3 gap-2">
+                    <div className="space-y-1">
+                        <label className="text-[8px] font-black uppercase tracking-widest text-white/20 ml-1">Club</label>
+                        <div className="relative group">
+                            <input
+                                type="text"
+                                value={searchClub}
+                                onChange={(e) => setSearchClub(e.target.value)}
+                                placeholder="Search..."
+                                className="w-full bg-white/5 border border-white/5 rounded-xl px-2 py-2 text-[10px] font-bold text-white/60 focus:outline-none focus:border-ef-accent/50 placeholder:text-white/10"
+                            />
+                            {searchClub && (
+                                <button
+                                    onClick={() => setSearchClub('')}
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-white/20 hover:text-white"
+                                >
+                                    ✕
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                    <div className="space-y-1">
+                        <label className="text-[8px] font-black uppercase tracking-widest text-white/20 ml-1">Nation</label>
+                        <div className="relative group">
+                            <input
+                                type="text"
+                                value={searchNationality}
+                                onChange={(e) => setSearchNationality(e.target.value)}
+                                placeholder="Search..."
+                                className="w-full bg-white/5 border border-white/5 rounded-xl px-2 py-2 text-[10px] font-bold text-white/60 focus:outline-none focus:border-ef-accent/50 placeholder:text-white/10"
+                            />
+                            {searchNationality && (
+                                <button
+                                    onClick={() => setSearchNationality('')}
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-white/20 hover:text-white"
+                                >
+                                    ✕
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                    <div className="space-y-1">
+                        <label className="text-[8px] font-black uppercase tracking-widest text-white/20 ml-1">League</label>
+                        <select
+                            value={filterLeague}
+                            onChange={(e) => setFilterLeague(e.target.value)}
+                            className="w-full bg-white/5 border border-white/5 rounded-xl px-2 py-2 text-[10px] font-bold text-white/60 focus:outline-none focus:border-ef-accent/50 appearance-none cursor-pointer"
+                        >
+                            <option value="All" className="bg-[#0a0a0c]">All Leagues</option>
+                            {filterOptions.leagues.map(l => (
+                                <option key={l} value={l} className="bg-[#0a0a0c]">
+                                    {l}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
                 </div>
 
                 {/* Tabs Navigation */}

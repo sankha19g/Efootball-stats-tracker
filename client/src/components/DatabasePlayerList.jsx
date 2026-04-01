@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { getDatabasePlayers, invalidatePlayerCache } from '../services/footballApi';
+import { deleteFromGlobalDatabase } from '../services/playerService';
 import ScrapeDataModal from './ScrapeDataModal';
 
-const DatabasePlayerList = ({ onAddPlayers, onBack, settings, ownersPlayers = [] }) => {
+const DatabasePlayerList = ({ onAddPlayers, onBack, settings, ownersPlayers = [], showAlert, showConfirm }) => {
     const [players, setPlayers] = useState([]);
     const [loading, setLoading] = useState(false);
     const [total, setTotal] = useState(0);
@@ -111,6 +112,35 @@ const DatabasePlayerList = ({ onAddPlayers, onBack, settings, ownersPlayers = []
         setSelectedPlayers(new Map());
     };
 
+    const handleDeleteSelected = () => {
+        if (selectedPlayers.size === 0) return;
+
+        const playerIds = Array.from(selectedPlayers.keys());
+
+        showConfirm(
+            'Delete from Database',
+            `Are you sure you want to permanently delete these ${selectedPlayers.size} players from the global database? This action cannot be undone.`,
+            async () => {
+                try {
+                    setLoading(true);
+                    await deleteFromGlobalDatabase(playerIds);
+                    invalidatePlayerCache();
+                    setSelectedPlayers(new Map());
+                    showAlert('Deleted', 'Players removed from global database.', 'success');
+                    // Refresh current view
+                    setPage(1);
+                    fetchPlayers(1, search, filters);
+                } catch (err) {
+                    console.error('Delete error:', err);
+                    showAlert('Error', 'Failed to delete players from database.', 'danger');
+                } finally {
+                    setLoading(false);
+                }
+            },
+            'danger'
+        );
+    };
+
     const positions = ['All', 'CF', 'SS', 'LWF', 'RWF', 'LMF', 'RMF', 'AMF', 'CMF', 'DMF', 'LB', 'RB', 'CB', 'GK'];
     const cardTypes = ['All', 'POTW', 'Legendary', 'Epic', 'Featured', 'Highlight', 'Show Time', 'Normal'];
 
@@ -154,16 +184,27 @@ const DatabasePlayerList = ({ onAddPlayers, onBack, settings, ownersPlayers = []
                 <div className="flex items-center gap-3 w-full md:w-auto">
                     <div className="flex-1 text-right">
                         <p className="text-[10px] font-black opacity-40 uppercase tracking-widest leading-none mb-1">{selectedPlayers.size} Selected</p>
-                        <button
-                            onClick={handleAddSelected}
-                            disabled={selectedPlayers.size === 0}
-                            className={`px-6 py-3 rounded-xl font-black text-xs uppercase tracking-widest transition-all ${selectedPlayers.size > 0
-                                ? 'bg-ef-accent text-ef-dark shadow-[0_0_20px_rgba(0,255,136,0.2)] hover:scale-105 active:scale-95'
-                                : 'bg-white/5 text-white/20 cursor-not-allowed'
-                                }`}
-                        >
-                            Confirm
-                        </button>
+                        <div className="flex items-center gap-2">
+                            {selectedPlayers.size > 0 && (
+                                <button
+                                    onClick={handleDeleteSelected}
+                                    className="px-4 py-3 rounded-xl font-black text-xs uppercase tracking-widest bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-500/20 transition-all flex items-center gap-2"
+                                >
+                                    <span>🗑️</span>
+                                    <span>Delete</span>
+                                </button>
+                            )}
+                            <button
+                                onClick={handleAddSelected}
+                                disabled={selectedPlayers.size === 0}
+                                className={`px-6 py-3 rounded-xl font-black text-xs uppercase tracking-widest transition-all ${selectedPlayers.size > 0
+                                    ? 'bg-ef-accent text-ef-dark shadow-[0_0_20px_rgba(0,255,136,0.2)] hover:scale-105 active:scale-95'
+                                    : 'bg-white/5 text-white/20 cursor-not-allowed'
+                                    }`}
+                            >
+                                Confirm
+                            </button>
+                        </div>
                     </div>
                 </div>
             </header>

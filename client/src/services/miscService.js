@@ -15,6 +15,8 @@ import {
     deleteObject
 } from 'firebase/storage';
 
+const IMGBB_API_KEY = import.meta.env.VITE_IMGBB_API_KEY;
+
 export const getScreenshots = async (userId) => {
     if (!userId) return [];
     const q = query(collection(db, `users/${userId}/screenshots`), orderBy('createdAt', 'desc'));
@@ -24,17 +26,34 @@ export const getScreenshots = async (userId) => {
 
 export const addScreenshot = async (userId, file) => {
     if (!userId) throw new Error("User not authenticated");
+    if (!IMGBB_API_KEY) throw new Error("ImgBB API Key is missing! Check .env file.");
 
-    const storageRef = ref(storage, `users/${userId}/screenshots/${Date.now()}_${file.name}`);
-    const snapshot = await uploadBytes(storageRef, file);
-    const url = await getDownloadURL(snapshot.ref);
+    try {
+        const formData = new FormData();
+        formData.append("image", file);
 
-    const docRef = await addDoc(collection(db, `users/${userId}/screenshots`), {
-        url,
-        createdAt: new Date().toISOString()
-    });
+        const response = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
+            method: "POST",
+            body: formData,
+        });
 
-    return { id: docRef.id, url };
+        const data = await response.json();
+
+        if (data.success) {
+            const url = data.data.url;
+            const docRef = await addDoc(collection(db, `users/${userId}/screenshots`), {
+                url,
+                createdAt: new Date().toISOString()
+            });
+
+            return { id: docRef.id, url };
+        } else {
+            throw new Error(data.error?.message || "ImgBB Upload Failed");
+        }
+    } catch (err) {
+        console.error("Error uploading to ImgBB:", err);
+        throw err;
+    }
 };
 
 export const deleteScreenshot = async (userId, screenshotId, url) => {
@@ -42,12 +61,14 @@ export const deleteScreenshot = async (userId, screenshotId, url) => {
 
     await deleteDoc(doc(db, `users/${userId}/screenshots`, screenshotId));
 
-    // Try to delete from storage if we can parse the ref
-    try {
-        const storageRef = ref(storage, url);
-        await deleteObject(storageRef);
-    } catch (e) {
-        console.warn("Could not delete image from storage", e);
+    // Only try to delete from Firebase Storage if it's a firebase URL
+    if (url && url.includes('firebasestorage')) {
+        try {
+            const storageRef = ref(storage, url);
+            await deleteObject(storageRef);
+        } catch (e) {
+            console.warn("Could not delete legacy image from Firebase storage", e);
+        }
     }
 };
 

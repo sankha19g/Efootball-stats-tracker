@@ -259,23 +259,25 @@ const Leaderboard = ({ players, onPlayerClick, activePositions, includeSecondary
 
     return (
         <div className="max-w-6xl mx-auto pb-12 px-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-                {categories.filter(c => !c.isPerformance).map(cat => (
-                    <LeaderboardCard
-                        key={cat.id}
-                        {...cat}
-                        onExpand={() => setExpandedCategory(cat)}
-                        onPlayerClick={onPlayerClick}
-                        activePositions={activePositions}
-                        includeSecondary={includeSecondary}
-                    />
-                ))}
-            </div>
-
-            <div className="border-t border-white/5 my-12 pt-12">
-                <h2 className="text-sm font-black uppercase tracking-[0.4em] opacity-20 text-center mb-10">Performance Ratios (Per Game)</h2>
+            <div className="mb-12">
+                <h2 className="text-sm font-black uppercase tracking-[0.4em] opacity-20 text-center mb-10 text-ef-accent">Performance Ratios (Per Game)</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {categories.filter(c => c.isPerformance).map(cat => (
+                        <LeaderboardCard
+                            key={cat.id}
+                            {...cat}
+                            onExpand={() => setExpandedCategory(cat)}
+                            onPlayerClick={onPlayerClick}
+                            activePositions={activePositions}
+                            includeSecondary={includeSecondary}
+                        />
+                    ))}
+                </div>
+            </div>
+
+            <div className="border-t border-white/5 pt-12">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {categories.filter(c => !c.isPerformance).map(cat => (
                         <LeaderboardCard
                             key={cat.id}
                             {...cat}

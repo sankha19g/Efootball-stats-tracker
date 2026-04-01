@@ -255,7 +255,11 @@ function App() {
 
   // Filter & Sort State
   const [showFilters, setShowFilters] = useState(false);
-  const [sortBy, setSortBy] = useState('rating'); // rating, goals, assists
+  const [sortBy, setSortBy] = useState(() => localStorage.getItem('ef-squad-sort') || 'rating'); // rating, goals, assists, dateAdded
+
+  useEffect(() => {
+    localStorage.setItem('ef-squad-sort', sortBy);
+  }, [sortBy]);
   const [filterPos, setFilterPos] = useState('All');
   const [filterType, setFilterType] = useState('All');
   const [filterInactive, setFilterInactive] = useState(false);
@@ -640,7 +644,7 @@ function App() {
     if (!user) return;
     try {
       const addedPlayers = await addPlayersBulk(user.uid, playersList);
-      setPlayers(prev => [...prev, ...addedPlayers]);
+      setPlayers(prev => [...addedPlayers, ...prev]);
       setShowDatabase(false);
       showAlert('Bulk Import', `Successfully added ${playersList.length} players to your squad!`, 'success');
       return addedPlayers;
@@ -1058,6 +1062,7 @@ function App() {
       if (sortBy === 'assists') return (b.assists || 0) - (a.assists || 0);
       if (sortBy === 'name') return (a.name || '').localeCompare(b.name || '');
       if (sortBy === 'position') return (a.position || '').localeCompare(b.position || '');
+      if (sortBy === 'dateAdded') return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
       return 0;
     });
 
@@ -2037,6 +2042,7 @@ function App() {
                   className="w-full bg-black/40 border border-white/10 rounded-xl px-5 py-3 text-sm font-bold outline-none cursor-pointer hover:border-ef-accent/50 transition-all text-white"
                 >
                   <option value="rating" className="text-black">Overall Rating</option>
+                  <option value="dateAdded" className="text-black">Date Added</option>
                   <option value="goals" className="text-black">Top Scorer</option>
                   <option value="assists" className="text-black">Most Assists</option>
                   <option value="name" className="text-black">Player Name</option>

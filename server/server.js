@@ -583,15 +583,16 @@ function parseSkillsFromHtml(html) {
     
     const text = $el.text().trim();
     if (!text || text.length > 50) return;
+    const lowerText = text.toLowerCase();
 
-    if (text === 'Player Skills') {
+    if (lowerText.includes('player skills') || lowerText === 'skills') {
       inSkillSection = true;
       return;
     }
 
     if (inSkillSection) {
       // If we hit the next major section or a stat label, stop
-      if (text === 'AI Playing Styles' || text === 'Playing Style' || STAT_LABELS.has(text)) {
+      if (lowerText.includes('ai playing style') || lowerText === 'playing style' || STAT_LABELS.has(text.toUpperCase())) {
         inSkillSection = false;
         return;
       }

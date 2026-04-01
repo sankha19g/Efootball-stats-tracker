@@ -61,14 +61,21 @@ async function scrapeSinglePlayer(url) {
         if (headerText.includes('position')) player.position = val;
         if (headerText.includes('overall rating')) player.rating = parseInt(val) || 0;
         
-        if (headerText.includes('playing style')) {
-            const nextRowText = $(th).parent().next('tr').find('td').text().trim();
-            if (nextRowText) player.playstyle = nextRowText;
+        if (headerText === 'playing style') {
+            // First try the current row (td next to th)
+            if (val && val !== 'None' && val.length > 3) {
+                player.playstyle = val;
+            } else {
+                // Legacy/fallback: check next row
+                const nextRowText = $(th).parent().next('tr').find('td').text().trim();
+                if (nextRowText && nextRowText.length > 3) player.playstyle = nextRowText;
+            }
         }
 
         if (headerText.includes('player skills')) {
             $(th).parent().nextAll('tr').each((j, row) => {
-                if ($(row).find('th').length > 0) return false;
+                const rowText = $(row).text().trim().toLowerCase();
+                if ($(row).find('th').length > 0 || rowText.includes('ai playing style')) return false;
                 const skill = $(row).find('td').text().trim();
                 if (skill && player.skills.length < 10) {
                     player.skills.push(skill);
@@ -101,7 +108,7 @@ async function scrapeSinglePlayer(url) {
     // Image extraction
     $('img').each((i, img) => {
         const src = $(img).attr('src');
-        if (src && src.includes('img/card/')) {
+        if (src && (src.includes('img/card/') || src.includes('assets/img/card/'))) {
             let realImageUrl = src;
             if (!realImageUrl.startsWith('http')) {
                 realImageUrl = realImageUrl.replace(/^\.\//, '');
@@ -110,8 +117,12 @@ async function scrapeSinglePlayer(url) {
                 }
                 realImageUrl = 'https://pesdb.net' + realImageUrl;
             }
-            player.image = realImageUrl;
-            return false;
+            
+            // Prioritize the front card image (starts with 'f')
+            if (realImageUrl.includes('/f') || !player.image) {
+                player.image = realImageUrl;
+                if (realImageUrl.includes('/f')) return false; // Break if we found the front image
+            }
         }
     });
 
@@ -194,19 +205,23 @@ async function scrapePesdb(url) {
                 nationality_flag_url: flagUrl,
                 club_original: club,
                 club_badge_url: '',
-                playstyle: 'None' // Requires individual page scraping
+                playstyle: 'None', // Requires individual page scraping
+                skills: []
             });
         }
     });
 
-    console.log(`[Scraper] Found ${scrapedPlayers.length} players. Fetching details...`);
+    const urlObj = new URL(url);
+    const baseUrl = urlObj.origin + urlObj.pathname;
+
+    console.log(`[Scraper] Found ${scrapedPlayers.length} players. Fetching details using base: ${baseUrl}`);
  
      const BATCH_SIZE = 5;
      for (let i = 0; i < scrapedPlayers.length; i += BATCH_SIZE) {
          const batch = scrapedPlayers.slice(i, i + BATCH_SIZE);
          await Promise.all(batch.map(async (player) => {
              try {
-                 const detailUrl = `https://pesdb.net/efootball/?id=${player.id}`;
+                 const detailUrl = `${baseUrl}?id=${player.id}`;
                  const { data: detailData } = await axios.get(detailUrl, {
                      headers: {
                          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -218,9 +233,14 @@ async function scrapePesdb(url) {
                  detail$('table.player th').each((idx, th) => {
                      const headerText = detail$(th).text().trim().toLowerCase();
  
-                     if (headerText.includes('playing style')) {
-                         player.playstyle = detail$(th).parent().next('tr').find('td').text().trim() || 'None';
-                     }
+                     if (headerText === 'playing style') {
+                        const directVal = detail$(th).next('td').text().trim();
+                        if (directVal && directVal !== 'None' && directVal.length > 3) {
+                            player.playstyle = directVal;
+                        } else {
+                            player.playstyle = detail$(th).parent().next('tr').find('td').text().trim() || 'None';
+                        }
+                    }
  
                      if (headerText.includes('league')) {
                          player.league = detail$(th).next('td').text().trim() || 'Other';
@@ -231,7 +251,8 @@ async function scrapePesdb(url) {
                  detail$('th').each((i, el) => {
                     if (detail$(el).text().trim().toLowerCase().includes('player skills')) {
                         detail$(el).parent().nextAll('tr').each((j, row) => {
-                            if (detail$(row).find('th').length > 0) return false;
+                            const rowText = detail$(row).text().trim().toLowerCase();
+                            if (detail$(row).find('th').length > 0 || rowText.includes('ai playing style')) return false;
                             const skill = detail$(row).find('td').text().trim();
                             if (skill && player.skills.length < 10) {
                                 player.skills.push(skill);
@@ -243,7 +264,7 @@ async function scrapePesdb(url) {
                  // Extract accurate image
                  detail$('img').each((i, img) => {
                      const src = detail$(img).attr('src');
-                     if (src && src.includes('img/card/')) {
+                     if (src && (src.includes('img/card/') || src.includes('assets/img/card/'))) {
                          let realImageUrl = src;
                          if (!realImageUrl.startsWith('http')) {
                              realImageUrl = realImageUrl.replace(/^\.\//, '');
@@ -252,8 +273,12 @@ async function scrapePesdb(url) {
                              }
                              realImageUrl = 'https://pesdb.net' + realImageUrl;
                          }
-                         player.image = realImageUrl;
-                         return false;
+                         
+                         // Prioritize front card image
+                         if (realImageUrl.includes('/f') || !player.image) {
+                            player.image = realImageUrl;
+                            if (realImageUrl.includes('/f')) return false;
+                         }
                      }
                  });
              } catch (err) {
