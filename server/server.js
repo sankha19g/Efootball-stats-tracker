@@ -573,36 +573,50 @@ const STAT_LABELS = new Set(['SHT','PAS','DRI','DEX','LBS','AER','DEF','GK1']);
 function parseSkillsFromHtml(html) {
   const $ = cheerio.load(html);
   const skills = [];
-  let inSkillSection = false;
 
-  // More targeted selector for skills section
-  // Usually skills are in a specific div or after a specific header
-  $('*').each((i, el) => {
-    const $el = $(el);
-    if ($el.children().length > 0) return; // Only check leaf nodes
-    
-    const text = $el.text().trim();
-    if (!text || text.length > 50) return;
-    const lowerText = text.toLowerCase();
+  // Try multiple common selectors for efootball-world and similar sites
+  // 1. Look for headers followed by lists/tables
+  const skillHeaders = $('th, td, div, h3, h4').filter((i, el) => {
+    const txt = $(el).text().trim().toLowerCase();
+    return txt === 'player skills' || txt === 'skills' || txt.includes('player skills');
+  });
 
-    if (lowerText.includes('player skills') || lowerText === 'skills') {
-      inSkillSection = true;
-      return;
-    }
-
-    if (inSkillSection) {
-      // If we hit the next major section or a stat label, stop
-      if (lowerText.includes('ai playing style') || lowerText === 'playing style' || STAT_LABELS.has(text.toUpperCase())) {
-        inSkillSection = false;
-        return;
-      }
-      
-      // Basic validation for skill names (avoiding empty or clearly wrong text)
-      if (text && text.length > 2 && !text.includes(':')) {
-        skills.push(text);
-      }
+  skillHeaders.each((i, header) => {
+    // If it's a table header, look at subsequent rows
+    if (header.tagName === 'th' || header.tagName === 'td') {
+      $(header).parent().nextAll('tr').each((j, row) => {
+        const rowText = $(row).text().trim();
+        // Stop if we hit another header or section
+        if ($(row).find('th').length > 0 || /playing style|stats|rating/i.test(rowText)) return false;
+        
+        const skill = $(row).find('td').text().trim();
+        if (skill && skill.length > 2 && skill.length < 40 && !skills.includes(skill)) {
+          skills.push(skill);
+        }
+      });
+    } else {
+      // If it's a div or h3, look for sibling lists
+      $(header).nextAll().find('li, .skill-item, .attribute-value').each((j, item) => {
+        const skill = $(item).text().trim();
+        if (skill && skill.length > 2 && !skills.includes(skill)) {
+           skills.push(skill);
+        }
+      });
     }
   });
+
+  // Fallback: If still no skills, look for elements containing known skill names
+  if (skills.length === 0) {
+    const knownSkills = ['Super-sub', 'Double Touch', 'Interception', 'Blocker', 'Captaincy', 'First-time Shot'];
+    $('*').each((i, el) => {
+      if ($(el).children().length === 0) {
+        const text = $(el).text().trim();
+        if (knownSkills.some(ks => text.toLowerCase() === ks.toLowerCase())) {
+          if (!skills.includes(text)) skills.push(text);
+        }
+      }
+    });
+  }
 
   return skills;
 }

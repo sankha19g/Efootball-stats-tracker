@@ -72,29 +72,32 @@ async function scrapeSinglePlayer(url) {
             }
         }
 
-        if (headerText.includes('player skills')) {
+        if (headerText.includes('player skills') || headerText === 'skills') {
             $(th).parent().nextAll('tr').each((j, row) => {
                 const rowText = $(row).text().trim().toLowerCase();
+                // Stop if we hit a new section (header or AI Playing Style)
                 if ($(row).find('th').length > 0 || rowText.includes('ai playing style')) return false;
-                const skill = $(row).find('td').text().trim();
-                if (skill && player.skills.length < 10) {
-                    player.skills.push(skill);
-                }
+                
+                // On PESDB, skills are in td. Some rows might have 2 tds (label: value) or just 1 (skill name)
+                $(row).find('td').each((k, td) => {
+                    const skill = $(td).text().trim();
+                    if (skill && skill.length > 2 && !player.skills.includes(skill) && player.skills.length < 15) {
+                        player.skills.push(skill);
+                    }
+                });
             });
         }
     });
 
-    // Fallback for skills/playstyle if not found in the loop above
+    // Final check for skills in any table that looks like skills
     if (player.skills.length === 0) {
-        $('th').each((i, el) => {
+        $('th, td').each((i, el) => {
             const txt = $(el).text().trim().toLowerCase();
-            if (txt.includes('player skills')) {
-                $(el).parent().nextAll('tr').each((j, row) => {
+            if (txt === 'player skills' || txt === 'skills') {
+                $(el).parent().nextAll('tr').slice(0, 15).each((j, row) => {
                     if ($(row).find('th').length > 0) return false;
-                    const skill = $(row).find('td').text().trim();
-                    if (skill && player.skills.length < 10) {
-                        player.skills.push(skill);
-                    }
+                    const skill = $(row).find('td').first().text().trim();
+                    if (skill && !player.skills.includes(skill)) player.skills.push(skill);
                 });
             }
         });
@@ -248,15 +251,19 @@ async function scrapePesdb(url) {
                  });
 
                  // Extract Skills in batch fetch
-                 detail$('th').each((i, el) => {
-                    if (detail$(el).text().trim().toLowerCase().includes('player skills')) {
+                 detail$('th, td').each((i, el) => {
+                    const txt = detail$(el).text().trim().toLowerCase();
+                    if (txt === 'player skills' || txt === 'skills' || txt.includes('player skills')) {
                         detail$(el).parent().nextAll('tr').each((j, row) => {
                             const rowText = detail$(row).text().trim().toLowerCase();
                             if (detail$(row).find('th').length > 0 || rowText.includes('ai playing style')) return false;
-                            const skill = detail$(row).find('td').text().trim();
-                            if (skill && player.skills.length < 10) {
-                                player.skills.push(skill);
-                            }
+                            
+                            detail$(row).find('td').each((k, td) => {
+                                const skill = detail$(td).text().trim();
+                                if (skill && skill.length > 2 && !player.skills.includes(skill) && player.skills.length < 15) {
+                                    player.skills.push(skill);
+                                }
+                            });
                         });
                     }
                  });
