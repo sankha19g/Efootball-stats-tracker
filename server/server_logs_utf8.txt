@@ -1,0 +1,249 @@
+﻿
+> efootball-server@1.0.0 dev
+> nodemon server.js
+
+[33m[nodemon] 3.1.11[39m
+[33m[nodemon] to restart at any time, enter `rs`[39m
+[33m[nodemon] watching path(s): *.*[39m
+[33m[nodemon] watching extensions: js,mjs,cjs,json[39m
+[32m[nodemon] starting `node server.js`[39m
+Γ£à Loaded 11227 players from local DB
+npm : Γ¥î Error loading local database: SyntaxError: Unexpected token '∩╗┐', "∩╗┐{"countri"... is not valid JSON
+At line:1 char:1
++ npm run dev > server_logs_new.txt 2>&1
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Γ¥î Error loadi... not valid JSON:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+    at JSON.parse (<anonymous>)
+    at Object.<anonymous> (C:\Users\ADMIN\Downloads\efootball\server\server.js:30:30)
+    at Module._compile (node:internal/modules/cjs/loader:1378:14)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1437:10)
+    at Module.load (node:internal/modules/cjs/loader:1212:32)
+    at Module._load (node:internal/modules/cjs/loader:1028:12)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:142:12)
+    at node:internal/main/run_main_module:28:49
+≡ƒÜÇ Server running on http://localhost:5001
+Γ¥î MongoDB connection error: MongooseServerSelectionError: Could not connect to any servers in your MongoDB Atlas 
+cluster. One common reason is that you're trying to access the database from an IP that isn't whitelisted. Make sure 
+your current IP address is on your Atlas cluster's IP whitelist: https://www.mongodb.com/docs/atlas/security-whitelist/
+    at _handleConnectionErrors 
+(C:\Users\ADMIN\Downloads\efootball\server\node_modules\mongoose\lib\connection.js:1169:11)
+    at NativeConnection.openUri 
+(C:\Users\ADMIN\Downloads\efootball\server\node_modules\mongoose\lib\connection.js:1100:11) {
+  errorLabelSet: Set(0) {},
+  reason: TopologyDescription {
+    type: 'ReplicaSetNoPrimary',
+    servers: Map(3) {
+      'ac-tpzgyx0-shard-00-00.obpzx8w.mongodb.net:27017' => [ServerDescription],
+      'ac-tpzgyx0-shard-00-01.obpzx8w.mongodb.net:27017' => [ServerDescription],
+      'ac-tpzgyx0-shard-00-02.obpzx8w.mongodb.net:27017' => [ServerDescription]
+    },
+    stale: false,
+    compatible: true,
+    heartbeatFrequencyMS: 10000,
+    localThresholdMS: 15,
+    setName: 'atlas-ljpvt0-shard-0',
+    maxElectionId: null,
+    maxSetVersion: null,
+    commonWireVersion: 0,
+    logicalSessionTimeoutMinutes: null
+  },
+  code: undefined,
+  cause: TopologyDescription {
+    type: 'ReplicaSetNoPrimary',
+    servers: Map(3) {
+      'ac-tpzgyx0-shard-00-00.obpzx8w.mongodb.net:27017' => [ServerDescription],
+      'ac-tpzgyx0-shard-00-01.obpzx8w.mongodb.net:27017' => [ServerDescription],
+      'ac-tpzgyx0-shard-00-02.obpzx8w.mongodb.net:27017' => [ServerDescription]
+    },
+    stale: false,
+    compatible: true,
+    heartbeatFrequencyMS: 10000,
+    localThresholdMS: 15,
+    setName: 'atlas-ljpvt0-shard-0',
+    maxElectionId: null,
+    maxSetVersion: null,
+    commonWireVersion: 0,
+    logicalSessionTimeoutMinutes: null
+  }
+}
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node server.js`[39m
+Γ£à Loaded 11227 players from local DB
+Γ£à Loaded 5 leagues from local DB
+node:events:497
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: listen EADDRINUSE: address already in use :::5001
+    at Server.setupListenHandle [as _listen2] (node:net:1893:16)
+    at listenInCluster (node:net:1941:12)
+    at Server.listen (node:net:2029:7)
+    at Function.listen (C:\Users\ADMIN\Downloads\efootball\server\node_modules\express\lib\application.js:635:24)
+    at Object.<anonymous> (C:\Users\ADMIN\Downloads\efootball\server\server.js:462:5)
+    at Module._compile (node:internal/modules/cjs/loader:1378:14)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1437:10)
+    at Module.load (node:internal/modules/cjs/loader:1212:32)
+    at Module._load (node:internal/modules/cjs/loader:1028:12)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:142:12)
+Emitted 'error' event on Server instance at:
+    at emitErrorNT (node:net:1920:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:82:21) {
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '::',
+  port: 5001
+}
+
+Node.js v21.6.2
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node server.js`[39m
+C:\Users\ADMIN\Downloads\efootball\server\server.js:464
+});/
+    
+
+SyntaxError: Invalid or unexpected token
+    at internalCompileFunction (node:internal/vm:77:18)
+    at wrapSafe (node:internal/modules/cjs/loader:1290:20)
+    at Module._compile (node:internal/modules/cjs/loader:1342:27)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1437:10)
+    at Module.load (node:internal/modules/cjs/loader:1212:32)
+    at Module._load (node:internal/modules/cjs/loader:1028:12)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:142:12)
+    at node:internal/main/run_main_module:28:49
+
+Node.js v21.6.2
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node server.js`[39m
+Γ£à Loaded 11227 players from local DB
+Γ£à Loaded 5 leagues from local DB
+≡ƒÜÇ Server running on http://localhost:5001
+Γ¥î MongoDB connection error: MongooseServerSelectionError: Could not connect to any servers in your MongoDB Atlas 
+cluster. One common reason is that you're trying to access the database from an IP that isn't whitelisted. Make sure 
+your current IP address is on your Atlas cluster's IP whitelist: https://www.mongodb.com/docs/atlas/security-whitelist/
+    at _handleConnectionErrors 
+(C:\Users\ADMIN\Downloads\efootball\server\node_modules\mongoose\lib\connection.js:1169:11)
+    at NativeConnection.openUri 
+(C:\Users\ADMIN\Downloads\efootball\server\node_modules\mongoose\lib\connection.js:1100:11) {
+  errorLabelSet: Set(0) {},
+  reason: TopologyDescription {
+    type: 'ReplicaSetNoPrimary',
+    servers: Map(3) {
+      'ac-tpzgyx0-shard-00-00.obpzx8w.mongodb.net:27017' => [ServerDescription],
+      'ac-tpzgyx0-shard-00-01.obpzx8w.mongodb.net:27017' => [ServerDescription],
+      'ac-tpzgyx0-shard-00-02.obpzx8w.mongodb.net:27017' => [ServerDescription]
+    },
+    stale: false,
+    compatible: true,
+    heartbeatFrequencyMS: 10000,
+    localThresholdMS: 15,
+    setName: 'atlas-ljpvt0-shard-0',
+    maxElectionId: null,
+    maxSetVersion: null,
+    commonWireVersion: 0,
+    logicalSessionTimeoutMinutes: null
+  },
+  code: undefined,
+  cause: TopologyDescription {
+    type: 'ReplicaSetNoPrimary',
+    servers: Map(3) {
+      'ac-tpzgyx0-shard-00-00.obpzx8w.mongodb.net:27017' => [ServerDescription],
+      'ac-tpzgyx0-shard-00-01.obpzx8w.mongodb.net:27017' => [ServerDescription],
+      'ac-tpzgyx0-shard-00-02.obpzx8w.mongodb.net:27017' => [ServerDescription]
+    },
+    stale: false,
+    compatible: true,
+    heartbeatFrequencyMS: 10000,
+    localThresholdMS: 15,
+    setName: 'atlas-ljpvt0-shard-0',
+    maxElectionId: null,
+    maxSetVersion: null,
+    commonWireVersion: 0,
+    logicalSessionTimeoutMinutes: null
+  }
+}
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node server.js`[39m
+Γ£à Loaded 11227 players from local DB
+Γ£à Loaded 5 leagues from local DB
+node:events:497
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: listen EADDRINUSE: address already in use :::5001
+    at Server.setupListenHandle [as _listen2] (node:net:1893:16)
+    at listenInCluster (node:net:1941:12)
+    at Server.listen (node:net:2029:7)
+    at Function.listen (C:\Users\ADMIN\Downloads\efootball\server\node_modules\express\lib\application.js:635:24)
+    at Object.<anonymous> (C:\Users\ADMIN\Downloads\efootball\server\server.js:498:5)
+    at Module._compile (node:internal/modules/cjs/loader:1378:14)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1437:10)
+    at Module.load (node:internal/modules/cjs/loader:1212:32)
+    at Module._load (node:internal/modules/cjs/loader:1028:12)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:142:12)
+Emitted 'error' event on Server instance at:
+    at emitErrorNT (node:net:1920:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:82:21) {
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '::',
+  port: 5001
+}
+
+Node.js v21.6.2
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node server.js`[39m
+C:\Users\ADMIN\Downloads\efootball\server\server.js:500
+});/
+    
+
+SyntaxError: Invalid or unexpected token
+    at internalCompileFunction (node:internal/vm:77:18)
+    at wrapSafe (node:internal/modules/cjs/loader:1290:20)
+    at Module._compile (node:internal/modules/cjs/loader:1342:27)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1437:10)
+    at Module.load (node:internal/modules/cjs/loader:1212:32)
+    at Module._load (node:internal/modules/cjs/loader:1028:12)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:142:12)
+    at node:internal/main/run_main_module:28:49
+
+Node.js v21.6.2
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node server.js`[39m
+Γ£à Loaded 11227 players from local DB
+Γ£à Loaded 5 leagues from local DB
+node:events:497
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: listen EADDRINUSE: address already in use :::5001
+    at Server.setupListenHandle [as _listen2] (node:net:1893:16)
+    at listenInCluster (node:net:1941:12)
+    at Server.listen (node:net:2029:7)
+    at Function.listen (C:\Users\ADMIN\Downloads\efootball\server\node_modules\express\lib\application.js:635:24)
+    at Object.<anonymous> (C:\Users\ADMIN\Downloads\efootball\server\server.js:499:5)
+    at Module._compile (node:internal/modules/cjs/loader:1378:14)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1437:10)
+    at Module.load (node:internal/modules/cjs/loader:1212:32)
+    at Module._load (node:internal/modules/cjs/loader:1028:12)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:142:12)
+Emitted 'error' event on Server instance at:
+    at emitErrorNT (node:net:1920:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:82:21) {
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '::',
+  port: 5001
+}
+
+Node.js v21.6.2
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
