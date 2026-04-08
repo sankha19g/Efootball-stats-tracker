@@ -13,7 +13,8 @@ import {
     setDoc,
     getDoc,
     where,
-    limit as firestoreLimit
+    limit as firestoreLimit,
+    writeBatch
 } from 'firebase/firestore';
 
 const PLAYERS_COLLECTION = 'players';
@@ -178,6 +179,39 @@ export const updatePlayersBulk = async (userId, playerIds, updates) => {
     });
 
     await Promise.all(promises);
+};
+
+export const batchUpdatePlayers = async (userId, updateArray) => {
+    if (!userId || !updateArray || updateArray.length === 0) return;
+
+    const batch = writeBatch(db);
+    updateArray.forEach(({ id, updates }) => {
+        const playerRef = doc(db, `users/${userId}/${PLAYERS_COLLECTION}`, id);
+        batch.update(playerRef, updates);
+    });
+
+    await batch.commit();
+};
+
+export const batchAddPlayers = async (userId, playersList) => {
+    if (!userId || !playersList || playersList.length === 0) return [];
+
+    const batch = writeBatch(db);
+    const results = [];
+    const createdAt = new Date().toISOString();
+
+    playersList.forEach((player) => {
+        const cleanPlayer = JSON.parse(JSON.stringify(player));
+        const newDocRef = doc(collection(db, `users/${userId}/${PLAYERS_COLLECTION}`));
+        batch.set(newDocRef, {
+            ...cleanPlayer,
+            createdAt
+        });
+        results.push({ _id: newDocRef.id, ...cleanPlayer, createdAt });
+    });
+
+    await batch.commit();
+    return results;
 };
 
 export const deletePlayer = async (userId, playerId) => {

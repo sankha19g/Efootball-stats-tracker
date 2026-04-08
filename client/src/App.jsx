@@ -9,7 +9,9 @@ import {
   deletePlayer,
   uploadBase64Image,
   addPlayersBulk,
-  updatePlayersBulk
+  updatePlayersBulk,
+  batchUpdatePlayers,
+  batchAddPlayers
 } from './services/playerService';
 import { getApps, addApp, deleteApp } from './services/miscService';
 import { getSquads, saveSquad, deleteSquad } from './services/squadService';
@@ -23,6 +25,7 @@ const Leaderboard = lazy(() => import('./components/Leaderboard'));
 const PlayerDetailsModal = lazy(() => import('./components/PlayerDetailsModal'));
 const ScreenshotsModal = lazy(() => import('./components/ScreenshotsModal'));
 const LinksModal = lazy(() => import('./components/LinksModal'));
+const ImportSummaryModal = lazy(() => import('./components/ImportSummaryModal'));
 const LoginModal = lazy(() => import('./components/LoginModal'));
 const SettingsModal = lazy(() => import('./components/SettingsModal'));
 const AppsDrawer = lazy(() => import('./components/AppsDrawer'));
@@ -41,6 +44,7 @@ function App() {
   const [squads, setSquads] = useState([]);
   const [view, setView] = useState('list'); // 'list', 'leaderboard', or 'squad-builder'
   const [loading, setLoading] = useState(true);
+  const [importPreviewData, setImportPreviewData] = useState(null);
 
   // Modal Visibility State
   const [showAddPlayer, setShowAddPlayer] = useState(false);
@@ -775,6 +779,157 @@ function App() {
     } catch (err) {
       console.error('Error bulk updating:', err);
       showAlert('Error', 'Failed to update players.', 'danger');
+    }
+  };
+
+  const handleImportSquadJSON = async (importedPlayers) => {
+    if (!user || !importedPlayers || !Array.isArray(importedPlayers)) return;
+
+    const toUpdate = [];
+    const toAdd = [];
+    const details = [];
+    const existingPlayers = [...players];
+
+    importedPlayers.forEach(imp => {
+      // Identify player by _id, ID, pesdb_id, or playerId
+      const match = existingPlayers.find(p => 
+        (imp._id && p._id === imp._id) || 
+        (imp.id && p._id === imp.id) ||
+        (imp.playerId && p.playerId === imp.playerId) || 
+        (imp.pesdb_id && p.pesdb_id === imp.pesdb_id) ||
+        (imp.ID && (p.playerId === String(imp.ID) || p.pesdb_id === String(imp.ID)))
+      );
+
+      // Mapping for exported headers -> internal keys
+      const mapping = {
+        'Name': 'name',
+        'Position': 'position',
+        'Rating': 'rating',
+        'Height': 'height',
+        'Weight': 'weight',
+        'Age': 'age',
+        'Foot': 'strongFoot',
+        'Playstyle': 'playstyle',
+        'Club': 'club',
+        'League': 'league',
+        'Nationality': 'nationality',
+        'CardType': 'cardType',
+        // Weak Foot
+        'WFUsage': 'Weak Foot Usage',
+        'Weak Foot Usage': 'Weak Foot Usage',
+        'WFAccuracy': 'Weak Foot Accuracy',
+        'Weak Foot Accuracy': 'Weak Foot Accuracy',
+        // Condition / Form
+        'Condition': 'Form',
+        'Form': 'Form',
+        'Player Form': 'Form',
+        // Injury
+        'InjuryRes': 'Injury Resistance',
+        'Injury Resistance': 'Injury Resistance',
+        // Meta
+        'Featured': 'Featured Players',
+        'Featured Players': 'Featured Players',
+        'Date Added': 'Date Added',
+        'DateAdded': 'Date Added'
+      };
+
+      if (match) {
+        const updates = {};
+        const changes = [];
+        Object.keys(imp).forEach(k => {
+          const trimmedKey = k.trim();
+          const internalKey = mapping[trimmedKey] || trimmedKey;
+          
+          // Exclude internal fields and the primary ID used for matching
+          if (['_id', 'id', 'ID', '#', 'Photo'].includes(internalKey)) return;
+          
+          if (imp[k] !== undefined && imp[k] !== null && imp[k] !== '') {
+            const newVal = imp[k];
+            const oldVal = match[internalKey];
+            
+            // Only consider it a change if values are different
+            if (String(newVal) !== String(oldVal || "")) {
+              updates[internalKey] = newVal;
+              changes.push({ field: internalKey, old: oldVal, new: newVal });
+            }
+          }
+        });
+
+        if (changes.length > 0) {
+          toUpdate.push({ id: match._id, updates });
+          details.push({
+            name: match.name || imp.Name || 'Unknown Player',
+            id: match._id,
+            type: 'update',
+            changes
+          });
+        }
+      } else {
+        const newPlayer = {};
+        const changes = [];
+        Object.keys(imp).forEach(k => {
+          const internalKey = mapping[k] || k;
+          if (internalKey === '#' || internalKey === 'Photo' || internalKey === 'DateAdded') return;
+          
+          if (k === 'ID') newPlayer.pesdb_id = String(imp[k]);
+          else if (imp[k] !== undefined && imp[k] !== null && imp[k] !== '') {
+            newPlayer[internalKey] = imp[k];
+          }
+          
+          if (newPlayer[internalKey]) {
+             changes.push({ field: internalKey, new: newPlayer[internalKey] });
+          }
+        });
+        
+        if (newPlayer.name || newPlayer.pesdb_id) {
+           toAdd.push(newPlayer);
+           details.push({
+             name: newPlayer.name || 'New Player',
+             type: 'add',
+             changes
+           });
+        }
+      }
+    });
+
+    if (toUpdate.length === 0 && toAdd.length === 0) {
+      showAlert('Info', 'No new data or changes found in this file.', 'info');
+      return;
+    }
+
+    setImportPreviewData({
+      summary: { added: toAdd.length, updated: toUpdate.length, total: importedPlayers.length },
+      details,
+      rawActions: { toUpdate, toAdd }
+    });
+  };
+
+  const handleConfirmImportSave = async () => {
+    if (!user || !importPreviewData) return;
+    const { toUpdate, toAdd } = importPreviewData.rawActions;
+
+    setLoading(true);
+    try {
+      if (toUpdate.length > 0) {
+        for (let i = 0; i < toUpdate.length; i += 500) {
+          await batchUpdatePlayers(user.uid, toUpdate.slice(i, i + 500));
+        }
+      }
+      if (toAdd.length > 0) {
+        for (let i = 0; i < toAdd.length; i += 500) {
+          await batchAddPlayers(user.uid, toAdd.slice(i, i + 500));
+        }
+      }
+
+      const updatedPlayersList = await getPlayers(user.uid);
+      setPlayers(updatedPlayersList);
+      showAlert('Import Complete', `Successfully added ${toAdd.length} new players and updated ${toUpdate.length} matches.`, 'success');
+      setImportPreviewData(null);
+    } catch (err) {
+      console.error('Import error:', err);
+      showAlert('Import Failed', `Error: ${err.message}`, 'danger');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -2261,6 +2416,14 @@ function App() {
             />
           )}
 
+          {importPreviewData && (
+            <ImportSummaryModal
+              data={importPreviewData}
+              onSave={handleConfirmImportSave}
+              onUndo={() => setImportPreviewData(null)}
+            />
+          )}
+
           {/* Main Content Area */}
           <div className="animate-slide-up" style={{ animationDelay: '0.2s' }}>
             {loading ? (
@@ -2653,6 +2816,7 @@ function App() {
                   <MySquadDB
                     players={players}
                     onBack={() => setView('list')}
+                    onImport={handleImportSquadJSON}
                   />
                 )}
 

@@ -1,7 +1,24 @@
 import { useState, useMemo, useEffect } from 'react';
 import { PLAYSTYLES, PLAYER_SKILLS, SPECIAL_SKILLS } from '../constants';
 
-const MySquadDB = ({ players, onBack }) => {
+const parseEfDate = (dateStr) => {
+    if (!dateStr) return null;
+    let d = new Date(dateStr);
+    if (!isNaN(d.getTime())) return d;
+    
+    // Handle "2 Apr '26" format
+    const match = String(dateStr).match(/(\d+)\s+([A-Za-z]+)\s+'(\d+)/);
+    if (match) {
+        const day = match[1];
+        const month = match[2];
+        const year = "20" + match[3];
+        const parsed = new Date(`${month} ${day}, ${year}`);
+        if (!isNaN(parsed.getTime())) return parsed;
+    }
+    return null;
+};
+
+const MySquadDB = ({ players, onBack, onImport }) => {
     const [search, setSearch] = useState('');
 
     const [showSettings, setShowSettings] = useState(false);
@@ -44,11 +61,13 @@ const MySquadDB = ({ players, onBack }) => {
             weight: false,
             age: false,
             strongFoot: false,
-            createdAt: false,
+            createdAt: true,
             weakUsage: false,
             weakAccuracy: false,
             form: false,
-            injury: false
+            injury: false,
+            featured: false,
+            dateAdded: true
         };
     });
 
@@ -67,11 +86,13 @@ const MySquadDB = ({ players, onBack }) => {
         { id: 'league', label: 'League' },
         { id: 'nationality', label: 'Nationality' },
         { id: 'card', label: 'Card Type' },
-        { id: 'createdAt', label: 'Date Added' },
-        { id: 'weakUsage', label: 'WF Usage' },
-        { id: 'weakAccuracy', label: 'WF Accuracy' },
-        { id: 'form', label: 'Form/Condition' },
-        { id: 'injury', label: 'Injury Res.' }
+        { id: 'createdAt', label: 'Uploaded' },
+        { id: 'dateAdded', label: 'Date Added' },
+        { id: 'weakUsage', label: 'Weak Foot Usage' },
+        { id: 'weakAccuracy', label: 'Weak Foot Accuracy' },
+        { id: 'form', label: 'Form' },
+        { id: 'injury', label: 'Injury Resistance' },
+        { id: 'featured', label: 'Featured Players' }
     ];
 
     useEffect(() => {
@@ -183,8 +204,8 @@ const MySquadDB = ({ players, onBack }) => {
                 case 'dateAdded':
                 case 'dateAdded_desc':
                 case 'dateAdded_asc':
-                    valA = new Date(a.createdAt || 0).getTime();
-                    valB = new Date(b.createdAt || 0).getTime();
+                    valA = parseEfDate(a.DateAdded || a['Date Added'] || a.createdAt || 0)?.getTime() || 0;
+                    valB = parseEfDate(b.DateAdded || b['Date Added'] || b.createdAt || 0)?.getTime() || 0;
                     break;
                 case 'goals':
                     valA = Number(a.goals) || 0;
@@ -536,6 +557,38 @@ const MySquadDB = ({ players, onBack }) => {
                         </div>
                     )}
                     
+                    {/* Import Button */}
+                    <button 
+                        onClick={() => document.getElementById('squad-import-input').click()}
+                        className="px-6 h-full rounded-2xl flex items-center justify-center border bg-white/5 border-white/10 text-white/40 hover:text-white hover:bg-white/10 transition-all gap-2"
+                        title="Import JSON Squad"
+                    >
+                        <span className="text-lg">📥</span>
+                        <span className="text-[10px] font-black uppercase tracking-widest hidden sm:inline">Import</span>
+                    </button>
+                    <input 
+                        type="file" 
+                        id="squad-import-input" 
+                        accept=".json" 
+                        className="hidden" 
+                        onChange={(e) => {
+                            const file = e.target.files[0];
+                            if (file) {
+                                const reader = new FileReader();
+                                reader.onload = (event) => {
+                                    try {
+                                        const json = JSON.parse(event.target.result);
+                                        onImport(json);
+                                    } catch (err) {
+                                        console.error("JSON Parse Error", err);
+                                    }
+                                };
+                                reader.readAsText(file);
+                            }
+                            e.target.value = '';
+                        }}
+                    />
+
                     {/* Export Button */}
                     <button 
                         onClick={() => setShowExport(!showExport)}
@@ -673,11 +726,13 @@ const MySquadDB = ({ players, onBack }) => {
                                     {visibleCols.league && <th className={`px-4 ${conciseMode ? 'py-1' : 'py-3'} text-left text-[10px] font-black uppercase tracking-wider opacity-40 hidden md:table-cell`}>League</th>}
                                     {visibleCols.nationality && <th className={`px-4 ${conciseMode ? 'py-1' : 'py-3'} text-left text-[10px] font-black uppercase tracking-wider opacity-40`}>Nationality</th>}
                                     {visibleCols.card && <th className={`px-4 ${conciseMode ? 'py-1' : 'py-3'} text-left text-[10px] font-black uppercase tracking-wider opacity-40 hidden sm:table-cell`}>Card</th>}
-                                    {visibleCols.weakUsage && <th className={`px-4 ${conciseMode ? 'py-1' : 'py-3'} text-left text-[10px] font-black uppercase tracking-wider opacity-40`}>WF Usage</th>}
-                                    {visibleCols.weakAccuracy && <th className={`px-4 ${conciseMode ? 'py-1' : 'py-3'} text-left text-[10px] font-black uppercase tracking-wider opacity-40`}>WF Acc.</th>}
-                                    {visibleCols.form && <th className={`px-4 ${conciseMode ? 'py-1' : 'py-3'} text-left text-[10px] font-black uppercase tracking-wider opacity-40`}>Condition</th>}
-                                    {visibleCols.injury && <th className={`px-4 ${conciseMode ? 'py-1' : 'py-3'} text-left text-[10px] font-black uppercase tracking-wider opacity-40`}>Injury</th>}
-                                    {visibleCols.createdAt && <th className={`px-4 ${conciseMode ? 'py-1' : 'py-3'} text-left text-[10px] font-black uppercase tracking-wider opacity-40`}>Added</th>}
+                                    {visibleCols.weakUsage && <th className={`px-4 ${conciseMode ? 'py-1' : 'py-3'} text-left text-[10px] font-black uppercase tracking-wider opacity-40`}>Weak Foot Usage</th>}
+                                    {visibleCols.weakAccuracy && <th className={`px-4 ${conciseMode ? 'py-1' : 'py-3'} text-left text-[10px] font-black uppercase tracking-wider opacity-40`}>Weak Foot Accuracy</th>}
+                                    {visibleCols.form && <th className={`px-4 ${conciseMode ? 'py-1' : 'py-3'} text-left text-[10px] font-black uppercase tracking-wider opacity-40`}>Form</th>}
+                                    {visibleCols.injury && <th className={`px-4 ${conciseMode ? 'py-1' : 'py-3'} text-left text-[10px] font-black uppercase tracking-wider opacity-40`}>Injury Resistance</th>}
+                                    {visibleCols.featured && <th className={`px-4 ${conciseMode ? 'py-1' : 'py-3'} text-left text-[10px] font-black uppercase tracking-wider opacity-40`}>Featured</th>}
+                                    {visibleCols.createdAt && <th className={`px-4 ${conciseMode ? 'py-1' : 'py-3'} text-left text-[10px] font-black uppercase tracking-wider opacity-40`}>Uploaded</th>}
+                                    {visibleCols.dateAdded && <th className={`px-4 ${conciseMode ? 'py-1' : 'py-3'} text-left text-[10px] font-black uppercase tracking-wider opacity-40`}>Added</th>}
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-white/5">
@@ -792,27 +847,46 @@ const MySquadDB = ({ players, onBack }) => {
                                         )}
                                         {visibleCols.weakUsage && (
                                             <td className={`px-4 ${conciseMode ? 'py-0.5' : 'py-3'} whitespace-nowrap text-[10px] font-bold opacity-60`}>
-                                                {player.weakFootUsage || '---'}
+                                                {player.weakFootUsage || player['Weak Foot Usage'] || '---'}
                                             </td>
                                         )}
                                         {visibleCols.weakAccuracy && (
                                             <td className={`px-4 ${conciseMode ? 'py-0.5' : 'py-3'} whitespace-nowrap text-[10px] font-bold opacity-60`}>
-                                                {player.weakFootAccuracy || '---'}
+                                                {player.weakFootAccuracy || player['Weak Foot Accuracy'] || '---'}
                                             </td>
                                         )}
                                         {visibleCols.form && (
-                                            <td className={`px-4 ${conciseMode ? 'py-0.5' : 'py-3'} whitespace-nowrap text-[10px] font-bold opacity-60 uppercase`}>
-                                                {player.conditioning || '---'}
+                                            <td className={`px-4 ${conciseMode ? 'py-0.5' : 'py-3'} whitespace-nowrap text-[10px] font-bold opacity-60`}>
+                                                {player.conditioning || player.Form || player['Player Form'] || '---'}
                                             </td>
                                         )}
                                         {visibleCols.injury && (
-                                            <td className={`px-4 ${conciseMode ? 'py-0.5' : 'py-3'} whitespace-nowrap text-[10px] font-bold opacity-60 uppercase`}>
-                                                {player.injuryResistance || '---'}
+                                            <td className={`px-4 ${conciseMode ? 'py-0.5' : 'py-3'} whitespace-nowrap text-[10px] font-bold opacity-60`}>
+                                                {player.injuryResistance || player['Injury Resistance'] || '---'}
+                                            </td>
+                                        )}
+                                        {visibleCols.featured && (
+                                            <td className={`px-4 ${conciseMode ? 'py-0.5' : 'py-3'} whitespace-nowrap text-[10px] font-bold`}>
+                                                {(() => {
+                                                    const val = player.featured || player['Featured Players'];
+                                                    if (!val || val === 'Standard' || val === 'No' || val === false) {
+                                                        return <span className="opacity-20 uppercase text-[9px]">Standard</span>;
+                                                    }
+                                                    return <span className="text-ef-blue uppercase text-[9px] tracking-tighter">{val}</span>;
+                                                })()}
                                             </td>
                                         )}
                                         {visibleCols.createdAt && (
                                             <td className={`px-4 ${conciseMode ? 'py-0.5' : 'py-3'} whitespace-nowrap text-[9px] font-bold opacity-30`}>
                                                 {player.createdAt ? new Date(player.createdAt).toLocaleDateString() : '---'}
+                                            </td>
+                                        )}
+                                        {visibleCols.dateAdded && (
+                                            <td className={`px-4 ${conciseMode ? 'py-0.5' : 'py-3'} whitespace-nowrap text-[9px] font-bold opacity-30`}>
+                                                {(() => {
+                                                    const d = parseEfDate(player.DateAdded || player['Date Added']);
+                                                    return d ? d.toLocaleDateString() : '---';
+                                                })()}
                                             </td>
                                         )}
                                     </tr>

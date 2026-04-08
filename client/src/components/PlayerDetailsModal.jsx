@@ -3,6 +3,23 @@ import { PLAYSTYLES, TOP_LEAGUES, SPECIAL_SKILLS, PLAYER_SKILLS, ALL_SKILLS } fr
 import { searchLeagues, searchTeams, searchCountries, getFlagUrl } from '../services/footballApi';
 import SavedProgressionsModal from './SavedProgressionsModal';
 
+const parseEfDate = (dateStr) => {
+    if (!dateStr) return null;
+    let d = new Date(dateStr);
+    if (!isNaN(d.getTime())) return d;
+    
+    // Handle "2 Apr '26" format
+    const match = String(dateStr).match(/(\d+)\s+([A-Za-z]+)\s+'(\d+)/);
+    if (match) {
+        const day = match[1];
+        const month = match[2];
+        const year = "20" + match[3];
+        const parsed = new Date(`${month} ${day}, ${year}`);
+        if (!isNaN(parsed.getTime())) return parsed;
+    }
+    return null;
+};
+
 const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEditMode = false, settings, showAlert, showConfirm }) => {
     const [isEditing, setIsEditing] = useState(initialEditMode);
     const [showProgressions, setShowProgressions] = useState(false);
@@ -10,13 +27,21 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
     const [isCustomLeague, setIsCustomLeague] = useState(false);
     const [formData, setFormData] = useState({
         ...player,
-        playstyle: player.playstyle || 'None',
-        tags: player.tags || [],
-        age: player.age || '',
-        height: player.height || '',
-        strongFoot: player.strongFoot || 'Right',
+        playstyle: player.playstyle || player.Playstyle || 'None',
+        tags: player.tags || player.Tags || [],
+        age: player.age || player.Age || '',
+        height: player.height || player.Height || '',
+        weight: player.weight || player.Weight || '',
+        strongFoot: player.strongFoot || player.Foot || 'Right',
         secondaryPosition: Array.isArray(player.secondaryPosition) ? player.secondaryPosition.join(', ') : (player.secondaryPosition || ''),
-        additionalPositions: Array.isArray(player.additionalPositions) ? player.additionalPositions.join(', ') : (player.additionalPositions || '')
+        additionalPositions: Array.isArray(player.additionalPositions) ? player.additionalPositions.join(', ') : (player.additionalPositions || ''),
+        // Technical normalization using exact JSON keys
+        'Weak Foot Usage': player['Weak Foot Usage'] ?? player.weakFootUsage ?? player.WFUsage ?? '',
+        'Weak Foot Accuracy': player['Weak Foot Accuracy'] ?? player.weakFootAccuracy ?? player.WFAccuracy ?? '',
+        'Form': player['Form'] ?? player.conditioning ?? player['Player Form'] ?? player.Condition ?? '',
+        'Injury Resistance': player['Injury Resistance'] ?? player.injuryResistance ?? player.InjuryRes ?? '',
+        'Featured Players': player['Featured Players'] ?? player.featured ?? player.Featured ?? '',
+        'Date Added': player['Date Added'] ?? player.DateAdded ?? null
     });
     const [tagInput, setTagInput] = useState('');
     const [isLeaguePopupOpen, setIsLeaguePopupOpen] = useState(false);
@@ -607,7 +632,7 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
     };
 
     return (
-        <div className={`fixed inset-0 bg-black/95 flex items-center justify-center z-50 p-4 ${settings?.highPerf ? '' : 'animate-fade-in'} `}>
+        <div className={`fixed inset-0 bg-[#0a0a0c] z-[150] overflow-hidden flex flex-col ${settings?.highPerf ? '' : 'animate-fade-in'} `}>
             {showProgressions && (
                 <SavedProgressionsModal
                     player={player}
@@ -619,45 +644,19 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
                 />
             )}
 
-            <div className={`relative w-full max-w-4xl bg-[#0a0a0c] border border-white/5 rounded-3xl overflow-hidden flex flex-col md:flex-row shadow-[0_0_80px_rgba(0,0,0,0.6)] ${settings?.highPerf ? '' : 'animate-slide-up'} ${isEditing ? 'h-auto' : ''} max-h-[90vh]`}>
+            <div className={`relative w-full h-full bg-[#0a0a0c] flex flex-col md:flex-row ${settings?.highPerf ? '' : 'animate-slide-up'} ${isEditing ? 'h-auto overflow-y-auto' : ''}`}>
 
                 {/* Close/Back Button */}
                 <button
                     onClick={onClose}
-                    className="absolute top-4 left-4 md:left-auto md:right-4 z-50 p-2 md:p-2.5 rounded-xl bg-black/40 md:bg-black/20 hover:bg-black/60 md:hover:bg-black/40 text-white transition-all active:scale-95 border border-white/10"
+                    className="absolute top-6 left-6 z-50 flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white transition-all active:scale-95 border border-white/10 backdrop-blur-md group"
                 >
-                    <span className="hidden md:block">✕</span>
-                    <span className="md:hidden text-xl">←</span>
+                    <span className="text-xl group-hover:-translate-x-1 transition-transform">←</span>
+                    <span className="text-[10px] font-black uppercase tracking-widest hidden sm:inline">Back to Squad</span>
                 </button>
 
                 {/* Left Side: Card Visual & Quick Info */}
-                <div className={`w-full md:w-1/3 p-4 md:p-6 flex flex-col md:flex-col gap-4 md:gap-6 ${getCardStyles(formData.cardType).bg} no-scrollbar md:border-r border-white/5 relative overflow-hidden h-fit md:h-full shrink-0`}>
-
-                    {/* Mobile-only Header at the very top (Left Aligned) */}
-                    <div className="md:hidden flex flex-col items-start border-b border-white/10 pb-3 pt-1 w-full">
-                        <h2 className="text-xl font-black text-white uppercase tracking-tight leading-none truncate w-full">{formData.name}</h2>
-                        <div className="flex items-center gap-2 mt-2">
-                            <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-ef-accent text-ef-dark uppercase tracking-widest leading-none">
-                                {formData.position}
-                            </span>
-                            {formData.playstyle && formData.playstyle !== 'None' && (
-                                <span className="text-[9px] font-black text-ef-accent uppercase tracking-[0.1em] border-l border-white/10 pl-2">
-                                    {formData.playstyle}
-                                </span>
-                            )}
-                            <span className="text-sm font-black text-ef-accent leading-none">★ {formData.rating}</span>
-                        </div>
-                        {/* Mobile Tags */}
-                        {formData.tags && formData.tags.length > 0 && (
-                            <div className="flex flex-wrap gap-1.5 mt-2.5">
-                                {formData.tags.map(tag => (
-                                    <span key={tag} className="px-2 py-0.5 bg-ef-accent/5 border border-ef-accent/20 rounded-full text-ef-accent text-[7px] font-black uppercase tracking-widest">
-                                        #{tag}
-                                    </span>
-                                ))}
-                            </div>
-                        )}
-                    </div>
+                <div className={`w-full md:w-1/3 p-6 md:p-8 pt-24 md:pt-28 flex flex-col md:flex-col gap-4 md:gap-6 ${getCardStyles(formData.cardType).bg} no-scrollbar md:border-r border-white/5 relative overflow-hidden h-fit md:h-full shrink-0`}>
 
                     <div className="flex flex-row md:flex-col items-center md:items-center gap-4 w-full h-full">
                         {/* Dynamic Background Glow based on Image */}
@@ -762,9 +761,40 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
 
                         {/* Stats under photo */}
                         {/* Player Details List (Moved from Right Side) */}
-                        <div className="flex-1 md:w-full md:mt-2 space-y-2 px-0 md:px-2 text-white/80 z-10">
+                        <div className="flex-1 md:w-full space-y-4 px-0 md:px-2 text-white/80 z-10 overflow-y-auto custom-scrollbar no-scrollbar">
+                            {/* Main Identity Area (Name, Position, etc) */}
+                            <div className="flex flex-col gap-1 items-start md:items-start text-left">
+                                <h1 className="text-xl md:text-2xl font-black text-white uppercase tracking-tighter leading-tight">
+                                    {formData.name}
+                                </h1>
+                                <div className="flex items-center gap-2 mt-1">
+                                    <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-ef-accent text-ef-dark uppercase tracking-widest leading-none">
+                                        {formData.position}
+                                    </span>
+                                    {formData.secondaryPosition && (
+                                        <span className="text-[9px] font-black text-ef-accent opacity-40 uppercase tracking-widest">
+                                            {formData.secondaryPosition}
+                                        </span>
+                                    )}
+                                </div>
+                                {formData.playstyle && formData.playstyle !== 'None' && (
+                                     <div className="mt-2 text-[8px] font-black uppercase tracking-[0.2em] text-ef-accent px-2 py-1 bg-ef-accent/5 rounded-lg border border-ef-accent/10 whitespace-nowrap overflow-hidden text-ellipsis max-w-full">
+                                        {formData.playstyle}
+                                     </div>
+                                )}
+                                {formData.tags && formData.tags.length > 0 && (
+                                    <div className="flex flex-wrap gap-1.5 mt-3">
+                                        {formData.tags.map(tag => (
+                                            <span key={tag} className="px-2 py-1 bg-ef-accent/5 border border-ef-accent/20 rounded-full text-ef-accent text-[7px] font-black uppercase tracking-widest hover:bg-ef-accent/10 transition-colors">
+                                                #{tag}
+                                            </span>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
                             {/* Compact vertical list */}
-                            <div className="flex flex-col gap-1 md:gap-1.5 pt-0 md:pt-2">
+                            <div className="flex flex-col gap-1 md:gap-1.5 pt-2 border-t border-white/10">
                                 <div className="flex items-center justify-between text-[10px] py-1 border-b border-white/5">
                                     <span className="opacity-40 uppercase font-black tracking-widest">Club</span>
                                     <div className="flex items-center gap-1.5 max-w-[120px]">
@@ -798,11 +828,77 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
                                 </div>
                                 <div className="flex items-center justify-between text-[10px] py-1 border-b border-white/5">
                                     <span className="opacity-40 uppercase font-black tracking-widest">Player ID</span>
-                                    <span className="font-mono opacity-60">{formData.playerId || '-'}</span>
+                                    <span className="font-mono opacity-60">{formData.playerId || formData.pesdb_id || '-'}</span>
                                 </div>
-                                <div className="flex items-center justify-between text-[10px] py-1">
-                                    <span className="opacity-40 uppercase font-black tracking-widest">Age / Foot / Height</span>
-                                    <span className="font-bold">{formData.age || '-'} • {formData.strongFoot} • {formData.height ? `${formData.height}cm` : '-'}</span>
+                                
+                                <div className="flex items-center justify-between text-[10px] py-1 border-b border-white/5">
+                                    <span className="opacity-40 uppercase font-black tracking-widest">Form</span>
+                                    <span className="font-bold text-ef-accent">{formData['Form'] || 'Standard'}</span>
+                                </div>
+
+                                <div className="flex items-center justify-between text-[10px] py-1 border-b border-white/5">
+                                    <span className="opacity-40 uppercase font-black tracking-widest">Weak Foot Usage</span>
+                                    <span className="font-bold uppercase">{formData['Weak Foot Usage'] || '-'}</span>
+                                </div>
+                                
+                                <div className="flex items-center justify-between text-[10px] py-1 border-b border-white/5">
+                                    <span className="opacity-40 uppercase font-black tracking-widest">Weak Foot Accuracy</span>
+                                    <span className="font-bold uppercase">{formData['Weak Foot Accuracy'] || '-'}</span>
+                                </div>
+
+                                <div className="flex items-center justify-between text-[10px] py-1 border-b border-white/5">
+                                    <span className="opacity-40 uppercase font-black tracking-widest">Injury Resistance</span>
+                                    <span className="font-bold uppercase">{formData['Injury Resistance'] || '-'}</span>
+                                </div>
+
+                                <div className="flex items-center justify-between text-[10px] py-1 border-b border-white/5">
+                                    <span className="opacity-40 uppercase font-black tracking-widest">Uploaded</span>
+                                    <span className="font-bold opacity-60 text-[9px]">
+                                        {formData.createdAt ? new Date(formData.createdAt).toLocaleDateString() : 'N/A'}
+                                    </span>
+                                </div>
+
+                                <div className="flex items-center justify-between text-[10px] py-1 border-b border-white/5">
+                                    <span className="opacity-40 uppercase font-black tracking-widest">Date Added</span>
+                                    <span className="font-bold opacity-60 text-[9px]">
+                                        {(() => {
+                                            const d = parseEfDate(formData['Date Added']);
+                                            return d ? d.toLocaleDateString() : 'Unknown';
+                                        })()}
+                                    </span>
+                                </div>
+
+                                <div className="flex items-center justify-between text-[10px] py-1 border-b border-white/5">
+                                    <span className="opacity-40 uppercase font-black tracking-widest">Featured Players</span>
+                                    <span className={`font-bold text-right text-[9px] uppercase ${formData['Featured Players'] && formData['Featured Players'] !== 'Standard' ? 'text-ef-blue' : 'opacity-20'} `}>
+                                        {formData['Featured Players'] || 'Standard'}
+                                    </span>
+                                </div>
+                                <div className="grid grid-cols-4 gap-2 mt-4">
+                                    <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-3 flex flex-col items-center justify-center transition-all hover:bg-white/10 hover:border-white/20 group">
+                                        <span className="text-sm font-black text-white leading-none mb-1.5 group-hover:scale-110 transition-transform">
+                                            {formData.age || '-'}
+                                        </span>
+                                        <span className="text-[8px] font-black uppercase tracking-[0.2em] text-white/20 group-hover:text-ef-accent transition-colors">Age</span>
+                                    </div>
+                                    <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-3 flex flex-col items-center justify-center transition-all hover:bg-white/10 hover:border-white/20 group">
+                                        <span className="text-sm font-black text-white leading-none mb-1.5 group-hover:scale-110 transition-transform">
+                                            {formData.strongFoot ? (formData.strongFoot.charAt(0)) : '-'}
+                                        </span>
+                                        <span className="text-[8px] font-black uppercase tracking-[0.2em] text-white/20 group-hover:text-ef-accent transition-colors">Foot</span>
+                                    </div>
+                                    <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-3 flex flex-col items-center justify-center transition-all hover:bg-white/10 hover:border-white/20 group">
+                                        <span className="text-sm font-black text-white leading-none mb-1.5 group-hover:scale-110 transition-transform">
+                                            {formData.height || '-'}
+                                        </span>
+                                        <span className="text-[8px] font-black uppercase tracking-[0.2em] text-white/20 group-hover:text-ef-accent transition-colors">Height</span>
+                                    </div>
+                                    <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-3 flex flex-col items-center justify-center transition-all hover:bg-white/10 hover:border-white/20 group">
+                                        <span className="text-sm font-black text-white leading-none mb-1.5 group-hover:scale-110 transition-transform">
+                                            {formData.weight || '-'}
+                                        </span>
+                                        <span className="text-[8px] font-black uppercase tracking-[0.2em] text-white/20 group-hover:text-ef-accent transition-colors">Weight</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -810,7 +906,7 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
                 </div>
 
                 {/* Right Side: Details / Edit Form */}
-                <div className="w-full md:w-7/12 p-6 md:p-10 bg-black flex flex-col justify-center relative overflow-hidden group/modal">
+                <div className="w-full md:w-2/3 p-8 md:p-12 pt-24 md:pt-28 bg-black flex flex-col justify-start relative overflow-hidden group/modal overflow-y-auto custom-scrollbar">
                     {isEditing ? (
                         <form onSubmit={handleSubmit} onPaste={handlePaste} className="space-y-4 h-full flex flex-col">
                             <h3 className="text-2xl font-black mb-4 flex items-center gap-2">
@@ -1071,13 +1167,56 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
                                         <input type="number" name="assists" value={formData.assists} onChange={handleChange} className="w-full bg-white/5 border border-white/10 rounded-xl p-2 text-white focus:border-ef-accent focus:outline-none text-center font-bold text-sm" />
                                     </div>
                                 </div>
-                                <div className="space-y-1">
-                                    <label className="text-[10px] font-black uppercase tracking-widest opacity-40">Card Type</label>
-                                    <select name="cardType" value={formData.cardType} onChange={handleChange} className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:border-ef-accent focus:outline-none font-bold text-xs appearance-none">
-                                        {['Normal', 'Legend', 'Epic', 'Featured', 'POTW', 'BigTime', 'ShowTime'].map(type => (
-                                            <option key={type} value={type} className="bg-ef-dark">{type}</option>
-                                        ))}
-                                    </select>
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] font-black uppercase tracking-widest opacity-40">Condition</label>
+                                        <input type="text" name="Form" value={formData['Form'] || ''} onChange={handleChange} placeholder="Standard" className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:border-ef-accent focus:outline-none font-bold text-sm" />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] font-black uppercase tracking-widest opacity-40">WF Usage</label>
+                                        <input type="text" name="Weak Foot Usage" value={formData['Weak Foot Usage'] || ''} onChange={handleChange} className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:border-ef-accent focus:outline-none font-bold text-sm" />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] font-black uppercase tracking-widest opacity-40">WF Acc.</label>
+                                        <input type="text" name="Weak Foot Accuracy" value={formData['Weak Foot Accuracy'] || ''} onChange={handleChange} className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:border-ef-accent focus:outline-none font-bold text-sm" />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] font-black uppercase tracking-widest opacity-40">Injury Res.</label>
+                                        <input type="text" name="Injury Resistance" value={formData['Injury Resistance'] || ''} onChange={handleChange} className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:border-ef-accent focus:outline-none font-bold text-sm" />
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] font-black uppercase tracking-widest opacity-40">Card Type</label>
+                                        <select name="cardType" value={formData.cardType} onChange={handleChange} className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:border-ef-accent focus:outline-none font-bold text-xs appearance-none">
+                                            {['Normal', 'Legend', 'Epic', 'Featured', 'POTW', 'BigTime', 'ShowTime'].map(type => (
+                                                <option key={type} value={type} className="bg-ef-dark">{type}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div className="space-y-1 text-left">
+                                        <label className="text-[10px] font-black uppercase tracking-widest opacity-40">Featured</label>
+                                        <input 
+                                            type="text"
+                                            name="Featured Players" 
+                                            value={formData['Featured Players'] || ''} 
+                                            onChange={handleChange}
+                                            placeholder="Standard"
+                                            className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:border-ef-accent focus:outline-none font-bold text-xs"
+                                        />
+                                    </div>
+                                    <div className="space-y-1 col-span-2 lg:col-span-1">
+                                        <label className="text-[10px] font-black uppercase tracking-widest opacity-40">Date Added</label>
+                                        <input 
+                                            type="text" 
+                                            name="Date Added" 
+                                            value={formData['Date Added'] || ''} 
+                                            onChange={handleChange}
+                                            placeholder="2026/04/06"
+                                            className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:border-ef-accent focus:outline-none font-bold text-xs" 
+                                        />
+                                    </div>
                                 </div>
 
                                 {/* Tags Management */}
@@ -1119,50 +1258,37 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
                             </div>
                         </form>
                     ) : (
-                        <div className="flex-1 flex flex-col relative p-4 md:p-6 bg-[#0a0a0c] group/details overflow-hidden">
+                        <div className="flex-1 flex flex-col relative bg-[#0a0a0c] group/details overflow-hidden">
                             {/* Abstract Background Decoration */}
                             <div className="absolute top-0 right-0 w-64 h-64 bg-ef-accent/5 rounded-full blur-3xl -z-10 translate-x-1/3 -translate-y-1/3"></div>
 
+                            {/* Tab Navigation */}
+                            <div className="flex items-center gap-1 p-1 bg-white/5 rounded-2xl mx-4 md:mx-6 mt-4 md:mt-6 mb-2 border border-white/5 backdrop-blur-md z-30">
+                                {[
+                                    { id: 0, label: 'Identity', icon: '👤' },
+                                    { id: 1, label: 'Analytics', icon: '📊' },
+                                    { id: 2, label: 'Skills', icon: '🪄' },
+                                    { id: 3, label: 'Builds', icon: '📈' }
+                                ].map((tab) => (
+                                    <button
+                                        key={tab.id}
+                                        onClick={() => setModalPage(tab.id)}
+                                        className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 ${modalPage === tab.id 
+                                            ? 'bg-ef-accent text-ef-dark shadow-[0_0_20px_rgba(0,255,136,0.2)]' 
+                                            : 'text-white/40 hover:text-white hover:bg-white/5'
+                                        }`}
+                                    >
+                                        <span>{tab.icon}</span>
+                                        <span className={modalPage === tab.id ? 'block' : 'hidden md:block'}>{tab.label}</span>
+                                    </button>
+                                ))}
+                            </div>
+
+                            <div className="flex-1 relative overflow-hidden">
+                                <div className="absolute inset-0 p-4 md:p-6 overflow-y-auto no-scrollbar">
+
                             {/* Page 0: Full Player Details */}
                             <div className={`flex-1 flex flex-col transition-all duration-500 transform overflow-y-auto no-scrollbar ${modalPage === 0 ? 'translate-x-0 opacity-100' : '-translate-x-full opacity-0 pointer-events-none absolute inset-0 p-4 md:p-6'} `}>
-                                <div className="mb-4">
-                                    <div className="flex justify-between items-start group">
-                                        <div className="flex flex-col md:flex-row md:items-center gap-2">
-                                            <div className={`hidden md:block w-1.5 h-6 rounded-full ${player.cardType === 'Legendary' ? 'bg-yellow-500' : player.cardType === 'Epic' ? 'bg-green-500' : 'bg-ef-blue'} `}></div>
-                                            <div className="hidden md:block">
-                                                <h2 className="text-xl md:text-2xl font-black tracking-tighter text-white uppercase leading-none">{player.name}</h2>
-                                                <div className="flex items-center gap-3 mt-1.5">
-                                                    <div className="text-[10px] font-black text-ef-accent font-mono tracking-widest">{player.position}</div>
-                                                     {player.secondaryPosition && (
-                                                        <div className="text-[9px] font-black text-white/40 uppercase tracking-[0.1em] border-l border-white/10 pl-3">
-                                                            {Array.isArray(player.secondaryPosition) ? player.secondaryPosition.join(' ') : player.secondaryPosition.split(',').map(s => s.trim()).join(' ')}
-                                                        </div>
-                                                    )}
-                                                    {player.additionalPositions && player.additionalPositions.length > 0 && (
-                                                        <div className="text-[9px] font-black text-ef-blue uppercase tracking-[0.1em] border-l border-white/10 pl-3">
-                                                            {Array.isArray(player.additionalPositions) ? player.additionalPositions.join(' ') : player.additionalPositions}
-                                                        </div>
-                                                    )}
-                                                    {player.playstyle && player.playstyle !== 'None' && (
-                                                        <div className="text-[9px] font-black text-ef-accent uppercase tracking-[0.2em] border-l border-white/10 pl-3">
-                                                            {player.playstyle}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                                {/* Tags Display in View Mode */}
-                                                {(player.tags && player.tags.length > 0) && (
-                                                    <div className="flex flex-wrap gap-2 mt-3">
-                                                        {player.tags.map(tag => (
-                                                            <span key={tag} className="px-2.5 py-1 bg-ef-accent/5 border border-ef-accent/20 rounded-full text-ef-accent text-[8px] font-black uppercase tracking-widest">
-                                                                #{tag}
-                                                            </span>
-                                                        ))}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
 
                                 {/* Main Stats Grid */}
                                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
@@ -1275,30 +1401,17 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
 
                                 {/* Action Buttons */}
                                 <div className="mt-auto flex flex-col gap-3 pt-4">
-                                    <div className="flex gap-3">
-                                        <button onClick={() => setModalPage(2)} className="flex-1 py-3 rounded-xl bg-ef-accent/10 border border-ef-accent/20 hover:bg-ef-accent/20 transition-all font-black text-[9px] tracking-widest uppercase flex items-center justify-center gap-2 text-ef-accent">
-                                            <span>🪄</span> Player Skills
-                                        </button>
-                                        <button onClick={() => setShowProgressions(true)} className="flex-1 py-3 rounded-xl bg-white/5 border border-white/10 hover:border-ef-accent/50 hover:bg-white/10 hover:text-ef-accent transition-all font-black text-[9px] tracking-widest uppercase flex items-center justify-center gap-2">
-                                            <span>📊</span> Progressions
-                                            {player.progressions?.length > 0 && (
-                                                <span className="min-w-[16px] h-4 px-1 bg-white/10 border border-white/10 text-ef-accent rounded flex items-center justify-center text-[8px] font-black">
-                                                    {player.progressions.length}
-                                                </span>
-                                            )}
-                                        </button>
-                                    </div>
                                     <button onClick={() => setIsEditing(true)} className="w-full py-3 rounded-xl bg-white/5 border border-white/10 hover:border-ef-accent/50 hover:bg-white/10 hover:text-ef-accent transition-all font-black text-[9px] tracking-widest uppercase flex items-center justify-center gap-2">
                                         <span>⚡</span> Edit Data
                                     </button>
                                 </div>
                             </div>
 
-                            {/* Page 1: Comparison */}
-                            <div className={`flex-1 flex flex-col transition-all duration-500 transform overflow-y-auto no-scrollbar ${modalPage === 1 ? 'translate-x-0 opacity-100' : modalPage === 0 ? 'translate-x-full opacity-0 pointer-events-none absolute inset-0 p-4 md:p-6' : '-translate-x-full opacity-0 pointer-events-none absolute inset-0 p-4 md:p-6'} `}>
-                                <div className="flex items-center justify-between mb-6">
-                                    <h3 className="text-xl font-black text-white uppercase tracking-tighter flex items-center gap-2">
-                                        <span className="text-ef-accent">🆚</span> Compare
+                            {/* Page 1: Analytics / Comparison Graph */}
+                            <div className={`flex-1 flex flex-col transition-all duration-500 transform overflow-y-auto no-scrollbar ${modalPage === 1 ? 'translate-x-0 opacity-100' : modalPage < 1 ? 'translate-x-full opacity-0 pointer-events-none absolute inset-0' : '-translate-x-full opacity-0 pointer-events-none absolute inset-0'} `}>
+                                <div className="flex items-center justify-between mb-4">
+                                    <h3 className="text-sm font-black text-white uppercase tracking-widest flex items-center gap-2">
+                                        <span className="text-ef-accent">📊</span> Stat Ranking
                                     </h3>
 
                                     <div className="flex gap-2">
@@ -1344,7 +1457,7 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
                                                         <button
                                                             key={opt.id}
                                                             onClick={() => { setComparisonStat(opt.id); setIsComparisonDropdownOpen(false); }}
-                                                            className={`w - full flex items - center gap - 2 px - 3 py - 2 transition - colors hover: bg - white / 5 ${comparisonStat === opt.id ? 'bg-ef-accent/5' : ''} `}
+                                                            className={`w-full flex items-center gap-2 px-3 py-2 transition-colors hover:bg-white/5 ${comparisonStat === opt.id ? 'bg-ef-accent/5' : ''} `}
                                                         >
                                                             <span className="text-xs">{opt.icon}</span>
                                                             <span className={`text-[9px] font-black uppercase tracking-widest ${comparisonStat === opt.id ? 'text-ef-accent' : 'text-white/50'} `}>{opt.label}</span>
@@ -1396,7 +1509,7 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
                                                     <span className={`text-[10px] font-black opacity-50 mb-0.5 ${p.isCurrent ? 'text-ef-accent' : 'text-white'}`}>#{p.rank}</span>
 
                                                     {/* Image Popup */}
-                                                    <div className="w-10 h-12 rounded-lg bg-white/10 border border-white/20 overflow-hidden shadow-xl mb-1 hidden group-hover:block transition-all animate-fade-in relative absolute bottom-full mb-8 z-50 pointer-events-none">
+                                                    <div className="w-10 h-12 rounded-lg bg-white/10 border border-white/20 overflow-hidden shadow-xl hidden group-hover:block transition-all animate-fade-in absolute bottom-full mb-6 z-50 pointer-events-none">
                                                         {p.image ? (
                                                             <img src={p.image} alt={p.name} className="w-full h-full object-cover" />
                                                         ) : (
@@ -1439,7 +1552,7 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
                             </div>
 
                             {/* Page 2: Player Skills */}
-                            <div className={`flex-1 flex flex-col transition-all duration-500 transform overflow-y-auto no-scrollbar ${modalPage === 2 ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0 pointer-events-none absolute inset-0 p-4 md:p-6'} `}>
+                            <div className={`flex-1 flex flex-col transition-all duration-500 transform overflow-y-auto no-scrollbar ${modalPage === 2 ? 'translate-x-0 opacity-100' : modalPage < 2 ? 'translate-x-full opacity-0 pointer-events-none absolute inset-0 p-4 md:p-6' : '-translate-x-full opacity-0 pointer-events-none absolute inset-0 p-4 md:p-6'} `}>
                                 <div className="flex items-center justify-between mb-4">
                                     <h3 className="text-xl font-black text-white uppercase tracking-tighter flex items-center gap-2">
                                         <span className="text-ef-accent">🪄</span> Player Skills
@@ -1748,30 +1861,47 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
                                 </div>
                             </div>
 
-
-
-                            {/* Global Arrow Navigation */}
-                            <button
-                                onClick={() => setModalPage(p => p === 0 ? 1 : 0)}
-                                className="absolute right-0 top-1/2 -translate-y-1/2 w-8 h-20 bg-white/5 border border-white/10 border-r-0 rounded-l-2xl flex items-center justify-center hover:bg-ef-accent/10 hover:border-ef-accent/30 transition-all group/arrow z-50 backdrop-blur-md"
-                            >
-                                <span className="text-ef-accent text-xl font-black transition-transform group-hover/arrow:scale-125">
-                                    {modalPage === 0 ? '❯' : '❮'}
-                                </span>
-                            </button>
-
-                            {/* Page Dots Overlay */}
-                            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
-                                {[0, 1, 2].map(i => (
-                                    <div key={i} className={`w-1 h-1 rounded-full transition-all duration-300 ${modalPage === i ? 'bg-ef-accent w-3' : 'bg-white/20'} `} />
-                                ))}
+                            {/* Page 3: Builds / Progressions */}
+                            <div className={`flex-1 flex flex-col transition-all duration-500 transform overflow-y-auto no-scrollbar ${modalPage === 3 ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0 pointer-events-none absolute inset-0 p-4 md:p-6'} `}>
+                                <div className="flex-1 flex flex-col items-center justify-center text-center p-6 bg-white/5 rounded-3xl border border-white/10 backdrop-blur-md">
+                                    <div className="w-20 h-20 bg-ef-accent/10 rounded-full flex items-center justify-center mb-6 border border-ef-accent/20">
+                                        <span className="text-4xl text-ef-accent">📊</span>
+                                    </div>
+                                    <h3 className="text-xl font-black text-white uppercase tracking-widest mb-2">Saved Builds</h3>
+                                    <p className="text-[10px] text-white/40 uppercase font-black tracking-widest leading-relaxed max-w-[200px] mb-8">
+                                        View and manage your optimized progression paths for {formData.name}
+                                    </p>
+                                    
+                                    <button 
+                                        onClick={() => setShowProgressions(true)}
+                                        className="w-full py-4 bg-ef-accent text-ef-dark rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-[0_0_30px_rgba(0,255,136,0.2)] hover:scale-[1.02] active:scale-95 transition-all"
+                                    >
+                                        Open Progressions Manager
+                                    </button>
+                                    
+                                    {player.progressions?.length > 0 ? (
+                                        <div className="mt-8 pt-8 border-t border-white/5 w-full">
+                                            <div className="flex justify-between items-center mb-4 px-2">
+                                                <span className="text-[8px] font-black uppercase tracking-widest opacity-20 text-white">Active Build Status</span>
+                                                <span className="px-2 py-0.5 bg-ef-accent/20 text-ef-accent rounded text-[8px] font-black">{player.progressions.length} Builds Saved</span>
+                                            </div>
+                                            <div className="text-[9px] text-white/30 font-bold italic">
+                                                Tap the button above to view all saved progression sets.
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="mt-8 opacity-20 text-[8px] font-black uppercase tracking-widest">No builds saved yet</div>
+                                    )}
+                                </div>
                             </div>
                         </div>
-                    )}
+                    </div>
                 </div>
+                )}
             </div>
-        </div >
-    );
+        </div>
+    </div>
+);
 };
 
 export default PlayerDetailsModal;
