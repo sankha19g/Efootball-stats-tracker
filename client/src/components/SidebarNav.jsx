@@ -21,6 +21,13 @@ const SidebarNav = ({ view, setView, setShowAddPlayer, setShowDatabase, setShowS
             desc: 'Mass recruitment'
         },
         {
+            label: 'My Squad DB',
+            icon: '📋',
+            onClick: () => { setView('squad-db'); setIsOpen(false); },
+            primary: true,
+            desc: 'View all 1000+ players'
+        },
+        {
             label: 'Manual Entry',
             icon: '✍️',
             onClick: () => { setShowAddPlayer(true); setIsOpen(false); },

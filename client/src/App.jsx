@@ -34,6 +34,7 @@ const RemainderModal = lazy(() => import('./components/RemainderModal'));
 const BadgesView = lazy(() => import('./components/BadgesView'));
 const SocialDrawer = lazy(() => import('./components/SocialDrawer'));
 const BrochureModal = lazy(() => import('./components/BrochureModal'));
+const MySquadDB = lazy(() => import('./components/MySquadDB'));
 
 function App() {
   const [players, setPlayers] = useState([]);
@@ -2648,7 +2649,14 @@ function App() {
           />
         )}
 
-        {view === 'quick-stats' && (
+                {view === 'squad-db' && (
+                  <MySquadDB
+                    players={players}
+                    onBack={() => setView('list')}
+                  />
+                )}
+
+                {view === 'quick-stats' && (
           <QuickStatsView
             players={players}
             user={user}
