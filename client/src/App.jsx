@@ -956,6 +956,7 @@ function App() {
         normalizeString(p.club || "").includes(query) ||
         normalizeString(p.position || "").includes(query) ||
         normalizeString(p.secondaryPosition || "").includes(query) ||
+        (Array.isArray(p.additionalPositions) ? p.additionalPositions.join(' ').toLowerCase() : String(p.additionalPositions || '')).includes(query) ||
         (p.tags && p.tags.some(tag => normalizeString(tag).includes(query)))
       );
     }
@@ -1062,7 +1063,16 @@ function App() {
       if (sortBy === 'assists') return (b.assists || 0) - (a.assists || 0);
       if (sortBy === 'name') return (a.name || '').localeCompare(b.name || '');
       if (sortBy === 'position') return (a.position || '').localeCompare(b.position || '');
-      if (sortBy === 'dateAdded') return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+      if (sortBy === 'dateAdded_desc') {
+        const dateA = new Date(a.dateAdded || a.createdAt || 0).getTime();
+        const dateB = new Date(b.dateAdded || b.createdAt || 0).getTime();
+        return dateB - dateA;
+      }
+      if (sortBy === 'dateAdded_asc') {
+        const dateA = new Date(a.dateAdded || a.createdAt || 0).getTime();
+        const dateB = new Date(b.dateAdded || b.createdAt || 0).getTime();
+        return dateA - dateB;
+      }
       return 0;
     });
 
@@ -2042,7 +2052,8 @@ function App() {
                   className="w-full bg-black/40 border border-white/10 rounded-xl px-5 py-3 text-sm font-bold outline-none cursor-pointer hover:border-ef-accent/50 transition-all text-white"
                 >
                   <option value="rating" className="text-black">Overall Rating</option>
-                  <option value="dateAdded" className="text-black">Date Added</option>
+                  <option value="dateAdded_desc" className="text-black">Date Added (Newest)</option>
+                  <option value="dateAdded_asc" className="text-black">Date Added (Oldest)</option>
                   <option value="goals" className="text-black">Top Scorer</option>
                   <option value="assists" className="text-black">Most Assists</option>
                   <option value="name" className="text-black">Player Name</option>

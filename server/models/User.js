@@ -8,6 +8,7 @@ const playerSchema = new mongoose.Schema({
     age: Number,
     position: { type: String, required: true },
     secondaryPosition: String,
+    additionalPositions: [String],
     playstyle: String,
     pesdb_id: String,
     playerId: String,
@@ -30,7 +31,8 @@ const playerSchema = new mongoose.Schema({
         assists: Number,
         matches: Number,
         savedAt: { type: Date, default: Date.now }
-    }]
+    }],
+    dateAdded: { type: Date, default: Date.now }
 }, { timestamps: true });
 
 const userSchema = new mongoose.Schema({

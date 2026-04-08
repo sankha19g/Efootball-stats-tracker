@@ -9,7 +9,7 @@ const QuickStatsView = ({ players, onUpdate, onClose, user, activeSquad }) => {
     const [filterSpecialChars, setFilterSpecialChars] = useState(false);
     const [sortBy, setSortBy] = useState('date');
     const [showMy11, setShowMy11] = useState(false);
-    const [activePage, setActivePage] = useState(0); // 0: Stats, 1: NOT USED, 2: Photo Upload
+    const [activePage, setActivePage] = useState(0); // 0: Stats, 2: Photo, 3: Sec Pos, 4: Rename, 5: Date Added
     const [activeFilters, setActiveFilters] = useState({
         position: '',
         club: '',
@@ -74,8 +74,15 @@ const QuickStatsView = ({ players, onUpdate, onClose, user, activeSquad }) => {
         result.sort((a, b) => {
             if (sortBy === 'rating') return (b.rating || 0) - (a.rating || 0);
             if (sortBy === 'name') return (a.name || '').localeCompare(b.name || '');
-            if (sortBy === 'date') {
-                return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+            if (sortBy === 'dateAdded_desc') {
+                const dateA = new Date(a.dateAdded || a.createdAt || 0).getTime();
+                const dateB = new Date(b.dateAdded || b.createdAt || 0).getTime();
+                return dateB - dateA;
+            }
+            if (sortBy === 'dateAdded_asc') {
+                const dateA = new Date(a.dateAdded || a.createdAt || 0).getTime();
+                const dateB = new Date(b.dateAdded || b.createdAt || 0).getTime();
+                return dateA - dateB;
             }
             return 0;
         });
@@ -127,6 +134,13 @@ const QuickStatsView = ({ players, onUpdate, onClose, user, activeSquad }) => {
                         title="Rename"
                     >
                         <span className="text-xl">✏️</span>
+                    </button>
+                    <button
+                        onClick={() => { setActivePage(5); setEditingPlayerId(null); }}
+                        className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${activePage === 5 ? 'bg-cyan-500 text-white shadow-lg shadow-cyan-500/20 scale-110' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
+                        title="Date Added"
+                    >
+                        <span className="text-xl">📅</span>
                     </button>
                 </div>
 
@@ -191,7 +205,8 @@ const QuickStatsView = ({ players, onUpdate, onClose, user, activeSquad }) => {
                                             >
                                                 <option value="rating">🔽 Rating</option>
                                                 <option value="name">🅰️ Name</option>
-                                                <option value="date">🕐 Date Added</option>
+                                                <option value="dateAdded_desc">🔽 Date Added</option>
+                                                <option value="dateAdded_asc">🔼 Date Added</option>
                                             </select>
                                         </div>
                                     </div>
@@ -494,6 +509,50 @@ const QuickStatsView = ({ players, onUpdate, onClose, user, activeSquad }) => {
                                 )}
                             </div>
                         </div>
+
+                        {/* Page 5: Date Added */}
+                        <div className={`absolute inset-0 flex flex-col transition-all duration-500 transform ${activePage === 5 ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-100 pointer-events-none'}`}>
+                            <div className="flex-1 overflow-y-auto custom-scrollbar p-2 md:p-4 space-y-2">
+                                {filteredPlayers.length === 0 ? (
+                                    <div className="h-60 flex flex-col items-center justify-center opacity-20">
+                                        <span className="text-4xl mb-2">👤</span>
+                                        <p className="text-xs font-black uppercase tracking-widest">No players found</p>
+                                    </div>
+                                ) : (
+                                    filteredPlayers.map(player => (
+                                        <div key={player._id} className="group bg-white/5 hover:bg-white/10 border border-white/5 rounded-2xl p-[3px] flex items-center justify-between gap-4 transition-all hover:border-white/10">
+                                            {/* Photo & Info */}
+                                            <div className="flex items-center gap-3 w-1/3 min-w-0">
+                                                <div className="w-10 h-10 flex-shrink-0 rounded-lg overflow-hidden border border-white/10 bg-black/40">
+                                                    <img src={player.image} alt="" className="w-full h-full object-cover object-top" />
+                                                </div>
+                                                <div className="truncate">
+                                                    <h4 className="text-xs font-black text-white truncate uppercase tracking-tight">{player.name}</h4>
+                                                    <div className="flex items-center gap-1.5 mt-0.5">
+                                                        <span className="text-[8px] opacity-40 font-black uppercase tracking-widest leading-none">{player.position}</span>
+                                                        <span className="text-[9px] opacity-20 font-black">•</span>
+                                                        <span className="text-[9px] opacity-20 font-bold uppercase truncate leading-none">{player.club}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Date Added Input */}
+                                            <div className="flex-1 max-w-sm">
+                                                <div className="relative group/input">
+                                                    <DateInput
+                                                        value={player.dateAdded || player.createdAt}
+                                                        onUpdate={(val) => onUpdate(player._id, { dateAdded: val })}
+                                                    />
+                                                    <div className="absolute right-3 top-1/2 -translate-y-1/2 opacity-20 text-[8px] font-black uppercase tracking-widest group-focus-within/input:opacity-0 transition-opacity pointer-events-none">
+                                                        DATE ADDED
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </div>
                     </div>
 
                     <div className="flex flex-col items-center gap-2 pb-2">
@@ -578,10 +637,10 @@ const FilterSelect = ({ label, value, options, onChange }) => (
 );
 
 const SecondaryPosInput = ({ value, onUpdate }) => {
-    const [localValue, setLocalValue] = useState(value || '');
-
+    const [localValue, setLocalValue] = useState(Array.isArray(value) ? value.join(', ') : (value || ''));
+ 
     useEffect(() => {
-        setLocalValue(value || '');
+        setLocalValue(Array.isArray(value) ? value.join(', ') : (value || ''));
     }, [value]);
 
     const handleCommit = () => {
@@ -761,6 +820,40 @@ const RenameInput = ({ value, onUpdate }) => {
             onBlur={handleCommit}
             onKeyDown={(e) => e.key === 'Enter' && e.target.blur()}
             className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2 text-xs font-bold text-orange-500 outline-none focus:border-orange-500/40 transition-all placeholder:text-white/5"
+        />
+    );
+};
+
+const DateInput = ({ value, onUpdate }) => {
+    // Format value to YYYY-MM-DD for input type="date"
+    const formatDate = (dateVal) => {
+        if (!dateVal) return '';
+        const date = new Date(dateVal);
+        if (isNaN(date.getTime())) return '';
+        return date.toISOString().split('T')[0];
+    };
+
+    const [localValue, setLocalValue] = useState(formatDate(value));
+
+    useEffect(() => {
+        setLocalValue(formatDate(value));
+    }, [value]);
+
+    const handleCommit = (newVal) => {
+        if (newVal && newVal !== formatDate(value)) {
+            onUpdate(newVal);
+        }
+    };
+
+    return (
+        <input
+            type="date"
+            value={localValue}
+            onChange={(e) => {
+                setLocalValue(e.target.value);
+                handleCommit(e.target.value);
+            }}
+            className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2 text-xs font-bold text-cyan-400 outline-none focus:border-cyan-400/40 transition-all [color-scheme:dark]"
         />
     );
 };

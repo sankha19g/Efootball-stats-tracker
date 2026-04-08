@@ -51,15 +51,41 @@ export const searchGlobalFirestore = async (nameQuery) => {
     if (!nameQuery || nameQuery.length < 2) return [];
 
     try {
+        const queryText = nameQuery.toLowerCase();
+        
+        // 1. Direct ID Lookup (for manual/hidden players)
+        if (/^\d{5,}/.test(nameQuery)) {
+            const docRef = doc(db, GLOBAL_DB_COLLECTION, nameQuery);
+            const d = await getDoc(docRef);
+            if (d.exists()) {
+                return [{ id: d.id, ...d.data() }];
+            }
+        }
+
+        // 2. Search by 'search_name'
         const q = query(
             collection(db, GLOBAL_DB_COLLECTION),
-            where('search_name', '>=', nameQuery.toLowerCase()),
-            where('search_name', '<=', nameQuery.toLowerCase() + '\uf8ff'),
+            where('search_name', '>=', queryText),
+            where('search_name', '<=', queryText + '\uf8ff'),
             firestoreLimit(20)
         );
 
         const snapshot = await getDocs(q);
-        return snapshot.docs.map(doc => doc.data());
+        let players = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        // 3. Fallback to 'name' (for older manual entries)
+        if (players.length === 0) {
+            const qFallback = query(
+                collection(db, GLOBAL_DB_COLLECTION),
+                where('name', '>=', nameQuery), 
+                where('name', '<=', nameQuery + '\uf8ff'),
+                firestoreLimit(20)
+            );
+            const snapFallback = await getDocs(qFallback);
+            players = snapFallback.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        }
+
+        return players;
     } catch (err) {
         console.error("Global Firestore search error:", err);
         return [];
@@ -75,10 +101,13 @@ export const getRecentGlobalPlayers = async (limitNum = 50) => {
         );
 
         const snapshot = await getDocs(q);
-        return snapshot.docs.map(doc => doc.data());
+        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     } catch (err) {
-        console.error("Error fetching recent global players:", err);
-        return [];
+        console.error("Error fetching recent players:", err);
+        // Fallback: Just get any players if orderBy fails (likely due to missing index/fields)
+        const qFallback = query(collection(db, GLOBAL_DB_COLLECTION), firestoreLimit(limitNum));
+        const snap = await getDocs(qFallback);
+        return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     }
 };
 

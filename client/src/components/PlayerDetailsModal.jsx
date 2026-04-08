@@ -15,7 +15,8 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
         age: player.age || '',
         height: player.height || '',
         strongFoot: player.strongFoot || 'Right',
-        secondaryPosition: player.secondaryPosition || ''
+        secondaryPosition: Array.isArray(player.secondaryPosition) ? player.secondaryPosition.join(', ') : (player.secondaryPosition || ''),
+        additionalPositions: Array.isArray(player.additionalPositions) ? player.additionalPositions.join(', ') : (player.additionalPositions || '')
     });
     const [tagInput, setTagInput] = useState('');
     const [isLeaguePopupOpen, setIsLeaguePopupOpen] = useState(false);
@@ -403,7 +404,14 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        onUpdate(player._id, formData, false);
+        const finalData = {
+            ...formData,
+            secondaryPosition: typeof formData.secondaryPosition === 'string' ? formData.secondaryPosition.trim() : formData.secondaryPosition,
+            additionalPositions: typeof formData.additionalPositions === 'string' 
+                ? formData.additionalPositions.split(',').map(s => s.trim().toUpperCase()).filter(s => s !== '')
+                : formData.additionalPositions
+        };
+        onUpdate(player._id, finalData, false);
         setIsEditing(false);
     };
 
@@ -1006,7 +1014,7 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-3 gap-4">
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                     <div className="space-y-1">
                                         <label className="text-[10px] font-black uppercase tracking-widest opacity-40">Position</label>
                                         <select name="position" value={formData.position} onChange={handleChange} className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:border-ef-accent focus:outline-none font-bold text-sm appearance-none">
@@ -1016,14 +1024,25 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
                                         </select>
                                     </div>
                                     <div className="space-y-1">
-                                        <label className="text-[10px] font-black uppercase tracking-widest opacity-40">Secondary Position</label>
+                                        <label className="text-[10px] font-black uppercase tracking-widest opacity-40">Secondary</label>
                                         <input
                                             type="text"
                                             name="secondaryPosition"
-                                            placeholder="e.g. LWF, SS"
+                                            placeholder="Built-in"
                                             value={formData.secondaryPosition || ''}
                                             onChange={handleChange}
                                             className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:border-ef-accent focus:outline-none font-bold text-sm"
+                                        />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] font-black uppercase tracking-widest opacity-40">Additional (Trained)</label>
+                                        <input
+                                            type="text"
+                                            name="additionalPositions"
+                                            placeholder="From Training"
+                                            value={formData.additionalPositions || ''}
+                                            onChange={handleChange}
+                                            className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-ef-blue focus:border-ef-blue focus:outline-none font-bold text-sm"
                                         />
                                     </div>
                                     <div className="space-y-1">
@@ -1114,9 +1133,14 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
                                                 <h2 className="text-xl md:text-2xl font-black tracking-tighter text-white uppercase leading-none">{player.name}</h2>
                                                 <div className="flex items-center gap-3 mt-1.5">
                                                     <div className="text-[10px] font-black text-ef-accent font-mono tracking-widest">{player.position}</div>
-                                                    {player.secondaryPosition && (
+                                                     {player.secondaryPosition && (
                                                         <div className="text-[9px] font-black text-white/40 uppercase tracking-[0.1em] border-l border-white/10 pl-3">
-                                                            {player.secondaryPosition.split(',').map(s => s.trim()).join(' ')}
+                                                            {Array.isArray(player.secondaryPosition) ? player.secondaryPosition.join(' ') : player.secondaryPosition.split(',').map(s => s.trim()).join(' ')}
+                                                        </div>
+                                                    )}
+                                                    {player.additionalPositions && player.additionalPositions.length > 0 && (
+                                                        <div className="text-[9px] font-black text-ef-blue uppercase tracking-[0.1em] border-l border-white/10 pl-3">
+                                                            {Array.isArray(player.additionalPositions) ? player.additionalPositions.join(' ') : player.additionalPositions}
                                                         </div>
                                                     )}
                                                     {player.playstyle && player.playstyle !== 'None' && (
