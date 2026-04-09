@@ -245,7 +245,7 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
         }
         setFormData(prev => ({
             ...prev,
-            [name]: ['rating', 'goals', 'assists', 'matches', 'age', 'height'].includes(name) ? Number(newValue) : newValue
+            [name]: ['rating', 'goals', 'assists', 'matches', 'age', 'height', 'weight'].includes(name) ? Number(newValue) : newValue
         }));
 
         if (name === 'club') {
@@ -632,7 +632,7 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
     };
 
     return (
-        <div className={`fixed inset-0 bg-[#0a0a0c] z-[150] overflow-hidden flex flex-col ${settings?.highPerf ? '' : 'animate-fade-in'} `}>
+        <div className={`fixed inset-0 bg-[#0a0a0c] z-[150] overflow-hidden flex flex-col ${settings?.highPerf ? '' : 'animate-fade-in'}`}>
             {showProgressions && (
                 <SavedProgressionsModal
                     player={player}
@@ -667,16 +667,16 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
                             </div>
                         )}
 
-                        <div className={`relative z-10 w-28 h-40 sm:w-40 sm:h-60 md:w-48 md:h-72 rounded-xl overflow-hidden border-[3px] md:border-[5px] border-white/20 bg-black/40 shrink-0 group/card ${settings?.highPerf ? '' : `transition-all duration-500 ${getCardStyles(formData.cardType).glow}`} `}>
+                        <div className={`relative z-10 w-28 h-40 sm:w-40 sm:h-60 md:w-48 md:h-72 rounded-xl overflow-hidden border-[3px] md:border-[5px] border-white/20 bg-black/40 shrink-0 group/card ${settings?.highPerf ? '' : `transition-all duration-500 ${getCardStyles(formData.cardType).glow}`}`}>
                             {/* Internal Effects: Light Leak & Shine */}
                             {!settings?.highPerf && (
                                 <div className="absolute inset-0 z-10 pointer-events-none overflow-hidden">
                                     {/* Static Light Leak */}
-                                    <div className={`absolute -top-10 -left-10 w-40 h-40 bg-gradient-to-br ${getCardStyles(formData.cardType).leak} blur - 3xl opacity - 60`}></div>
-                                    <div className={`absolute -bottom-10 -right-10 w-40 h-40 bg-gradient-to-tl ${getCardStyles(formData.cardType).leak} blur - 3xl opacity - 40`}></div>
+                                    <div className={`absolute -top-10 -left-10 w-40 h-40 bg-gradient-to-br ${getCardStyles(formData.cardType).leak} blur-3xl opacity-60`}></div>
+                                    <div className={`absolute -bottom-10 -right-10 w-40 h-40 bg-gradient-to-tl ${getCardStyles(formData.cardType).leak} blur-3xl opacity-40`}></div>
 
                                     {/* Radial Glow/Flare */}
-                                    <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 rounded-full ${getCardStyles(formData.cardType).flare} blur - [80px] opacity - 30`}></div>
+                                    <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 rounded-full ${getCardStyles(formData.cardType).flare} blur-[80px] opacity-30`}></div>
 
                                     {/* Animated Shine Sweep */}
                                     <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent -translate-x-full animate-shine pointer-events-none"></div>
@@ -760,6 +760,7 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
                         )}
 
                         {/* Stats under photo */}
+                    </div>
                         {/* Player Details List (Moved from Right Side) */}
                         <div className="flex-1 md:w-full space-y-4 px-0 md:px-2 text-white/80 z-10 overflow-y-auto custom-scrollbar no-scrollbar">
                             {/* Main Identity Area (Name, Position, etc) */}
@@ -867,10 +868,9 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
                                         })()}
                                     </span>
                                 </div>
-
                                 <div className="flex items-center justify-between text-[10px] py-1 border-b border-white/5">
                                     <span className="opacity-40 uppercase font-black tracking-widest">Featured Players</span>
-                                    <span className={`font-bold text-right text-[9px] uppercase ${formData['Featured Players'] && formData['Featured Players'] !== 'Standard' ? 'text-ef-blue' : 'opacity-20'} `}>
+                                    <span className={`font-bold text-right text-[9px] uppercase ${formData['Featured Players'] && formData['Featured Players'] !== 'Standard' ? 'text-ef-blue' : 'opacity-20'}`}>
                                         {formData['Featured Players'] || 'Standard'}
                                     </span>
                                 </div>
@@ -895,7 +895,202 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
                                     </div>
                                     <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-3 flex flex-col items-center justify-center transition-all hover:bg-white/10 hover:border-white/20 group">
                                         <span className="text-sm font-black text-white leading-none mb-1.5 group-hover:scale-110 transition-transform">
-                                            {formData.weight || '-'}
+                                        {formData.weight || '-'}
+                                        </span>
+                                </div>
+
+                                {/* Badges */}
+                                <div className="flex flex-col items-center gap-1 md:gap-2">
+                                    {(formData.logos?.club || player.club_badge_url) && (
+                                        <div className="w-5 h-5 md:w-8 md:h-8">
+                                            <img src={formData.logos?.club || player.club_badge_url} alt="" className="w-full h-full object-contain filter drop-shadow-md" />
+                                        </div>
+                                    )}
+                                    {(player.logos?.country || player.nationality_flag_url) && (
+                                        <div className="w-5 h-5 md:w-8 md:h-8 overflow-hidden">
+                                            <img src={player.logos?.country || player.nationality_flag_url} alt="" className="w-full h-full object-contain filter drop-shadow-md" />
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {isEditing && (
+                                <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 opacity-0 hover:opacity-100 transition cursor-pointer">
+                                    <span className="text-white font-bold bg-black/50 px-4 py-2 rounded-full border border-white/30">Upload / Paste Photo</span>
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={handleImageChange}
+                                        className="absolute inset-0 opacity-0 cursor-pointer"
+                                    />
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Image URL Input (Edit Mode Only) */}
+                        {isEditing && (
+                            <div className="w-full px-2 flex gap-4">
+                                <div className="flex-1">
+                                    <label className="block text-[8px] font-black uppercase tracking-widest opacity-30 mb-1.5 ml-1">Image Link</label>
+                                    <input
+                                        type="text"
+                                        placeholder="https://..."
+                                        value={formData.image && !formData.image.startsWith('data:') ? formData.image : ''}
+                                        onChange={(e) => setFormData(prev => ({ ...prev, image: e.target.value }))}
+                                        className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[10px] text-white focus:outline-none focus:border-ef-accent/40 transition-all font-medium"
+                                    />
+                                </div>
+                                <div className="w-24">
+                                    <label className="block text-[8px] font-black uppercase tracking-widest opacity-30 mb-1.5">Direct Paste</label>
+                                    <div
+                                        onPaste={handlePaste}
+                                        tabIndex="0"
+                                        className="w-full h-[34px] bg-white/5 border border-white/10 border-dashed rounded-lg flex items-center justify-center text-center cursor-pointer hover:bg-white/10 hover:border-ef-accent/30 transition-all outline-none focus:border-ef-accent/50 focus:bg-ef-accent/5 group"
+                                    >
+                                        <span className="text-[12px] group-focus:scale-110 transition-transform">📋</span>
+                                        <span className="ml-2 text-[6px] font-black uppercase tracking-widest text-white/20 group-focus:text-ef-accent">Paste</span>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Stats under photo */}
+                    </div>
+                        {/* Player Details List (Moved from Right Side) */}
+                        <div className="flex-1 md:w-full space-y-4 px-0 md:px-2 text-white/80 z-10 overflow-y-auto custom-scrollbar no-scrollbar">
+                            {/* Main Identity Area (Name, Position, etc) */}
+                            <div className="flex flex-col gap-1 items-start md:items-start text-left">
+                                <h1 className="text-xl md:text-2xl font-black text-white uppercase tracking-tighter leading-tight">
+                                    {formData.name}
+                                </h1>
+                                <div className="flex items-center gap-2 mt-1">
+                                    <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-ef-accent text-ef-dark uppercase tracking-widest leading-none">
+                                        {formData.position}
+                                    </span>
+                                    {formData.secondaryPosition && (
+                                        <span className="text-[9px] font-black text-ef-accent opacity-40 uppercase tracking-widest">
+                                            {formData.secondaryPosition}
+                                        </span>
+                                    )}
+                                </div>
+                                {formData.playstyle && formData.playstyle !== 'None' && (
+                                     <div className="mt-2 text-[8px] font-black uppercase tracking-[0.2em] text-ef-accent px-2 py-1 bg-ef-accent/5 rounded-lg border border-ef-accent/10 whitespace-nowrap overflow-hidden text-ellipsis max-w-full">
+                                        {formData.playstyle}
+                                     </div>
+                                )}
+                                {formData.tags && formData.tags.length > 0 && (
+                                    <div className="flex flex-wrap gap-1.5 mt-3">
+                                        {formData.tags.map(tag => (
+                                            <span key={tag} className="px-2 py-1 bg-ef-accent/5 border border-ef-accent/20 rounded-full text-ef-accent text-[7px] font-black uppercase tracking-widest hover:bg-ef-accent/10 transition-colors">
+                                                #{tag}
+                                            </span>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Compact vertical list */}
+                            <div className="flex flex-col gap-1 md:gap-1.5 pt-2 border-t border-white/10">
+                                <div className="flex items-center justify-between text-[10px] py-1 border-b border-white/5">
+                                    <span className="opacity-40 uppercase font-black tracking-widest">Club</span>
+                                    <div className="flex items-center gap-1.5 max-w-[120px]">
+                                        {formData.logos?.club && <img src={formData.logos.club} className="w-3.5 h-3.5 object-contain" alt="" />}
+                                        <span className="font-bold truncate">{formData.club}</span>
+                                    </div>
+                                </div>
+                                <div className="flex items-center justify-between text-[10px] py-1 border-b border-white/5">
+                                    <span className="opacity-40 uppercase font-black tracking-widest">Country</span>
+                                    <div className="flex items-center gap-1.5 max-w-[120px]">
+                                        {player.logos?.country && <img src={player.logos.country} alt="" className="w-4 h-3 object-cover rounded-sm shadow-sm" />}
+                                        <span className="font-bold truncate">{player.nationality}</span>
+                                    </div>
+                                </div>
+                                <div className="flex items-center justify-between text-[10px] py-1 border-b border-white/5">
+                                    <span className="opacity-40 uppercase font-black tracking-widest">League</span>
+                                    <div className="flex items-center gap-1.5 max-w-[120px]">
+                                        {formData.logos?.league && <img src={formData.logos.league} className="w-3.5 h-3.5 object-contain" alt="" />}
+                                        <span className="font-bold truncate">{formData.league || 'N/A'}</span>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center justify-between text-[10px] py-1 border-b border-white/5">
+                                    <span className="opacity-40 uppercase font-black tracking-widest">Type</span>
+                                    <span className={`${formData.cardType === 'Legendary' ? 'text-yellow-400' :
+                                        formData.cardType === 'Epic' ? 'text-green-400' :
+                                            formData.cardType === 'Featured' ? 'text-purple-400' :
+                                                formData.cardType === 'POTW' ? 'text-cyan-400' :
+                                                    'text-blue-400'
+                                        } font-bold`}>{formData.cardType}</span>
+                                </div>
+                                <div className="flex items-center justify-between text-[10px] py-1 border-b border-white/5">
+                                    <span className="opacity-40 uppercase font-black tracking-widest">Player ID</span>
+                                    <span className="font-mono opacity-60">{formData.playerId || formData.pesdb_id || '-'}</span>
+                                </div>
+                                
+                                <div className="flex items-center justify-between text-[10px] py-1 border-b border-white/5">
+                                    <span className="opacity-40 uppercase font-black tracking-widest">Form</span>
+                                    <span className="font-bold text-ef-accent">{formData['Form'] || 'Standard'}</span>
+                                </div>
+
+                                <div className="flex items-center justify-between text-[10px] py-1 border-b border-white/5">
+                                    <span className="opacity-40 uppercase font-black tracking-widest">Weak Foot Usage</span>
+                                    <span className="font-bold uppercase">{formData['Weak Foot Usage'] || '-'}</span>
+                                </div>
+                                
+                                <div className="flex items-center justify-between text-[10px] py-1 border-b border-white/5">
+                                    <span className="opacity-40 uppercase font-black tracking-widest">Weak Foot Accuracy</span>
+                                    <span className="font-bold uppercase">{formData['Weak Foot Accuracy'] || '-'}</span>
+                                </div>
+
+                                <div className="flex items-center justify-between text-[10px] py-1 border-b border-white/5">
+                                    <span className="opacity-40 uppercase font-black tracking-widest">Injury Resistance</span>
+                                    <span className="font-bold uppercase">{formData['Injury Resistance'] || '-'}</span>
+                                </div>
+
+                                <div className="flex items-center justify-between text-[10px] py-1 border-b border-white/5">
+                                    <span className="opacity-40 uppercase font-black tracking-widest">Uploaded</span>
+                                    <span className="font-bold opacity-60 text-[9px]">
+                                        {formData.createdAt ? new Date(formData.createdAt).toLocaleDateString() : 'N/A'}
+                                    </span>
+                                </div>
+
+                                <div className="flex items-center justify-between text-[10px] py-1 border-b border-white/5">
+                                    <span className="opacity-40 uppercase font-black tracking-widest">Date Added</span>
+                                    <span className="font-bold opacity-60 text-[9px]">
+                                        {(() => {
+                                            const d = parseEfDate(formData['Date Added']);
+                                            return d ? d.toLocaleDateString() : 'Unknown';
+                                        })()}
+                                    </span>
+                                </div>
+                                <div className="flex items-center justify-between text-[10px] py-1 border-b border-white/5">
+                                    <span className="opacity-40 uppercase font-black tracking-widest">Featured Players</span>
+                                    <span className={`font-bold text-right text-[9px] uppercase ${formData['Featured Players'] && formData['Featured Players'] !== 'Standard' ? 'text-ef-blue' : 'opacity-20'}`}>
+                                        {formData['Featured Players'] || 'Standard'}
+                                    </span>
+                                </div>
+                                <div className="grid grid-cols-4 gap-2 mt-4">
+                                    <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-3 flex flex-col items-center justify-center transition-all hover:bg-white/10 hover:border-white/20 group">
+                                        <span className="text-sm font-black text-white leading-none mb-1.5 group-hover:scale-110 transition-transform">
+                                            {formData.age || '-'}
+                                        </span>
+                                        <span className="text-[8px] font-black uppercase tracking-[0.2em] text-white/20 group-hover:text-ef-accent transition-colors">Age</span>
+                                    </div>
+                                    <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-3 flex flex-col items-center justify-center transition-all hover:bg-white/10 hover:border-white/20 group">
+                                        <span className="text-sm font-black text-white leading-none mb-1.5 group-hover:scale-110 transition-transform">
+                                            {formData.strongFoot ? (formData.strongFoot.charAt(0)) : '-'}
+                                        </span>
+                                        <span className="text-[8px] font-black uppercase tracking-[0.2em] text-white/20 group-hover:text-ef-accent transition-colors">Foot</span>
+                                    </div>
+                                    <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-3 flex flex-col items-center justify-center transition-all hover:bg-white/10 hover:border-white/20 group">
+                                        <span className="text-sm font-black text-white leading-none mb-1.5 group-hover:scale-110 transition-transform">
+                                            {formData.height || '-'}
+                                        </span>
+                                        <span className="text-[8px] font-black uppercase tracking-[0.2em] text-white/20 group-hover:text-ef-accent transition-colors">Height</span>
+                                    </div>
+                                    <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-3 flex flex-col items-center justify-center transition-all hover:bg-white/10 hover:border-white/20 group">
+                                        <span className="text-sm font-black text-white leading-none mb-1.5 group-hover:scale-110 transition-transform">
+                                        {formData.weight || '-'}
                                         </span>
                                         <span className="text-[8px] font-black uppercase tracking-[0.2em] text-white/20 group-hover:text-ef-accent transition-colors">Weight</span>
                                     </div>
@@ -908,353 +1103,297 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
                 {/* Right Side: Details / Edit Form */}
                 <div className="w-full md:w-2/3 p-8 md:p-12 pt-24 md:pt-28 bg-black flex flex-col justify-start relative overflow-hidden group/modal overflow-y-auto custom-scrollbar">
                     {isEditing ? (
-                        <form onSubmit={handleSubmit} onPaste={handlePaste} className="space-y-4 h-full flex flex-col">
-                            <h3 className="text-2xl font-black mb-4 flex items-center gap-2">
-                                <span className="text-ef-accent">✍️</span> Edit Details
-                            </h3>
-
-                            <div className="flex-1 overflow-y-auto pr-2 space-y-4 custom-scrollbar">
-                                {/* Form content - keeping structure but refining styles */}
-                                <div className="space-y-1">
-                                    <label className="text-[10px] font-black uppercase tracking-widest opacity-40">Player Name</label>
-                                    <input
-                                        type="text" name="name"
-                                        value={formData.name} onChange={handleChange}
-                                        className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:border-ef-accent focus:outline-none focus:bg-white/10 transition font-bold text-lg"
-                                    />
-                                </div>
-
-                                <div className="space-y-1">
-                                    <label className="text-[10px] font-black uppercase tracking-widest opacity-40">Player ID</label>
-                                    <div className="relative flex gap-2">
-                                        <input
-                                            type="text" name="pesdb_id"
-                                            value={formData.pesdb_id || formData.playerId || ''} onChange={handleChange}
-                                            className="flex-1 bg-white/5 border border-white/10 rounded-xl p-3 text-white/70 focus:border-ef-accent focus:outline-none transition font-mono text-xs"
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={async () => {
-                                                const text = await navigator.clipboard.readText();
-                                                if (text) setFormData(prev => ({ ...prev, playerId: text, pesdb_id: text }));
-                                            }}
-                                            className="px-4 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95"
-                                        >
-                                            Paste
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-1 relative">
-                                        <label className="text-[10px] font-black uppercase tracking-widest opacity-40">Club</label>
-                                        <div className="relative">
-                                            <input
-                                                type="text" name="club"
-                                                value={formData.club || ''} onChange={handleChange}
-                                                onBlur={() => setTimeout(() => setShowClubResults(false), 200)}
-                                                onFocus={() => formData.club && formData.club.length >= 2 && setShowClubResults(true)}
-                                                className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:border-ef-accent focus:outline-none transition font-bold text-sm"
-                                            />
-                                            {isSearchingClub && (
-                                                <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                                                    <div className="w-3 h-3 border-2 border-ef-accent border-t-transparent rounded-full animate-spin"></div>
-                                                </div>
-                                            )}
-                                        </div>
-                                        {showClubResults && (
-                                            <div className="absolute z-50 w-full mt-2 bg-[#1a1a1e] border border-white/10 rounded-xl shadow-2xl overflow-hidden max-h-[200px] overflow-y-auto">
-                                                {clubResults.length > 0 ? (
-                                                    clubResults.map(club => (
-                                                        <div
-                                                            key={club.idTeam}
-                                                            onClick={() => handleSelectClub(club)}
-                                                            className="px-4 py-3 hover:bg-white/5 cursor-pointer flex items-center gap-3 transition-colors border-b border-white/5 last:border-0"
-                                                        >
-                                                            <img src={club.strBadge} alt="" className="w-6 h-6 object-contain" />
-                                                            <div className="flex-1 min-w-0">
-                                                                <div className="text-xs font-black text-white truncate">{club.strTeam}</div>
-                                                                <div className="text-[8px] uppercase font-bold opacity-30 truncate">{club.strLeague}</div>
-                                                            </div>
-                                                        </div>
-                                                    ))
-                                                ) : (
-                                                    !isSearchingClub && formData.club.length >= 2 && (
-                                                        <div className="px-4 py-6 text-center text-white/40 text-[10px] font-bold uppercase tracking-widest">
-                                                            No clubs found
-                                                        </div>
-                                                    )
-                                                )}
-                                            </div>
-                                        )}
-                                    </div>
-                                    <div className="space-y-1 relative" ref={leaguePopupRef}>
-                                        <div className="flex justify-between items-center">
-                                            <label className="text-[10px] font-black uppercase tracking-widest opacity-40">League</label>
-                                            <button
-                                                type="button"
-                                                onClick={() => setIsCustomLeague(!isCustomLeague)}
-                                                className="text-[10px] font-black uppercase tracking-widest text-ef-accent hover:opacity-80 transition-opacity"
-                                            >
-                                                {isCustomLeague ? '←' : '+'}
-                                            </button>
-                                        </div>
-                                        {isCustomLeague ? (
-                                            <input
-                                                type="text" name="league"
-                                                placeholder="League"
-                                                value={formData.league || ''} onChange={handleChange}
-                                                onBlur={handleLeagueBlur}
-                                                className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:border-ef-accent focus:outline-none transition font-bold text-sm"
-                                            />
-                                        ) : (
-                                            <div className="relative">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setIsLeaguePopupOpen(!isLeaguePopupOpen)}
-                                                    className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white flex items-center justify-between hover:bg-white/10 transition-all font-bold text-sm"
-                                                >
-                                                    <div className="flex items-center gap-2 overflow-hidden">
-                                                        {formData.league && leagueLogos[formData.league] ? (
-                                                            <img src={leagueLogos[formData.league]} alt="" className="w-5 h-5 object-contain flex-shrink-0" />
-                                                        ) : (
-                                                            <div className="w-5 h-5 rounded bg-white/5 flex items-center justify-center text-[8px] font-black opacity-40 flex-shrink-0">?</div>
-                                                        )}
-                                                        <span className={`truncate text-xs ${formData.league ? 'text-white' : 'text-white/30'} `}>
-                                                            {formData.league || 'Select'}
-                                                        </span>
-                                                    </div>
-                                                    <span className="text-[8px] opacity-50">▼</span>
-                                                </button>
-                                                {isLeaguePopupOpen && (
-                                                    <div className="absolute top-full left-0 w-full mt-2 bg-[#1a1a1e] border border-white/10 rounded-xl shadow-2xl overflow-hidden z-[100] max-h-[200px] overflow-y-auto">
-                                                        {TOP_LEAGUES.map(league => (
-                                                            <button
-                                                                key={league}
-                                                                type="button"
-                                                                onClick={() => {
-                                                                    setFormData(prev => ({
-                                                                        ...prev,
-                                                                        league: league,
-                                                                        logos: { ...prev.logos, league: leagueLogos[league] || '' }
-                                                                    }));
-                                                                    setIsLeaguePopupOpen(false);
-                                                                }}
-                                                                className={`flex items-center gap-3 px-3 py-2 w-full text-left hover:bg-white/5 border-b border-white/5 last:border-0 ${formData.league === league ? 'text-ef-accent' : 'text-white/70'} `}
-                                                            >
-                                                                {leagueLogos[league] && <img src={leagueLogos[league]} className="w-4 h-4 object-contain opacity-70" />}
-                                                                <span className="text-[10px] font-bold">{league}</span>
-                                                            </button>
-                                                        ))}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-3 gap-4">
-                                    <div className="space-y-1 relative">
-                                        <label className="text-[10px] font-black uppercase tracking-widest opacity-40">Country</label>
-                                        <div className="relative">
-                                            <input
-                                                type="text" name="nationality"
-                                                value={formData.nationality || ''} onChange={handleChange}
-                                                onBlur={() => setTimeout(() => setShowCountryResults(false), 200)}
-                                                onFocus={() => formData.nationality && formData.nationality.length >= 2 && setShowCountryResults(true)}
-                                                className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:border-ef-accent focus:outline-none font-bold text-sm"
-                                            />
-                                            {isSearchingCountry && (
-                                                <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                                                    <div className="w-3 h-3 border-2 border-ef-accent border-t-transparent rounded-full animate-spin"></div>
-                                                </div>
-                                            )}
-                                        </div>
-                                        {showCountryResults && (
-                                            <div className="absolute z-50 w-full mt-2 bg-[#1a1a1e] border border-white/10 rounded-xl shadow-2xl overflow-hidden max-h-[200px] overflow-y-auto">
-                                                {countryResults.length > 0 ? (
-                                                    countryResults.map(c => (
-                                                        <div
-                                                            key={c.name}
-                                                            onClick={() => handleSelectCountry(c)}
-                                                            className="px-4 py-3 hover:bg-white/5 cursor-pointer flex items-center gap-3 transition-colors border-b border-white/5 last:border-0"
-                                                        >
-                                                            <img src={getFlagUrl(c.name)} alt="" className="w-6 h-4 object-cover rounded-sm border border-white/10" />
-                                                            <span className="text-xs font-bold text-white">{c.name}</span>
-                                                        </div>
-                                                    ))
-                                                ) : (
-                                                    !isSearchingCountry && formData.nationality && formData.nationality.length >= 2 && (
-                                                        <div className="px-4 py-6 text-center text-white/40 text-[10px] font-bold uppercase tracking-widest">
-                                                            No countries found
-                                                        </div>
-                                                    )
-                                                )}
-                                            </div>
-                                        )}
-                                    </div>
-                                    <div className="space-y-1">
-                                        <label className="text-[10px] font-black uppercase tracking-widest opacity-40">Age</label>
-                                        <input type="number" name="age" value={formData.age || ''} onChange={handleChange} className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:border-ef-accent focus:outline-none font-bold text-sm" />
-                                    </div>
-                                    <div className="space-y-1">
-                                        <label className="text-[10px] font-black uppercase tracking-widest opacity-40">Height (cm)</label>
-                                        <input type="number" name="height" value={formData.height || ''} onChange={handleChange} className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:border-ef-accent focus:outline-none font-bold text-sm" />
-                                    </div>
-                                    <div className="space-y-1">
-                                        <label className="text-[10px] font-black uppercase tracking-widest opacity-40">Strong Foot</label>
-                                        <select name="strongFoot" value={formData.strongFoot} onChange={handleChange} className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:border-ef-accent focus:outline-none font-bold text-sm appearance-none">
-                                            <option value="Right">Right</option>
-                                            <option value="Left">Left</option>
-                                        </select>
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                    <div className="space-y-1">
-                                        <label className="text-[10px] font-black uppercase tracking-widest opacity-40">Position</label>
-                                        <select name="position" value={formData.position} onChange={handleChange} className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:border-ef-accent focus:outline-none font-bold text-sm appearance-none">
-                                            {['CF', 'SS', 'LWF', 'RWF', 'LMF', 'RMF', 'AMF', 'CMF', 'DMF', 'LB', 'RB', 'CB', 'GK'].map(pos => (
-                                                <option key={pos} value={pos} className="bg-ef-dark">{pos}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                    <div className="space-y-1">
-                                        <label className="text-[10px] font-black uppercase tracking-widest opacity-40">Secondary</label>
-                                        <input
-                                            type="text"
-                                            name="secondaryPosition"
-                                            placeholder="Built-in"
-                                            value={formData.secondaryPosition || ''}
-                                            onChange={handleChange}
-                                            className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:border-ef-accent focus:outline-none font-bold text-sm"
-                                        />
-                                    </div>
-                                    <div className="space-y-1">
-                                        <label className="text-[10px] font-black uppercase tracking-widest opacity-40">Additional (Trained)</label>
-                                        <input
-                                            type="text"
-                                            name="additionalPositions"
-                                            placeholder="From Training"
-                                            value={formData.additionalPositions || ''}
-                                            onChange={handleChange}
-                                            className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-ef-blue focus:border-ef-blue focus:outline-none font-bold text-sm"
-                                        />
-                                    </div>
-                                    <div className="space-y-1">
-                                        <label className="text-[10px] font-black uppercase tracking-widest opacity-40">Playstyle</label>
-                                        <select name="playstyle" value={formData.playstyle || ''} onChange={handleChange} className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:border-ef-accent focus:outline-none font-bold text-xs appearance-none">
-                                            {PLAYSTYLES.map(style => <option key={style} value={style} className="bg-ef-dark">{style}</option>)}
-                                        </select>
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-4 gap-2">
-                                    <div className="space-y-1">
-                                        <label className="text-[8px] font-black uppercase tracking-widest opacity-40 text-center block">Rat</label>
-                                        <input type="number" name="rating" value={formData.rating || ''} onChange={handleChange} className="w-full bg-white/5 border border-white/10 rounded-xl p-2 text-ef-accent focus:border-ef-accent focus:outline-none text-center font-black text-lg" />
-                                    </div>
-                                    <div className="space-y-1">
-                                        <label className="text-[8px] font-black uppercase tracking-widest opacity-40 text-center block">Mat</label>
-                                        <input type="number" name="matches" value={formData.matches || 0} onChange={handleChange} className="w-full bg-white/5 border border-white/10 rounded-xl p-2 text-white focus:border-ef-accent focus:outline-none text-center font-bold text-sm" />
-                                    </div>
-                                    <div className="space-y-1">
-                                        <label className="text-[8px] font-black uppercase tracking-widest opacity-40 text-center block">Gls</label>
-                                        <input type="number" name="goals" value={formData.goals} onChange={handleChange} className="w-full bg-white/5 border border-white/10 rounded-xl p-2 text-white focus:border-ef-accent focus:outline-none text-center font-bold text-sm" />
-                                    </div>
-                                    <div className="space-y-1">
-                                        <label className="text-[8px] font-black uppercase tracking-widest opacity-40 text-center block">Ast</label>
-                                        <input type="number" name="assists" value={formData.assists} onChange={handleChange} className="w-full bg-white/5 border border-white/10 rounded-xl p-2 text-white focus:border-ef-accent focus:outline-none text-center font-bold text-sm" />
-                                    </div>
-                                </div>
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                    <div className="space-y-1">
-                                        <label className="text-[10px] font-black uppercase tracking-widest opacity-40">Condition</label>
-                                        <input type="text" name="Form" value={formData['Form'] || ''} onChange={handleChange} placeholder="Standard" className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:border-ef-accent focus:outline-none font-bold text-sm" />
-                                    </div>
-                                    <div className="space-y-1">
-                                        <label className="text-[10px] font-black uppercase tracking-widest opacity-40">WF Usage</label>
-                                        <input type="text" name="Weak Foot Usage" value={formData['Weak Foot Usage'] || ''} onChange={handleChange} className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:border-ef-accent focus:outline-none font-bold text-sm" />
-                                    </div>
-                                    <div className="space-y-1">
-                                        <label className="text-[10px] font-black uppercase tracking-widest opacity-40">WF Acc.</label>
-                                        <input type="text" name="Weak Foot Accuracy" value={formData['Weak Foot Accuracy'] || ''} onChange={handleChange} className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:border-ef-accent focus:outline-none font-bold text-sm" />
-                                    </div>
-                                    <div className="space-y-1">
-                                        <label className="text-[10px] font-black uppercase tracking-widest opacity-40">Injury Res.</label>
-                                        <input type="text" name="Injury Resistance" value={formData['Injury Resistance'] || ''} onChange={handleChange} className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:border-ef-accent focus:outline-none font-bold text-sm" />
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-                                    <div className="space-y-1">
-                                        <label className="text-[10px] font-black uppercase tracking-widest opacity-40">Card Type</label>
-                                        <select name="cardType" value={formData.cardType} onChange={handleChange} className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:border-ef-accent focus:outline-none font-bold text-xs appearance-none">
-                                            {['Normal', 'Legend', 'Epic', 'Featured', 'POTW', 'BigTime', 'ShowTime'].map(type => (
-                                                <option key={type} value={type} className="bg-ef-dark">{type}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                    <div className="space-y-1 text-left">
-                                        <label className="text-[10px] font-black uppercase tracking-widest opacity-40">Featured</label>
-                                        <input 
-                                            type="text"
-                                            name="Featured Players" 
-                                            value={formData['Featured Players'] || ''} 
-                                            onChange={handleChange}
-                                            placeholder="Standard"
-                                            className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:border-ef-accent focus:outline-none font-bold text-xs"
-                                        />
-                                    </div>
-                                    <div className="space-y-1 col-span-2 lg:col-span-1">
-                                        <label className="text-[10px] font-black uppercase tracking-widest opacity-40">Date Added</label>
-                                        <input 
-                                            type="text" 
-                                            name="Date Added" 
-                                            value={formData['Date Added'] || ''} 
-                                            onChange={handleChange}
-                                            placeholder="2026/04/06"
-                                            className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:border-ef-accent focus:outline-none font-bold text-xs" 
-                                        />
-                                    </div>
-                                </div>
-
-                                {/* Tags Management */}
-                                <div className="space-y-2 pt-2 border-t border-white/5">
-                                    <label className="text-[10px] font-black uppercase tracking-widest opacity-40 flex items-center gap-2">
-                                        <span className="text-ef-accent">#</span> Tags
-                                    </label>
-                                    <div className="flex flex-wrap gap-2 mb-2">
-                                        {formData.tags.map(tag => (
-                                            <span key={tag} className="flex items-center gap-2 px-3 py-1.5 bg-ef-accent/10 border border-ef-accent/20 rounded-full text-ef-accent text-[10px] font-black uppercase tracking-widest group">
-                                                #{tag}
-                                                <button type="button" onClick={() => handleRemoveTag(tag)} className="hover:text-white transition-colors">✕</button>
-                                            </span>
-                                        ))}
-                                    </div>
-                                    <div className="relative flex gap-2">
-                                        <input
-                                            type="text"
-                                            placeholder="Add tag (e.g. Speedster, Header)"
-                                            value={tagInput}
-                                            onChange={(e) => setTagInput(e.target.value)}
-                                            onKeyDown={handleAddTag}
-                                            className="flex-1 bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:border-ef-accent focus:outline-none transition text-xs font-bold"
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={handleAddTag}
-                                            className="px-4 py-3 bg-ef-accent/20 hover:bg-ef-accent/30 border border-ef-accent/30 rounded-xl text-ef-accent text-[10px] font-black uppercase tracking-widest transition-all active:scale-95"
-                                        >
-                                            Add
-                                        </button>
-                                    </div>
+                        <form onSubmit={handleSubmit} onPaste={handlePaste} className="h-full flex flex-col">
+                            <div className="flex items-center justify-between mb-6">
+                                <h3 className="text-xl font-black flex items-center gap-2">
+                                    <span className="text-ef-accent">⚡</span> Edit Player Profile
+                                </h3>
+                                <div className="flex gap-2">
+                                    <button type="button" onClick={() => { setFormData({ ...player }); setIsEditing(false); }} className="px-4 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-[10px] font-black uppercase tracking-widest transition-all">Cancel</button>
+                                    <button type="submit" className="px-4 py-1.5 rounded-lg bg-ef-accent text-ef-dark text-[10px] font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-lg shadow-ef-accent/20">Save Profile</button>
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-3 pt-2 border-t border-white/10">
-                                <button type="button" onClick={() => { setFormData({ ...player }); setIsEditing(false); }} className="px-4 py-3 rounded-xl bg-white/5 hover:bg-white/10 transition font-bold text-sm">Cancel</button>
-                                <button type="submit" className="px-4 py-3 rounded-xl bg-gradient-to-r from-ef-accent to-ef-blue text-white font-black hover:scale-[1.02] active:scale-95 transition-all duration-300 text-xs tracking-[0.2em] uppercase shadow-lg">Save Changes</button>
+                            <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar flex justify-center">
+                                <div className="w-full max-w-xl py-6 space-y-8">
+                                    
+                                    {/* --- Section: Core Identity --- */}
+                                    <section>
+                                        <div className="flex items-center gap-3 mb-4 opacity-70">
+                                            <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent to-ef-accent/20"></div>
+                                            <span className="text-[10px] font-black uppercase tracking-[0.4em] text-ef-accent whitespace-nowrap">Core Identity</span>
+                                            <div className="h-[1px] flex-1 bg-gradient-to-l from-transparent to-ef-accent/20"></div>
+                                        </div>
+                                        
+                                        <div className="space-y-3">
+                                            <div className="flex flex-col gap-1.5">
+                                                <label className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-1">Player Name</label>
+                                                <input type="text" name="name" value={formData.name} onChange={handleChange} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white font-black focus:border-ef-accent focus:bg-white/10 focus:outline-none transition-all" />
+                                            </div>
+
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <div className="flex flex-col gap-1.5">
+                                                    <label className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-1">Player ID</label>
+                                                    <div className="relative">
+                                                        <input type="text" name="pesdb_id" value={formData.pesdb_id || formData.playerId || ''} onChange={handleChange} className="w-full bg-white/5 border border-white/10 rounded-xl pl-4 pr-12 py-3 font-mono text-xs text-white/70 focus:border-ef-accent focus:outline-none focus:text-white transition-all" />
+                                                        <button type="button" onClick={async () => { const text = await navigator.clipboard.readText(); if (text) setFormData(prev => ({ ...prev, playerId: text, pesdb_id: text })); }} className="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] font-black text-ef-accent uppercase hover:text-white transition-colors">Paste</button>
+                                                    </div>
+                                                </div>
+                                                <div className="flex flex-col gap-1.5">
+                                                    <label className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-1">Card Type</label>
+                                                    <select name="cardType" value={formData.cardType} onChange={handleChange} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 font-bold text-white focus:border-ef-accent focus:outline-none appearance-none cursor-pointer">
+                                                        {['Normal', 'Legend', 'Epic', 'Featured', 'POTW', 'BigTime', 'ShowTime'].map(type => (
+                                                            <option key={type} value={type} className="bg-ef-dark">{type}</option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                            </div>
+
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <div className="flex flex-col gap-1.5">
+                                                    <label className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-1">Featured Pack</label>
+                                                    <input type="text" name="Featured Players" value={formData['Featured Players'] || ''} onChange={handleChange} placeholder="Standard" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm font-bold text-white focus:border-ef-accent focus:outline-none transition-all" />
+                                                </div>
+                                                <div className="flex flex-col gap-1.5">
+                                                    <label className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-1">Date Added</label>
+                                                    <input type="text" name="Date Added" value={formData['Date Added'] || ''} onChange={handleChange} placeholder="e.g. 2026/04/08" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm font-bold text-white focus:border-ef-accent focus:outline-none transition-all" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </section>
+
+                                    {/* --- Section: Team & Origin --- */}
+                                    <section>
+                                        <div className="flex items-center gap-3 mb-4 opacity-70">
+                                            <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent to-ef-blue/20"></div>
+                                            <span className="text-[10px] font-black uppercase tracking-[0.4em] text-ef-blue whitespace-nowrap">Affiliation</span>
+                                            <div className="h-[1px] flex-1 bg-gradient-to-l from-transparent to-ef-blue/20"></div>
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div className="flex flex-col gap-1.5 relative">
+                                                <label className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-1">Club</label>
+                                                <div className="relative">
+                                                    <input
+                                                        type="text" name="club"
+                                                        value={formData.club || ''} onChange={handleChange}
+                                                        onBlur={() => setTimeout(() => setShowClubResults(false), 200)}
+                                                        onFocus={() => formData.club && formData.club.length >= 2 && setShowClubResults(true)}
+                                                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 font-bold text-white focus:border-ef-accent focus:outline-none"
+                                                    />
+                                                    {showClubResults && (
+                                                        <div className="absolute top-full left-0 right-0 mt-2 bg-[#1a1a1e] border border-white/10 rounded-xl shadow-2xl overflow-hidden z-[110] max-h-[200px] overflow-y-auto backdrop-blur-xl">
+                                                            {clubResults.map(club => (
+                                                                <div key={club.idTeam} onClick={() => handleSelectClub(club)} className="px-4 py-3 hover:bg-white/5 cursor-pointer flex items-center gap-3 transition-colors border-b border-white/5 last:border-0">
+                                                                    <img src={club.strBadge} alt="" className="w-5 h-5 object-contain" />
+                                                                    <div className="flex-1 min-w-0">
+                                                                        <div className="text-[10px] font-black text-white truncate">{club.strTeam}</div>
+                                                                        <div className="text-[7px] uppercase font-bold opacity-30 truncate">{club.strLeague}</div>
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            <div className="flex flex-col gap-1.5 relative" ref={leaguePopupRef}>
+                                                <div className="flex justify-between items-center ml-1">
+                                                    <label className="text-[10px] font-black uppercase tracking-widest opacity-40">League</label>
+                                                    <button type="button" onClick={() => setIsCustomLeague(!isCustomLeague)} className="text-[8px] text-ef-accent opacity-50 hover:opacity-100 uppercase tracking-widest font-black">{isCustomLeague ? 'Use List' : 'Custom'}</button>
+                                                </div>
+                                                {isCustomLeague ? (
+                                                    <input type="text" name="league" value={formData.league || ''} onChange={handleChange} onBlur={handleLeagueBlur} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 font-bold text-white focus:border-ef-accent focus:outline-none" />
+                                                ) : (
+                                                    <div className="relative">
+                                                        <button type="button" onClick={() => setIsLeaguePopupOpen(!isLeaguePopupOpen)} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-left font-bold text-white hover:text-ef-accent transition-colors flex items-center justify-between">
+                                                            <span className="text-xs truncate">{formData.league || 'Select League'}</span>
+                                                            <span className="text-[8px] opacity-30">▼</span>
+                                                        </button>
+                                                        {isLeaguePopupOpen && (
+                                                            <div className="absolute top-full left-0 right-0 mt-2 bg-[#1a1a1e] border border-white/10 rounded-xl shadow-2xl overflow-hidden z-[110] max-h-[200px] overflow-y-auto backdrop-blur-xl">
+                                                                {TOP_LEAGUES.map(league => (
+                                                                    <button key={league} type="button" onClick={() => { setFormData(prev => ({ ...prev, league, logos: { ...prev.logos, league: leagueLogos[league] || '' } })); setIsLeaguePopupOpen(false); }} className={`flex items-center gap-3 px-4 py-3 w-full text-left hover:bg-white/5 border-b border-white/5 last:border-0 ${formData.league === league ? 'text-ef-accent' : 'text-white/70'} `}>
+                                                                        {leagueLogos[league] && <img src={leagueLogos[league]} className="w-4 h-4 object-contain opacity-70" />}
+                                                                        <span className="text-[10px] font-bold">{league}</span>
+                                                                    </button>
+                                                                ))}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-3 mt-3">
+                                            <div className="flex flex-col gap-1.5 relative">
+                                                <label className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-1">Nationality</label>
+                                                <div className="relative">
+                                                    <input
+                                                        type="text" name="nationality"
+                                                        value={formData.nationality || ''} onChange={handleChange}
+                                                        onBlur={() => setTimeout(() => setShowCountryResults(false), 200)}
+                                                        onFocus={() => formData.nationality && formData.nationality.length >= 2 && setShowCountryResults(true)}
+                                                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 font-bold text-white focus:border-ef-accent focus:outline-none"
+                                                    />
+                                                    {showCountryResults && (
+                                                        <div className="absolute top-full left-0 right-0 mt-2 bg-[#1a1a1e] border border-white/10 rounded-xl shadow-2xl overflow-hidden z-[110] max-h-[200px] overflow-y-auto backdrop-blur-xl">
+                                                            {countryResults.map(c => (
+                                                                <div key={c.name} onClick={() => handleSelectCountry(c)} className="px-4 py-3 hover:bg-white/5 cursor-pointer flex items-center gap-3 transition-colors border-b border-white/5 last:border-0">
+                                                                    <img src={getFlagUrl(c.name)} alt="" className="w-5 h-3 object-cover rounded-sm" />
+                                                                    <span className="text-[10px] font-bold text-white">{c.name}</span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <div className="flex flex-col gap-1.5">
+                                                <label className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-1">Age</label>
+                                                <input type="number" name="age" value={formData.age || ''} onChange={handleChange} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 font-black text-white focus:border-ef-accent focus:outline-none" />
+                                            </div>
+                                        </div>
+                                    </section>
+
+                                    {/* --- Section: Mechanical Specs --- */}
+                                    <section>
+                                        <div className="flex items-center gap-3 mb-4 opacity-70">
+                                            <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent to-purple-500/20"></div>
+                                            <span className="text-[10px] font-black uppercase tracking-[0.4em] text-purple-400 whitespace-nowrap">Specifications</span>
+                                            <div className="h-[1px] flex-1 bg-gradient-to-l from-transparent to-purple-500/20"></div>
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div className="flex flex-col gap-1.5">
+                                                <label className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-1">Height / Weight</label>
+                                                <div className="flex gap-2">
+                                                    <input type="number" name="height" value={formData.height || ''} onChange={handleChange} placeholder="CM" className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 font-bold text-white focus:border-ef-accent focus:outline-none" />
+                                                    <input type="number" name="weight" value={formData.weight || ''} onChange={handleChange} placeholder="KG" className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 font-bold text-white focus:border-ef-accent focus:outline-none" />
+                                                </div>
+                                            </div>
+                                            <div className="flex flex-col gap-1.5">
+                                                <label className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-1">Preferred Foot</label>
+                                                <select name="strongFoot" value={formData.strongFoot} onChange={handleChange} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 font-bold text-white focus:border-ef-accent focus:outline-none appearance-none cursor-pointer">
+                                                    <option value="Right">Right</option>
+                                                    <option value="Left">Left</option>
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 gap-3 mt-3">
+                                            <div className="flex flex-col gap-1.5">
+                                                <label className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-1">Playstyle</label>
+                                                <select name="playstyle" value={formData.playstyle || ''} onChange={handleChange} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 font-bold text-white focus:border-ef-accent focus:outline-none appearance-none cursor-pointer">
+                                                    {PLAYSTYLES.map(style => <option key={style} value={style} className="bg-ef-dark">{style}</option>)}
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 gap-4 mt-3">
+                                            <div className="flex flex-col gap-1.5">
+                                                <label className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-1">Main Position</label>
+                                                <select name="position" value={formData.position} onChange={handleChange} className="w-full bg-white/20 border border-ef-accent/30 rounded-xl px-4 py-3 font-black text-ef-accent focus:border-ef-accent focus:outline-none appearance-none cursor-pointer">
+                                                    {['CF', 'SS', 'LWF', 'RWF', 'LMF', 'RMF', 'AMF', 'CMF', 'DMF', 'LB', 'RB', 'CB', 'GK'].map(pos => (
+                                                        <option key={pos} value={pos} className="bg-ef-dark">{pos}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <div className="flex flex-col gap-1.5">
+                                                    <label className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-1">Secondary Icons</label>
+                                                    <input type="text" name="secondaryPosition" value={formData.secondaryPosition || ''} onChange={handleChange} placeholder="e.g. SS, AMF" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm font-bold text-white focus:border-ef-accent focus:outline-none" />
+                                                </div>
+                                                <div className="flex flex-col gap-1.5">
+                                                    <label className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-1">Trained Positions</label>
+                                                    <input type="text" name="additionalPositions" value={formData.additionalPositions || ''} onChange={handleChange} placeholder="e.g. DMF" className="w-full bg-white/5 border border-ef-blue/30 rounded-xl px-4 py-3 text-sm font-bold text-ef-blue focus:border-white focus:outline-none" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </section>
+
+                                    {/* --- Section: Performance Stats --- */}
+                                    <section>
+                                        <div className="flex items-center gap-3 mb-4 opacity-70">
+                                            <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent to-yellow-500/20"></div>
+                                            <span className="text-[10px] font-black uppercase tracking-[0.4em] text-yellow-500 whitespace-nowrap">Performance Data</span>
+                                            <div className="h-[1px] flex-1 bg-gradient-to-l from-transparent to-yellow-500/20"></div>
+                                        </div>
+
+                                        <div className="grid grid-cols-4 gap-3 mb-4">
+                                            <div className="flex flex-col gap-1.5 col-span-1">
+                                                <label className="text-[8px] font-black uppercase tracking-widest opacity-40 text-center">Rating</label>
+                                                <input type="number" name="rating" value={formData.rating || ''} onChange={handleChange} className="w-full bg-ef-accent/10 border border-ef-accent/30 rounded-xl py-3 text-center font-black text-ef-accent text-xl focus:border-ef-accent focus:outline-none" />
+                                            </div>
+                                            <div className="flex flex-col gap-1.5 col-span-1">
+                                                <label className="text-[8px] font-black uppercase tracking-widest opacity-40 text-center">Matches</label>
+                                                <input type="number" name="matches" value={formData.matches || 0} onChange={handleChange} className="w-full bg-white/5 border border-white/10 rounded-xl py-3 text-center font-bold text-white focus:border-ef-accent focus:outline-none" />
+                                            </div>
+                                            <div className="flex flex-col gap-1.5 col-span-1">
+                                                <label className="text-[8px] font-black uppercase tracking-widest opacity-40 text-center">Goals</label>
+                                                <input type="number" name="goals" value={formData.goals} onChange={handleChange} className="w-full bg-white/5 border border-white/10 rounded-xl py-3 text-center font-bold text-ef-blue focus:border-ef-accent focus:outline-none" />
+                                            </div>
+                                            <div className="flex flex-col gap-1.5 col-span-1">
+                                                <label className="text-[8px] font-black uppercase tracking-widest opacity-40 text-center">Assists</label>
+                                                <input type="number" name="assists" value={formData.assists} onChange={handleChange} className="w-full bg-white/5 border border-white/10 rounded-xl py-3 text-center font-bold text-white/60 focus:border-ef-accent focus:outline-none" />
+                                            </div>
+                                        </div>
+                                    </section>
+
+                                    {/* --- Section: Attributes --- */}
+                                    <section>
+                                        <div className="flex items-center gap-3 mb-4 opacity-70">
+                                            <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent to-cyan-500/20"></div>
+                                            <span className="text-[10px] font-black uppercase tracking-[0.4em] text-cyan-400 whitespace-nowrap">Card Attributes</span>
+                                            <div className="h-[1px] flex-1 bg-gradient-to-l from-transparent to-cyan-500/20"></div>
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div className="flex flex-col gap-1.5">
+                                                <label className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-1">Form/Condition</label>
+                                                <input type="text" name="Form" value={formData['Form'] || ''} onChange={handleChange} placeholder="Standard" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 font-bold text-white focus:border-ef-accent focus:outline-none" />
+                                            </div>
+                                            <div className="flex flex-col gap-1.5">
+                                                <label className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-1">Weak Foot Usage</label>
+                                                <input type="text" name="Weak Foot Usage" value={formData['Weak Foot Usage'] || ''} onChange={handleChange} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 font-bold text-white focus:border-ef-accent focus:outline-none" />
+                                            </div>
+                                            <div className="flex flex-col gap-1.5">
+                                                <label className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-1">Weak Foot Acc.</label>
+                                                <input type="text" name="Weak Foot Accuracy" value={formData['Weak Foot Accuracy'] || ''} onChange={handleChange} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 font-bold text-white focus:border-ef-accent focus:outline-none" />
+                                            </div>
+                                            <div className="flex flex-col gap-1.5">
+                                                <label className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-1">Injury Resistance</label>
+                                                <input type="text" name="Injury Resistance" value={formData['Injury Resistance'] || ''} onChange={handleChange} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 font-bold text-white focus:border-ef-accent focus:outline-none" />
+                                            </div>
+                                        </div>
+
+                                        <div className="mt-8 mb-8">
+                                            <label className="text-[10px] font-black uppercase tracking-[0.3em] text-ef-accent mb-4 block opacity-40 ml-1">Personalized Tags</label>
+                                            <div className="flex flex-wrap gap-2 mb-4 p-4 bg-white/[0.03] border border-white/5 rounded-2xl">
+                                                {formData.tags.length > 0 ? (
+                                                    formData.tags.map(tag => (
+                                                        <span key={tag} className="flex items-center gap-2 px-3 py-1.5 bg-ef-accent/10 border border-ef-accent/20 rounded-full text-ef-accent text-[10px] font-black uppercase tracking-widest group hover:bg-ef-accent/20 transition-all">
+                                                            #{tag}
+                                                            <button type="button" onClick={() => handleRemoveTag(tag)} className="text-white/20 hover:text-white transition-colors">✕</button>
+                                                        </span>
+                                                    ))
+                                                ) : (
+                                                    <span className="text-[10px] font-black uppercase tracking-widest opacity-20 py-2">No tags assigned</span>
+                                                )}
+                                            </div>
+                                            <div className="relative flex gap-2">
+                                                <input
+                                                    type="text"
+                                                    placeholder="Add new tag (e.g. Free Kick Specialist)"
+                                                    value={tagInput}
+                                                    onChange={(e) => setTagInput(e.target.value)}
+                                                    onKeyDown={handleAddTag}
+                                                    className="flex-1 bg-white/5 border border-white/10 rounded-xl px-5 py-3 text-white focus:border-ef-accent focus:outline-none transition-all text-[11px] font-bold"
+                                                />
+                                                <button type="button" onClick={handleAddTag} className="px-6 py-3 bg-ef-accent/20 hover:bg-ef-accent/30 border border-ef-accent/30 rounded-xl text-ef-accent text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 shadow-lg shadow-ef-accent/5">Add Tag</button>
+                                            </div>
+                                        </div>
+                                    </section>
+                                </div>
                             </div>
                         </form>
                     ) : (
@@ -1897,8 +2036,7 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
                         </div>
                     </div>
                 </div>
-                )}
-            </div>
+            )}
         </div>
     </div>
 );

@@ -18,7 +18,7 @@ const parseEfDate = (dateStr) => {
     return null;
 };
 
-const MySquadDB = ({ players, onBack, onImport }) => {
+const MySquadDB = ({ players, onBack, onImport, onPlayerClick }) => {
     const [search, setSearch] = useState('');
 
     const [showSettings, setShowSettings] = useState(false);
@@ -67,11 +67,13 @@ const MySquadDB = ({ players, onBack, onImport }) => {
             form: false,
             injury: false,
             featured: false,
-            dateAdded: true
+            dateAdded: true,
+            open: true
         };
     });
 
     const colLabels = [
+        { id: 'open', label: 'Action' },
         { id: 'image', label: 'Photo' },
         { id: 'name', label: 'Player Name' },
         { id: 'id', label: 'Player ID' },
@@ -733,6 +735,7 @@ const MySquadDB = ({ players, onBack, onImport }) => {
                                     {visibleCols.featured && <th className={`px-4 ${conciseMode ? 'py-1' : 'py-3'} text-left text-[10px] font-black uppercase tracking-wider opacity-40`}>Featured</th>}
                                     {visibleCols.createdAt && <th className={`px-4 ${conciseMode ? 'py-1' : 'py-3'} text-left text-[10px] font-black uppercase tracking-wider opacity-40`}>Uploaded</th>}
                                     {visibleCols.dateAdded && <th className={`px-4 ${conciseMode ? 'py-1' : 'py-3'} text-left text-[10px] font-black uppercase tracking-wider opacity-40`}>Added</th>}
+                                    {visibleCols.open && <th className={`px-4 ${conciseMode ? 'py-1' : 'py-3'} text-center text-[10px] font-black uppercase tracking-wider opacity-40`}>Details</th>}
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-white/5">
@@ -887,6 +890,17 @@ const MySquadDB = ({ players, onBack, onImport }) => {
                                                     const d = parseEfDate(player.DateAdded || player['Date Added']);
                                                     return d ? d.toLocaleDateString() : '---';
                                                 })()}
+                                            </td>
+                                        )}
+                                        {visibleCols.open && (
+                                            <td className={`px-4 ${conciseMode ? 'py-0.5' : 'py-3'} whitespace-nowrap text-center`}>
+                                                <button 
+                                                    onClick={(e) => { e.stopPropagation(); onPlayerClick(player); }}
+                                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-ef-blue/10 border border-ef-blue/20 text-ef-blue text-[9px] font-black uppercase tracking-widest hover:bg-ef-blue hover:text-white transition-all shadow-lg hover:shadow-ef-blue/40 active:scale-90 group/open"
+                                                >
+                                                    <span>Open</span>
+                                                    <span className="text-[10px] opacity-40 group-hover/open:opacity-100 transition-opacity">⚡</span>
+                                                </button>
                                             </td>
                                         )}
                                     </tr>

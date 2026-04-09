@@ -39,6 +39,23 @@ const SocialDrawer = lazy(() => import('./components/SocialDrawer'));
 const BrochureModal = lazy(() => import('./components/BrochureModal'));
 const MySquadDB = lazy(() => import('./components/MySquadDB'));
 
+const parseEfDate = (dateStr) => {
+  if (!dateStr) return null;
+  let d = new Date(dateStr);
+  if (!isNaN(d.getTime())) return d;
+  
+  // Handle "2 Apr '26" format
+  const match = String(dateStr).match(/(\d+)\s+([A-Za-z]+)\s+'(\d+)/);
+  if (match) {
+      const day = match[1];
+      const month = match[2];
+      const year = "20" + match[3];
+      const parsed = new Date(`${month} ${day}, ${year}`);
+      if (!isNaN(parsed.getTime())) return parsed;
+  }
+  return null;
+};
+
 function App() {
   const [players, setPlayers] = useState([]);
   const [squads, setSquads] = useState([]);
@@ -1220,13 +1237,23 @@ function App() {
       if (sortBy === 'name') return (a.name || '').localeCompare(b.name || '');
       if (sortBy === 'position') return (a.position || '').localeCompare(b.position || '');
       if (sortBy === 'dateAdded_desc') {
-        const dateA = new Date(a.dateAdded || a.createdAt || 0).getTime();
-        const dateB = new Date(b.dateAdded || b.createdAt || 0).getTime();
+        const dateA = parseEfDate(a['Date Added'] || a.DateAdded || a.dateAdded || 0)?.getTime() || 0;
+        const dateB = parseEfDate(b['Date Added'] || b.DateAdded || b.dateAdded || 0)?.getTime() || 0;
         return dateB - dateA;
       }
       if (sortBy === 'dateAdded_asc') {
-        const dateA = new Date(a.dateAdded || a.createdAt || 0).getTime();
-        const dateB = new Date(b.dateAdded || b.createdAt || 0).getTime();
+        const dateA = parseEfDate(a['Date Added'] || a.DateAdded || a.dateAdded || 0)?.getTime() || 0;
+        const dateB = parseEfDate(b['Date Added'] || b.DateAdded || b.dateAdded || 0)?.getTime() || 0;
+        return dateA - dateB;
+      }
+      if (sortBy === 'uploaded_desc') {
+        const dateA = new Date(a.createdAt || 0).getTime();
+        const dateB = new Date(b.createdAt || 0).getTime();
+        return dateB - dateA;
+      }
+      if (sortBy === 'uploaded_asc') {
+        const dateA = new Date(a.createdAt || 0).getTime();
+        const dateB = new Date(b.createdAt || 0).getTime();
         return dateA - dateB;
       }
       return 0;
@@ -2208,6 +2235,8 @@ function App() {
                   className="w-full bg-black/40 border border-white/10 rounded-xl px-5 py-3 text-sm font-bold outline-none cursor-pointer hover:border-ef-accent/50 transition-all text-white"
                 >
                   <option value="rating" className="text-black">Overall Rating</option>
+                  <option value="uploaded_desc" className="text-black">Date Uploaded (Newest)</option>
+                  <option value="uploaded_asc" className="text-black">Date Uploaded (Oldest)</option>
                   <option value="dateAdded_desc" className="text-black">Date Added (Newest)</option>
                   <option value="dateAdded_asc" className="text-black">Date Added (Oldest)</option>
                   <option value="goals" className="text-black">Top Scorer</option>
@@ -2817,6 +2846,7 @@ function App() {
                     players={players}
                     onBack={() => setView('list')}
                     onImport={handleImportSquadJSON}
+                    onPlayerClick={setSelectedPlayer}
                   />
                 )}
 

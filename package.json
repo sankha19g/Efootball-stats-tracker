@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "cheerio": "^1.2.0",
     "firebase-admin": "^11.8.0"
   }
 }
