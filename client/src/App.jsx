@@ -180,56 +180,6 @@ function App() {
           console.error("Error fetching user data:", err);
         } finally {
           setLoading(false);
-          
-          // Background sync for missing skills
-          setPlayers(currentPlayers => {
-            const playersMissingSkills = currentPlayers.filter(p => 
-              (!p.skills || p.skills.length === 0) && (p.pesdb_id || p.playerId)
-            );
-            
-            if (playersMissingSkills.length > 0) {
-              const syncMissingSkills = async () => {
-                try {
-                  const idsToFetch = playersMissingSkills.map(p => p.pesdb_id || p.playerId);
-                  const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001';
-                  const res = await fetch(`${baseUrl}/api/skills/bulk`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ pesdbIds: idsToFetch })
-                  });
-                  
-                  if (res.ok) {
-                    const bulkResults = await res.json();
-                    const updatedPlayersDict = {};
-                    
-                    await Promise.all(playersMissingSkills.map(async p => {
-                        const idCheck = p.pesdb_id || p.playerId;
-                        if (bulkResults[idCheck] && bulkResults[idCheck].length > 0) {
-                           const cleanSkills = bulkResults[idCheck].map(s => s?.trim()).filter(s => s && s !== '');
-                           try {
-                             await updatePlayer(user.uid, p._id, { skills: cleanSkills });
-                             updatedPlayersDict[p._id] = cleanSkills;
-                           } catch (updateErr) {
-                             console.error(`Failed to background save skills for ${p.name}`, updateErr);
-                           }
-                        }
-                    }));
-                    
-                    if (Object.keys(updatedPlayersDict).length > 0) {
-                       setPlayers(prev => prev.map(p => 
-                          updatedPlayersDict[p._id] ? { ...p, skills: updatedPlayersDict[p._id] } : p
-                       ));
-                       console.log(`✅ Background synced skills for ${Object.keys(updatedPlayersDict).length} players`);
-                    }
-                  }
-                } catch (e) {
-                  console.error("Background skills sync failed:", e);
-                }
-              };
-              syncMissingSkills();
-            }
-            return currentPlayers;
-          });
         }
       }
     };

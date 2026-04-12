@@ -18,24 +18,30 @@ const fs = require('fs');
 let pesdbPlayers = [];
 let soccerLeagues = [];
 
+// Utility to strip BOM from strings
+const stripBOM = (content) => content.startsWith('\uFEFF') ? content.slice(1) : content;
+
 try {
   const playersPath = path.join(__dirname, 'data', 'pesdb_players.json');
   const leaguesPath = path.join(__dirname, 'data', 'leagues.json');
 
   if (fs.existsSync(playersPath)) {
-    pesdbPlayers = JSON.parse(fs.readFileSync(playersPath, 'utf8'));
+    const content = fs.readFileSync(playersPath, 'utf8');
+    pesdbPlayers = JSON.parse(stripBOM(content));
     console.log(`✅ Loaded ${pesdbPlayers.length} players from local DB`);
   }
 
   if (fs.existsSync(leaguesPath)) {
-    const leaguesData = JSON.parse(fs.readFileSync(leaguesPath, 'utf8'));
+    const content = fs.readFileSync(leaguesPath, 'utf8');
+    const leaguesData = JSON.parse(stripBOM(content));
     soccerLeagues = leaguesData.countries || leaguesData; // Handle both formats
     console.log(`✅ Loaded ${soccerLeagues.length} leagues from local DB`);
   }
 
   const attributesPath = path.join(__dirname, 'data', 'efootball_attributes.json');
   if (fs.existsSync(attributesPath)) {
-    app.locals.attributes = JSON.parse(fs.readFileSync(attributesPath, 'utf8'));
+    const content = fs.readFileSync(attributesPath, 'utf8');
+    app.locals.attributes = JSON.parse(stripBOM(content));
     console.log('✅ Loaded eFootball attributes (playstyles, positions, etc.)');
   }
 } catch (err) {

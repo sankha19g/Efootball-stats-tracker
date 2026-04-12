@@ -85,8 +85,12 @@ const DatabasePlayerList = ({ onAddPlayers, onBack, settings, ownersPlayers = []
 
         const playersList = Array.from(selectedPlayers.values());
 
-        // Map to app player format
+        // Map to app player format — spread ALL scraped fields first, then override/add app-specific ones
         const playersToAdd = playersList.map(p => ({
+            // ── All scraped PESDB fields (pass through everything) ──
+            ...p,
+
+            // ── App-specific overrides ──
             name: p.name,
             image: p.image,
             nationality: p.nationality,
@@ -97,7 +101,7 @@ const DatabasePlayerList = ({ onAddPlayers, onBack, settings, ownersPlayers = []
             cardType: p.card_type || 'Normal',
             pesdb_id: p.id,
             playerId: p.id,
-            rating: 90,
+            rating: p.rating || 90,
             goals: 0,
             assists: 0,
             matches: 0,
@@ -105,7 +109,20 @@ const DatabasePlayerList = ({ onAddPlayers, onBack, settings, ownersPlayers = []
                 club: p.club_badge_url || '',
                 country: p.nationality_flag_url || '',
                 league: ''
-            }
+            },
+
+            // ── Scraped detail fields (explicit for safety) ──
+            height: p.height || '',
+            weight: p.weight || '',
+            age: p.age || '',
+            strongFoot: p.strongFoot || '',
+            skills: p.skills || [],
+            'Weak Foot Usage': p['Weak Foot Usage'] || '',
+            'Weak Foot Accuracy': p['Weak Foot Accuracy'] || '',
+            'Form': p['Form'] || '',
+            'Injury Resistance': p['Injury Resistance'] || '',
+            'Featured Players': p['Featured Players'] || '',
+            'Date Added': p['Date Added'] || ''
         }));
 
         onAddPlayers(playersToAdd);

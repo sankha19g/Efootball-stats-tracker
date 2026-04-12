@@ -20,6 +20,9 @@ const QuickStatsView = ({ players, onUpdate, onClose, user, activeSquad }) => {
     });
     const [searchRating, setSearchRating] = useState('');
     const [editingPlayerId, setEditingPlayerId] = useState(null);
+    const [isEditAllMode, setIsEditAllMode] = useState(false);
+    const [currentPaginationPage, setCurrentPaginationPage] = useState(1);
+    const ITEMS_PER_PAGE = 15;
 
     const categories = useMemo(() => {
         return {
@@ -89,6 +92,17 @@ const QuickStatsView = ({ players, onUpdate, onClose, user, activeSquad }) => {
 
         return result;
     }, [players, search, searchRating, filterInactive, filterSpecialChars, activeFilters, showMy11, my11Ids, sortBy]);
+
+    // Pagination logic
+    useEffect(() => {
+        setCurrentPaginationPage(1);
+    }, [search, searchRating, activeFilters, showMy11, sortBy, filterInactive, filterSpecialChars]);
+
+    const totalPages = Math.ceil(filteredPlayers.length / ITEMS_PER_PAGE);
+    const paginatedPlayers = useMemo(() => {
+        const start = (currentPaginationPage - 1) * ITEMS_PER_PAGE;
+        return filteredPlayers.slice(start, start + ITEMS_PER_PAGE);
+    }, [filteredPlayers, currentPaginationPage]);
 
     const handleStep = (player, field, delta) => {
         const newValue = Math.max(0, (player[field] || 0) + delta);
@@ -195,6 +209,16 @@ const QuickStatsView = ({ players, onUpdate, onClose, user, activeSquad }) => {
                                             {isRatingsUnlocked ? '🔓 Ratings' : '🔒 Ratings'}
                                         </button>
                                         <span className="w-1 h-1 rounded-full bg-white/20"></span>
+                                        <button
+                                            onClick={() => {
+                                                setIsEditAllMode(!isEditAllMode);
+                                                if (!isEditAllMode) setEditingPlayerId(null);
+                                            }}
+                                            className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded border transition-all ${isEditAllMode ? 'bg-red-500/20 border-red-500 text-red-500' : 'bg-white/5 border-white/10 text-white/40 hover:text-white'}`}
+                                        >
+                                            {isEditAllMode ? '🛑 Stop Edit All' : '📝 Edit All Mode'}
+                                        </button>
+                                        <span className="w-1 h-1 rounded-full bg-white/20"></span>
                                         <div className="flex items-center gap-1.5">
                                             <span className="text-[7px] font-black uppercase tracking-widest opacity-40 leading-none">Sort:</span>
                                             <select
@@ -236,7 +260,7 @@ const QuickStatsView = ({ players, onUpdate, onClose, user, activeSquad }) => {
                                     placeholder="Rating"
                                     value={searchRating}
                                     onChange={(e) => setSearchRating(e.target.value)}
-                                    className="w-full bg-black/40 border border-white/10 rounded-2xl pl-12 pr-4 py-3.5 text-sm font-black text-ef-accent outline-none focus:border-ef-accent/40 transition-all placeholder:text-white/10 appearance-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                    className="w-full bg-black/40 border border-white/10 rounded-2xl pl-12 pr-4 py-3.5 text-sm font-black text-ef-accent outline-none focus:border-ef-accent/40 transition-all placeholder:text-white/10 appearance-none"
                                 />
                             </div>
                         </div>
@@ -296,14 +320,14 @@ const QuickStatsView = ({ players, onUpdate, onClose, user, activeSquad }) => {
                         {/* Page 0: Match Stats & Ratings */}
                         <div className={`absolute inset-0 flex flex-col transition-all duration-500 transform ${activePage === 0 ? 'translate-x-0 opacity-100' : '-translate-x-full opacity-100 pointer-events-none'}`}>
                             <div className="flex-1 overflow-y-auto custom-scrollbar p-2 md:p-4 space-y-2">
-                                {filteredPlayers.length === 0 ? (
+                                {paginatedPlayers.length === 0 ? (
                                     <div className="h-60 flex flex-col items-center justify-center opacity-20">
                                         <span className="text-4xl mb-2">👤</span>
                                         <p className="text-xs font-black uppercase tracking-widest">No players found</p>
                                     </div>
                                 ) : (
-                                    filteredPlayers.map(player => {
-                                        const isEditing = editingPlayerId === player._id;
+                                    paginatedPlayers.map(player => {
+                                        const isEditing = isEditAllMode || editingPlayerId === player._id;
                                         return (
                                             <div key={player._id} className={`group bg-white/5 hover:bg-white/10 border border-white/5 rounded-2xl p-[3px] flex items-center justify-between gap-4 transition-all hover:border-white/10 ${isEditing ? 'bg-white/10 border-ef-accent/30' : ''}`}>
                                                 {/* Photo & Basic Info */}
@@ -363,10 +387,12 @@ const QuickStatsView = ({ players, onUpdate, onClose, user, activeSquad }) => {
                                                                 onManual={(val) => handleManualUpdate(player, 'assists', val)}
                                                                 color="ef-blue"
                                                             />
-                                                            <button
-                                                                onClick={() => setEditingPlayerId(null)}
-                                                                className="ml-2 w-8 h-8 rounded-lg bg-green-500/20 text-green-500 hover:bg-green-500 hover:text-white transition-all flex items-center justify-center font-black text-xs"
-                                                            >✓</button>
+                                                            {!isEditAllMode && (
+                                                                <button
+                                                                    onClick={() => setEditingPlayerId(null)}
+                                                                    className="ml-2 w-8 h-8 rounded-lg bg-green-500/20 text-green-500 hover:bg-green-500 hover:text-white transition-all flex items-center justify-center font-black text-xs"
+                                                                >✓</button>
+                                                            )}
                                                         </>
                                                     ) : (
                                                         <>
@@ -407,14 +433,14 @@ const QuickStatsView = ({ players, onUpdate, onClose, user, activeSquad }) => {
                         {/* Page 2: Photos */}
                         <div className={`absolute inset-0 flex flex-col transition-all duration-500 transform ${activePage === 2 ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-100 pointer-events-none'}`}>
                             <div className="flex-1 overflow-y-auto custom-scrollbar p-2 md:p-4 space-y-2">
-                                {filteredPlayers.length === 0 ? (
+                                {paginatedPlayers.length === 0 ? (
                                     <div className="h-60 flex flex-col items-center justify-center opacity-20">
                                         <span className="text-4xl mb-2">👤</span>
                                         <p className="text-xs font-black uppercase tracking-widest">No players found</p>
                                     </div>
                                 ) : (
                                     <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-                                        {filteredPlayers.map(player => (
+                                        {paginatedPlayers.map(player => (
                                             <PhotoUploadCard key={player._id} player={player} onUpdate={onUpdate} />
                                         ))}
                                     </div>
@@ -425,13 +451,13 @@ const QuickStatsView = ({ players, onUpdate, onClose, user, activeSquad }) => {
                         {/* Page 3: Secondary Positions */}
                         <div className={`absolute inset-0 flex flex-col transition-all duration-500 transform ${activePage === 3 ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-100 pointer-events-none'}`}>
                             <div className="flex-1 overflow-y-auto custom-scrollbar p-2 md:p-4 space-y-2">
-                                {filteredPlayers.length === 0 ? (
+                                {paginatedPlayers.length === 0 ? (
                                     <div className="h-60 flex flex-col items-center justify-center opacity-20">
                                         <span className="text-4xl mb-2">👤</span>
                                         <p className="text-xs font-black uppercase tracking-widest">No players found</p>
                                     </div>
                                 ) : (
-                                    filteredPlayers.map(player => (
+                                    paginatedPlayers.map(player => (
                                         <div key={player._id} className="group bg-white/5 hover:bg-white/10 border border-white/5 rounded-2xl p-[3px] flex items-center justify-between gap-4 transition-all hover:border-white/10">
                                             {/* Photo & Info */}
                                             <div className="flex items-center gap-3 w-1/3 min-w-0">
@@ -469,13 +495,13 @@ const QuickStatsView = ({ players, onUpdate, onClose, user, activeSquad }) => {
                         {/* Page 4: Rename Players */}
                         <div className={`absolute inset-0 flex flex-col transition-all duration-500 transform ${activePage === 4 ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-100 pointer-events-none'}`}>
                             <div className="flex-1 overflow-y-auto custom-scrollbar p-2 md:p-4 space-y-2">
-                                {filteredPlayers.length === 0 ? (
+                                {paginatedPlayers.length === 0 ? (
                                     <div className="h-60 flex flex-col items-center justify-center opacity-20">
                                         <span className="text-4xl mb-2">👤</span>
                                         <p className="text-xs font-black uppercase tracking-widest">No players found</p>
                                     </div>
                                 ) : (
-                                    filteredPlayers.map(player => (
+                                    paginatedPlayers.map(player => (
                                         <div key={player._id} className="group bg-white/5 hover:bg-white/10 border border-white/5 rounded-2xl p-[3px] flex items-center justify-between gap-4 transition-all hover:border-white/10">
                                             {/* Photo & Basic Info */}
                                             <div className="flex items-center gap-3 w-1/3 min-w-0">
@@ -513,13 +539,13 @@ const QuickStatsView = ({ players, onUpdate, onClose, user, activeSquad }) => {
                         {/* Page 5: Date Added */}
                         <div className={`absolute inset-0 flex flex-col transition-all duration-500 transform ${activePage === 5 ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-100 pointer-events-none'}`}>
                             <div className="flex-1 overflow-y-auto custom-scrollbar p-2 md:p-4 space-y-2">
-                                {filteredPlayers.length === 0 ? (
+                                {paginatedPlayers.length === 0 ? (
                                     <div className="h-60 flex flex-col items-center justify-center opacity-20">
                                         <span className="text-4xl mb-2">👤</span>
                                         <p className="text-xs font-black uppercase tracking-widest">No players found</p>
                                     </div>
                                 ) : (
-                                    filteredPlayers.map(player => (
+                                    paginatedPlayers.map(player => (
                                         <div key={player._id} className="group bg-white/5 hover:bg-white/10 border border-white/5 rounded-2xl p-[3px] flex items-center justify-between gap-4 transition-all hover:border-white/10">
                                             {/* Photo & Info */}
                                             <div className="flex items-center gap-3 w-1/3 min-w-0">
@@ -555,8 +581,38 @@ const QuickStatsView = ({ players, onUpdate, onClose, user, activeSquad }) => {
                         </div>
                     </div>
 
-                    <div className="flex flex-col items-center gap-2 pb-2">
-                        <p className="text-[10px] font-black uppercase tracking-widest opacity-30">Changes are saved automatically</p>
+                    <div className="flex border-t border-white/5 bg-white/5 px-6 py-3 items-center justify-between">
+                        <div className="flex items-center gap-4">
+                            <p className="text-[10px] font-black uppercase tracking-widest opacity-30">Changes saved automatically</p>
+                            <span className="w-1 h-1 rounded-full bg-white/10"></span>
+                            <p className="text-[10px] font-black uppercase tracking-widest opacity-30">
+                                {filteredPlayers.length} total players
+                            </p>
+                        </div>
+
+                        {totalPages > 1 && (
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => setCurrentPaginationPage(prev => Math.max(1, prev - 1))}
+                                    disabled={currentPaginationPage === 1}
+                                    className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-white/40 hover:text-white hover:bg-white/10 disabled:opacity-20 transition-all font-black"
+                                >
+                                    ←
+                                </button>
+                                <div className="flex items-center gap-1.5 px-3">
+                                    <span className="text-[11px] font-black text-ef-accent">{currentPaginationPage}</span>
+                                    <span className="text-[9px] font-black opacity-20 uppercase tracking-widest">of</span>
+                                    <span className="text-[11px] font-black text-white/40">{totalPages}</span>
+                                </div>
+                                <button
+                                    onClick={() => setCurrentPaginationPage(prev => Math.min(totalPages, prev + 1))}
+                                    disabled={currentPaginationPage === totalPages}
+                                    className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-white/40 hover:text-white hover:bg-white/10 disabled:opacity-20 transition-all font-black"
+                                >
+                                    →
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

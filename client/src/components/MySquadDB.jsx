@@ -68,6 +68,7 @@ const MySquadDB = ({ players, onBack, onImport, onPlayerClick }) => {
             injury: false,
             featured: false,
             dateAdded: true,
+            skills: false,
             open: true
         };
     });
@@ -94,7 +95,8 @@ const MySquadDB = ({ players, onBack, onImport, onPlayerClick }) => {
         { id: 'weakAccuracy', label: 'Weak Foot Accuracy' },
         { id: 'form', label: 'Form' },
         { id: 'injury', label: 'Injury Resistance' },
-        { id: 'featured', label: 'Featured Players' }
+        { id: 'featured', label: 'Featured Players' },
+        { id: 'skills', label: 'Skills' }
     ];
 
     useEffect(() => {
@@ -733,6 +735,7 @@ const MySquadDB = ({ players, onBack, onImport, onPlayerClick }) => {
                                     {visibleCols.form && <th className={`px-4 ${conciseMode ? 'py-1' : 'py-3'} text-left text-[10px] font-black uppercase tracking-wider opacity-40`}>Form</th>}
                                     {visibleCols.injury && <th className={`px-4 ${conciseMode ? 'py-1' : 'py-3'} text-left text-[10px] font-black uppercase tracking-wider opacity-40`}>Injury Resistance</th>}
                                     {visibleCols.featured && <th className={`px-4 ${conciseMode ? 'py-1' : 'py-3'} text-left text-[10px] font-black uppercase tracking-wider opacity-40`}>Featured</th>}
+                                    {visibleCols.skills && <th className={`px-4 ${conciseMode ? 'py-1' : 'py-3'} text-left text-[10px] font-black uppercase tracking-wider opacity-40`}>Skills</th>}
                                     {visibleCols.createdAt && <th className={`px-4 ${conciseMode ? 'py-1' : 'py-3'} text-left text-[10px] font-black uppercase tracking-wider opacity-40`}>Uploaded</th>}
                                     {visibleCols.dateAdded && <th className={`px-4 ${conciseMode ? 'py-1' : 'py-3'} text-left text-[10px] font-black uppercase tracking-wider opacity-40`}>Added</th>}
                                     {visibleCols.open && <th className={`px-4 ${conciseMode ? 'py-1' : 'py-3'} text-center text-[10px] font-black uppercase tracking-wider opacity-40`}>Details</th>}
@@ -877,6 +880,20 @@ const MySquadDB = ({ players, onBack, onImport, onPlayerClick }) => {
                                                     }
                                                     return <span className="text-ef-blue uppercase text-[9px] tracking-tighter">{val}</span>;
                                                 })()}
+                                            </td>
+                                        )}
+                                        {visibleCols.skills && (
+                                            <td className={`px-4 ${conciseMode ? 'py-0.5' : 'py-3'} whitespace-nowrap`}>
+                                                <div className="flex flex-wrap gap-1 max-w-[200px]">
+                                                    {[...(player.skills || []), ...(player.additionalSkills || [])].filter(Boolean).map((skill, idx) => (
+                                                        <span key={idx} className={`text-[7px] font-black uppercase px-1 py-0.5 rounded ${SPECIAL_SKILLS.includes(skill) ? 'bg-red-500/10 text-red-500 border border-red-500/20' : 'bg-white/5 text-white/40 border border-white/10'}`}>
+                                                            {skill}
+                                                        </span>
+                                                    ))}
+                                                    {[...(player.skills || []), ...(player.additionalSkills || [])].filter(Boolean).length === 0 && (
+                                                        <span className="text-[8px] font-bold opacity-20 uppercase">No Skills</span>
+                                                    )}
+                                                </div>
                                             </td>
                                         )}
                                         {visibleCols.createdAt && (

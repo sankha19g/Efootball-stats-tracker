@@ -19,6 +19,85 @@ const countryCodeMap = {
     'Scotland': 'GB-SCT', 'Croatia': 'HR', 'Serbia': 'RS', 'Switzerland': 'CH'
 };
 
+// ─── Date extraction from PESDB player ID and URL ─────────────────────────────
+// For featured/special cards the first 10 digits of the ID encode a Unix timestamp.
+function extractDateFromId(id) {
+    if (!id || id.length < 10) return '';
+    const ts = parseInt(id.slice(0, 10), 10);
+    if (isNaN(ts) || ts < 1000000000 || ts > 9999999999) return '';
+    const d = new Date(ts * 1000);
+    if (isNaN(d.getTime())) return '';
+    return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: '2-digit' });
+}
+
+// Build a human-readable pack name from the PESDB featured URL slug.
+// e.g. "potw-9-apr-26"         → "POTW 9 Apr '26"
+//      "epic-j-league-apr-9-26" → "Epic J League 9 Apr '26"
+//      "1760" (numeric)         → "" (no slug to parse)
+function extractFeaturedFromUrl(url) {
+    try {
+        const u = new URL(url);
+        const MONTHS = { jan:0, feb:1, mar:2, apr:3, may:4, jun:5,
+                         jul:6, aug:7, sep:8, oct:9, nov:10, dec:11 };
+        const MON_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+        // ── time_added param → just a date, no pack name ──
+        const ta = u.searchParams.get('time_added');
+        if (ta) {
+            const d = new Date(parseInt(ta) * 1000);
+            if (!isNaN(d.getTime()))
+                return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: '2-digit' });
+        }
+
+        const feat = u.searchParams.get('featured') || '';
+        // Skip pure numeric IDs (e.g. featured=1760)
+        if (!feat || /^\d+$/.test(feat)) return '';
+
+        // Try to find a date tail: -MMM-D-YY or -D-MMM-YY
+        // e.g.  potw-9-apr-26  |  epic-j-league-apr-9-26  |  worldwide-9-apr-26
+        const dateRe1 = /-(\d{1,2})-([a-z]{3})-(\d{2})$/i; // -9-apr-26
+        const dateRe2 = /-([a-z]{3})-(\d{1,2})-(\d{2})$/i; // -apr-9-26
+
+        let m = feat.match(dateRe1) || feat.match(dateRe2);
+        let dateStr = '';
+        let packSlug = feat;
+
+        if (m) {
+            // Determine which capture group is month vs day
+            let mon, day, yr2;
+            if (/^\d+$/.test(m[1])) { // -9-apr-26
+                day = parseInt(m[1]); mon = m[2].toLowerCase(); yr2 = parseInt(m[3]);
+            } else {                   // -apr-9-26
+                mon = m[1].toLowerCase(); day = parseInt(m[2]); yr2 = parseInt(m[3]);
+            }
+            if (MONTHS[mon] !== undefined) {
+                const monthName = MON_NAMES[MONTHS[mon]];
+                dateStr = `${day} ${monthName} '${yr2.toString().padStart(2,'0')}`;
+                // Strip the matched date tail from the slug to get the pack name part
+                packSlug = feat.slice(0, feat.length - m[0].length);
+            }
+        }
+
+        // Format the pack name: split by '-', capitalize known acronyms
+        const ACRONYMS = new Set(['POTW','GK','J','MLS','UEFA','FIFA','LA','FC']);
+        const packName = packSlug
+            .split('-')
+            .filter(Boolean)
+            .map(w => {
+                const upper = w.toUpperCase();
+                return ACRONYMS.has(upper) ? upper : w.charAt(0).toUpperCase() + w.slice(1);
+            })
+            .join(' ');
+
+        if (packName && dateStr) return `${packName} ${dateStr}`;
+        if (packName) return packName;
+        if (dateStr) return dateStr;
+    } catch(_) {}
+    return '';
+}
+
+// Fallback: decode date only from player ID first 10 digits.
+
 async function scrapeSinglePlayer(url) {
     console.log('[Scraper] Fetching Single Player URL:', url);
     const { data } = await axios.get(url, {
@@ -45,12 +124,23 @@ async function scrapeSinglePlayer(url) {
         card_type: 'Normal',
         playstyle: 'None',
         rating: 0,
-        skills: []
+        skills: [],
+        height: '',
+        weight: '',
+        age: '',
+        strongFoot: '',
+        'Date Added': '',
+        'Featured Players': '',
+        'Weak Foot Usage': '',
+        'Weak Foot Accuracy': '',
+        'Form': '',
+        'Injury Resistance': ''
     };
 
     // Extract basic info from table.player
     $('table.player th').each((idx, th) => {
-        const headerText = $(th).text().trim().toLowerCase();
+        // Strip trailing colon — PESDB emits "Height:", "Age:", "Foot:" etc.
+        const headerText = $(th).text().trim().toLowerCase().replace(/:$/, '').trim();
         const nextTd = $(th).next('td');
         const val = nextTd.text().trim();
 
@@ -60,18 +150,46 @@ async function scrapeSinglePlayer(url) {
         if (headerText.includes('league')) player.league = val;
         if (headerText.includes('position')) player.position = val;
         if (headerText.includes('overall rating')) player.rating = parseInt(val) || 0;
+
+        // Physical Attributes
+        if (headerText.includes('height')) player.height = parseInt(val) || val;
+        if (headerText.includes('weight')) player.weight = parseInt(val) || val;
+        if (headerText.includes('age') && !headerText.includes('usage')) player.age = parseInt(val) || val;
+        if (headerText.includes('foot') && !headerText.includes('weak')) player.strongFoot = val;
+
+        // Card / Pack Info
+        if (headerText.includes('date added') || headerText.includes('release date')) player['Date Added'] = val;
+        if (headerText.includes('featured') || headerText.includes('pack')) player['Featured Players'] = val;
+
+        // Technical Attributes
+        if (headerText.includes('weak foot usage') || headerText === 'weak foot use') player['Weak Foot Usage'] = val;
+        if (headerText.includes('weak foot accuracy') || headerText === 'weak foot acc') player['Weak Foot Accuracy'] = val;
+        if (headerText === 'form' || headerText.includes('condition') || headerText.includes('player form')) player['Form'] = val;
+        if (headerText.includes('injury')) player['Injury Resistance'] = val;
         
+        // ── Player Playing Style (exact match — must NOT match "ai playing style") ──
         if (headerText === 'playing style') {
-            // First try the current row (td next to th)
-            if (val && val !== 'None' && val.length > 3) {
+            // PESDB: value is sometimes in the sibling td, sometimes in the next row
+            if (val && val !== 'None' && val.length > 1) {
                 player.playstyle = val;
             } else {
-                // Legacy/fallback: check next row
-                const nextRowText = $(th).parent().next('tr').find('td').text().trim();
-                if (nextRowText && nextRowText.length > 3) player.playstyle = nextRowText;
+                const nextRowVal = $(th).parent().next('tr').find('td').first().text().trim();
+                if (nextRowVal && nextRowVal.length > 1) player.playstyle = nextRowVal;
             }
         }
 
+        // ── Featured Pack / Players ──
+        if (headerText === 'featured players' || headerText === 'featured' || headerText === 'pack') {
+            // Value is sometimes in sibling td, sometimes in the next row
+            if (val && val.length > 1) {
+                player['Featured Players'] = val;
+            } else {
+                const nextRowVal = $(th).parent().next('tr').find('td').first().text().trim();
+                if (nextRowVal && nextRowVal.length > 1) player['Featured Players'] = nextRowVal;
+            }
+        }
+
+        // ── Player Skills ──
         if (headerText.includes('player skills') || headerText === 'skills') {
             $(th).parent().nextAll('tr').each((j, row) => {
                 const rowText = $(row).text().trim().toLowerCase();
@@ -81,7 +199,7 @@ async function scrapeSinglePlayer(url) {
                 // On PESDB, skills are in td. Some rows might have 2 tds (label: value) or just 1 (skill name)
                 $(row).find('td').each((k, td) => {
                     const skill = $(td).text().trim();
-                    if (skill && skill.length > 2 && !player.skills.includes(skill) && player.skills.length < 15) {
+                    if (skill && skill.length > 2 && !player.skills.includes(skill) && player.skills.length < 20) {
                         player.skills.push(skill);
                     }
                 });
@@ -186,6 +304,11 @@ async function scrapePesdb(url) {
             if (url.includes('epic=')) card_type = 'Epic';
             if (id.length >= 14 && url.includes('featured=')) card_type = 'Featured';
 
+            // Date Added: decode from player ID
+            const dateAdded = extractDateFromId(id);
+            // Featured Pack: parse from URL slug (e.g. "POTW 9 Apr '26")
+            const featuredPack = extractFeaturedFromUrl(url);
+
             // Special images: f[ID]max.png
             const isSpecialCard = id.length >= 10 && id.startsWith('1') || id.startsWith('8');
             const prefix = isSpecialCard ? 'f' : '';
@@ -209,7 +332,12 @@ async function scrapePesdb(url) {
                 club_original: club,
                 club_badge_url: '',
                 playstyle: 'None', // Requires individual page scraping
-                skills: []
+                skills: [],
+                height: '', weight: '', age: '', strongFoot: '',
+                'Date Added': dateAdded,
+                'Featured Players': featuredPack,
+                'Weak Foot Usage': '', 'Weak Foot Accuracy': '',
+                'Form': '', 'Injury Resistance': ''
             });
         }
     });
@@ -234,39 +362,73 @@ async function scrapePesdb(url) {
                  const detail$ = cheerio.load(detailData);
  
                  detail$('table.player th').each((idx, th) => {
-                     const headerText = detail$(th).text().trim().toLowerCase();
+                     // Strip trailing colon — PESDB emits "Height:", "Age:", "Foot:" etc.
+                     const headerText = detail$(th).text().trim().toLowerCase().replace(/:$/, '').trim();
+                     const val = detail$(th).next('td').text().trim();
  
+                     // ── Player Playing Style (exact — excludes "ai playing style") ──
                      if (headerText === 'playing style') {
-                        const directVal = detail$(th).next('td').text().trim();
-                        if (directVal && directVal !== 'None' && directVal.length > 3) {
-                            player.playstyle = directVal;
+                        if (val && val !== 'None' && val.length > 1) {
+                            player.playstyle = val;
                         } else {
-                            player.playstyle = detail$(th).parent().next('tr').find('td').text().trim() || 'None';
+                            const nextRowVal = detail$(th).parent().next('tr').find('td').first().text().trim();
+                            if (nextRowVal && nextRowVal.length > 1) player.playstyle = nextRowVal;
                         }
                     }
- 
-                     if (headerText.includes('league')) {
-                         player.league = detail$(th).next('td').text().trim() || 'Other';
+
+                     if (headerText.includes('league')) player.league = val || 'Other';
+
+                     // Physical
+                     if (headerText.includes('height')) player.height = parseInt(val) || val;
+                     if (headerText.includes('weight')) player.weight = parseInt(val) || val;
+                     if (headerText.includes('age') && !headerText.includes('usage')) player.age = parseInt(val) || val;
+                     if (headerText.includes('foot') && !headerText.includes('weak')) player.strongFoot = val;
+
+                     // Card / Pack
+                     if (headerText.includes('date added') || headerText.includes('release date')) player['Date Added'] = val;
+
+                     // ── Featured Pack (exact — avoid matching random rows with 'featured') ──
+                     if (headerText === 'featured players' || headerText === 'featured' || headerText === 'pack') {
+                         if (val && val.length > 1) {
+                             player['Featured Players'] = val;
+                         } else {
+                             const nextRowVal = detail$(th).parent().next('tr').find('td').first().text().trim();
+                             if (nextRowVal && nextRowVal.length > 1) player['Featured Players'] = nextRowVal;
+                         }
                      }
+
+                     // Technical
+                     if (headerText.includes('weak foot usage') || headerText === 'weak foot use') player['Weak Foot Usage'] = val;
+                     if (headerText.includes('weak foot accuracy') || headerText === 'weak foot acc') player['Weak Foot Accuracy'] = val;
+                     if (headerText === 'form' || headerText.includes('condition') || headerText.includes('player form')) player['Form'] = val;
+                     if (headerText.includes('injury')) player['Injury Resistance'] = val;
                  });
 
+
+                 // Fallback: derive Date Added from player ID if not found on page
+                 if (!player['Date Added']) {
+                     player['Date Added'] = extractDateFromId(player.id);
+                 }
+
                  // Extract Skills in batch fetch
-                 detail$('th, td').each((i, el) => {
-                    const txt = detail$(el).text().trim().toLowerCase();
-                    if (txt === 'player skills' || txt === 'skills' || txt.includes('player skills')) {
-                        detail$(el).parent().nextAll('tr').each((j, row) => {
-                            const rowText = detail$(row).text().trim().toLowerCase();
-                            if (detail$(row).find('th').length > 0 || rowText.includes('ai playing style')) return false;
-                            
-                            detail$(row).find('td').each((k, td) => {
-                                const skill = detail$(td).text().trim();
-                                if (skill && skill.length > 2 && !player.skills.includes(skill) && player.skills.length < 15) {
-                                    player.skills.push(skill);
-                                }
-                            });
-                        });
-                    }
-                 });
+                 if (player.skills.length === 0) {
+                     detail$('th, td').each((i, el) => {
+                         const txt = detail$(el).text().trim().toLowerCase();
+                         if (txt === 'player skills' || txt === 'skills' || txt.includes('player skills')) {
+                             detail$(el).parent().nextAll('tr').each((j, row) => {
+                                 const rowText = detail$(row).text().trim().toLowerCase();
+                                 if (detail$(row).find('th').length > 0 || rowText.includes('ai playing style')) return false;
+                                 
+                                 detail$(row).find('td').each((k, td) => {
+                                     const skill = detail$(td).text().trim();
+                                     if (skill && skill.length > 2 && !player.skills.includes(skill) && player.skills.length < 20) {
+                                         player.skills.push(skill);
+                                     }
+                                 });
+                             });
+                         }
+                     });
+                 }
  
                  // Extract accurate image
                  detail$('img').each((i, img) => {
