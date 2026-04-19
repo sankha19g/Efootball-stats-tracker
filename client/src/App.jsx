@@ -43,15 +43,15 @@ const parseEfDate = (dateStr) => {
   if (!dateStr) return null;
   let d = new Date(dateStr);
   if (!isNaN(d.getTime())) return d;
-  
+
   // Handle "2 Apr '26" format
   const match = String(dateStr).match(/(\d+)\s+([A-Za-z]+)\s+'(\d+)/);
   if (match) {
-      const day = match[1];
-      const month = match[2];
-      const year = "20" + match[3];
-      const parsed = new Date(`${month} ${day}, ${year}`);
-      if (!isNaN(parsed.getTime())) return parsed;
+    const day = match[1];
+    const month = match[2];
+    const year = "20" + match[3];
+    const parsed = new Date(`${month} ${day}, ${year}`);
+    if (!isNaN(parsed.getTime())) return parsed;
   }
   return null;
 };
@@ -59,7 +59,13 @@ const parseEfDate = (dateStr) => {
 function App() {
   const [players, setPlayers] = useState([]);
   const [squads, setSquads] = useState([]);
-  const [view, setView] = useState('list'); // 'list', 'leaderboard', or 'squad-builder'
+  const [view, setView] = useState(() => localStorage.getItem('ef-app-view') || 'list'); // 'list', 'leaderboard', or 'squad-builder'
+
+  // Persist App View
+  useEffect(() => {
+    localStorage.setItem('ef-app-view', view);
+  }, [view]);
+
   const [loading, setLoading] = useState(true);
   const [importPreviewData, setImportPreviewData] = useState(null);
 
@@ -759,10 +765,10 @@ function App() {
 
     importedPlayers.forEach(imp => {
       // Identify player by _id, ID, pesdb_id, or playerId
-      const match = existingPlayers.find(p => 
-        (imp._id && p._id === imp._id) || 
+      const match = existingPlayers.find(p =>
+        (imp._id && p._id === imp._id) ||
         (imp.id && p._id === imp.id) ||
-        (imp.playerId && p.playerId === imp.playerId) || 
+        (imp.playerId && p.playerId === imp.playerId) ||
         (imp.pesdb_id && p.pesdb_id === imp.pesdb_id) ||
         (imp.ID && (p.playerId === String(imp.ID) || p.pesdb_id === String(imp.ID)))
       );
@@ -806,14 +812,14 @@ function App() {
         Object.keys(imp).forEach(k => {
           const trimmedKey = k.trim();
           const internalKey = mapping[trimmedKey] || trimmedKey;
-          
+
           // Exclude internal fields and the primary ID used for matching
           if (['_id', 'id', 'ID', '#', 'Photo'].includes(internalKey)) return;
-          
+
           if (imp[k] !== undefined && imp[k] !== null && imp[k] !== '') {
             const newVal = imp[k];
             const oldVal = match[internalKey];
-            
+
             // Only consider it a change if values are different
             if (String(newVal) !== String(oldVal || "")) {
               updates[internalKey] = newVal;
@@ -837,24 +843,24 @@ function App() {
         Object.keys(imp).forEach(k => {
           const internalKey = mapping[k] || k;
           if (internalKey === '#' || internalKey === 'Photo' || internalKey === 'DateAdded') return;
-          
+
           if (k === 'ID') newPlayer.pesdb_id = String(imp[k]);
           else if (imp[k] !== undefined && imp[k] !== null && imp[k] !== '') {
             newPlayer[internalKey] = imp[k];
           }
-          
+
           if (newPlayer[internalKey]) {
-             changes.push({ field: internalKey, new: newPlayer[internalKey] });
+            changes.push({ field: internalKey, new: newPlayer[internalKey] });
           }
         });
-        
+
         if (newPlayer.name || newPlayer.pesdb_id) {
-           toAdd.push(newPlayer);
-           details.push({
-             name: newPlayer.name || 'New Player',
-             type: 'add',
-             changes
-           });
+          toAdd.push(newPlayer);
+          details.push({
+            name: newPlayer.name || 'New Player',
+            type: 'add',
+            changes
+          });
         }
       }
     });
@@ -1046,7 +1052,13 @@ function App() {
   };
 
   // Search State
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(() => localStorage.getItem('ef-app-search') || '');
+
+  useEffect(() => {
+    localStorage.setItem('ef-app-search', searchQuery);
+  }, [searchQuery]);
+
+
 
   // Reset pagination when filters change
   useEffect(() => {
@@ -1123,11 +1135,11 @@ function App() {
         const check = (arr) => {
           if (!arr) return false;
           const skillsArray = Array.isArray(arr) ? arr : [arr];
-          
+
           if (filterSkill === 'Any Special Skill') {
             return skillsArray.some(s => SPECIAL_SKILLS.includes(s));
           }
-          
+
           return skillsArray.some(s => s?.toString().toLowerCase().trim() === target);
         };
         return check(p.skills) || check(p.additionalSkills);
@@ -2155,13 +2167,13 @@ function App() {
                       >
                         <option value="All" className="text-black">All Skills</option>
                         <option value="Any Special Skill" className="text-black font-black">✨ Any Special Skill</option>
-                        
+
                         <optgroup label="Special Skills" className="text-black bg-white/5">
                           {SPECIAL_SKILLS.map(skill => (
                             <option key={skill} value={skill} className="text-black">{skill}</option>
                           ))}
                         </optgroup>
-                        
+
                         <optgroup label="Standard Skills" className="text-black bg-white/5">
                           {PLAYER_SKILLS.map(skill => (
                             <option key={skill} value={skill} className="text-black">{skill}</option>
@@ -2413,9 +2425,9 @@ function App() {
                   <>
                     <div className={`grid ${settings.cardSize === 'mini' ? 'grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-3 md:gap-4' :
                       settings.cardSize === 'xs' ? 'grid-cols-5 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-1' :
-                      settings.cardSize === 'sm' ? 'grid-cols-4 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-2 md:gap-3' :
-                        settings.cardSize === 'md' ? 'grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-4' :
-                          'grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6'
+                        settings.cardSize === 'sm' ? 'grid-cols-4 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-2 md:gap-3' :
+                          settings.cardSize === 'md' ? 'grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-4' :
+                            'grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6'
                       } ${settings.highPerf ? '![animation:none]' : ''}`}>
                       {(settings.enablePagination
                         ? processedPlayers.slice((currentPage - 1) * settings.itemsPerPage, currentPage * settings.itemsPerPage)
@@ -2625,13 +2637,13 @@ function App() {
                               >
                                 <option value="" className="text-white/40 italic">-- Any Skill --</option>
                                 <option value="Any Special Skill" className="bg-ef-dark text-ef-accent font-black">✨ Any Special Skill</option>
-                                
+
                                 <optgroup label="Special Skills" className="bg-ef-dark text-white/50">
                                   {SPECIAL_SKILLS.map(s => (
                                     <option key={s} value={s} className="bg-ef-dark text-white">{s}</option>
                                   ))}
                                 </optgroup>
-                                
+
                                 <optgroup label="Standard Skills" className="bg-ef-dark text-white/50">
                                   {PLAYER_SKILLS.map(s => (
                                     <option key={s} value={s} className="bg-ef-dark text-white">{s}</option>
@@ -2736,8 +2748,8 @@ function App() {
                         const matchesClub = !lbFilters.club || normalizeString(p.club).includes(normalizeString(lbFilters.club));
                         const matchesLeague = !lbFilters.league || normalizeString(p.league).includes(normalizeString(lbFilters.league));
                         const matchesCountry = !lbFilters.country || normalizeString(p.nationality).includes(normalizeString(lbFilters.country));
-                        const matchesSkill = !lbFilters.skill || 
-                          (lbFilters.skill === 'Any Special Skill' 
+                        const matchesSkill = !lbFilters.skill ||
+                          (lbFilters.skill === 'Any Special Skill'
                             ? ((p.skills && p.skills.some(s => SPECIAL_SKILLS.includes(s))) || (p.additionalSkills && p.additionalSkills.some(s => SPECIAL_SKILLS.includes(s))))
                             : ((p.skills && p.skills.includes(lbFilters.skill)) || (p.additionalSkills && p.additionalSkills.includes(lbFilters.skill))));
                         const matchesType = lbFilters.cardTypes.length === 0 || lbFilters.cardTypes.includes(p.cardType);
@@ -2791,16 +2803,16 @@ function App() {
           />
         )}
 
-                {view === 'squad-db' && (
-                  <MySquadDB
-                    players={players}
-                    onBack={() => setView('list')}
-                    onImport={handleImportSquadJSON}
-                    onPlayerClick={setSelectedPlayer}
-                  />
-                )}
+        {view === 'squad-db' && (
+          <MySquadDB
+            players={players}
+            onBack={() => setView('list')}
+            onImport={handleImportSquadJSON}
+            onPlayerClick={setSelectedPlayer}
+          />
+        )}
 
-                {view === 'quick-stats' && (
+        {view === 'quick-stats' && (
           <QuickStatsView
             players={players}
             user={user}

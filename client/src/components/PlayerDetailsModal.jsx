@@ -604,7 +604,7 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
 
                 {/* Left Side: Card Visual & Quick Info */}
                 <div className={`w-full md:w-1/3 p-6 md:p-8 pt-24 md:pt-28 flex flex-col gap-4 md:gap-6 ${getCardStyles(formData.cardType).bg} md:border-r border-white/5 relative overflow-hidden h-fit md:h-full shrink-0 group/left font-sans`}>
-                    
+
                     {/* Dynamic Background Glow & Decorative Elements */}
                     <div className="absolute inset-0 pointer-events-none">
                         {formData.image && (
@@ -616,14 +616,15 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
                         <div className={`absolute -top-24 -left-24 w-64 h-64 bg-gradient-to-br ${getCardStyles(formData.cardType).leak} blur-3xl opacity-30`}></div>
                     </div>
 
-                    {/* Scrollable Container Wrapper for Left Side content */}
                     <div className="flex-1 flex flex-col gap-6 relative z-10 overflow-y-auto custom-scrollbar pr-1 md:pr-2">
-                        <div className="flex flex-col items-center gap-6 w-full">
+
+                        <div className="flex flex-col items-center gap-4 w-full">
+
                             {/* Player Card Container */}
-                            <div className={`relative w-40 h-60 sm:w-48 sm:h-72 md:w-56 md:h-80 rounded-2xl overflow-hidden border-[4px] md:border-[6px] border-white/20 bg-black/40 shadow-2xl transition-all duration-700 ${getCardStyles(formData.cardType).glow} group-hover/left:scale-[1.02] shrink-0`}>
+                            <div className={`relative w-28 h-40 sm:w-32 sm:h-48 md:w-36 md:h-52 rounded-2xl overflow-hidden border-[3px] md:border-[4px] border-white/20 bg-black/40 shadow-2xl transition-all duration-700 ${getCardStyles(formData.cardType).glow} group-hover/left:scale-[1.02] shrink-0`}>
                                 {/* Card Shine Effect */}
                                 <div className="absolute inset-0 z-10 pointer-events-none bg-gradient-to-tr from-transparent via-white/[0.05] to-transparent -translate-x-full animate-shine"></div>
-                                
+
                                 {formData.image ? (
                                     <img src={formData.image} alt={formData.name} className="w-full h-full object-cover object-top" />
                                 ) : (
@@ -634,12 +635,12 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
                                 )}
 
                                 {/* Card HUD: Rating & Position & Badges */}
-                                <div className="absolute top-0 left-0 z-20 flex flex-col items-center bg-black/80 backdrop-blur-xl w-[54px] pt-3 pb-2 rounded-br-2xl border-r border-b border-white/10 shadow-xl gap-3">
+                                <div className="absolute top-0 left-0 z-20 flex flex-col items-center bg-black/80 backdrop-blur-xl w-[44px] pt-3 pb-2 rounded-br-2xl border-r border-b border-white/10 shadow-xl gap-2">
                                     <div className="flex flex-col items-center justify-center">
-                                        <span className="text-2xl md:text-3xl font-black text-ef-accent leading-none tracking-tighter mb-0.5">{formData.rating}</span>
-                                        <span className="text-[10px] md:text-xs font-black text-ef-accent/80 italic uppercase leading-none">{formData.position}</span>
+                                        <span className="text-xl md:text-2xl font-black text-ef-accent leading-none tracking-tighter mb-0.5">{formData.rating}</span>
+                                        <span className="text-[8px] md:text-[10px] font-black text-ef-accent/80 italic uppercase leading-none">{formData.position}</span>
                                     </div>
-                                    
+
                                     <div className="flex flex-col items-center gap-2 border-t border-white/10 pt-2 w-full px-2">
                                         {(formData.logos?.club || player.club_badge_url) && (
                                             <img src={formData.logos?.club || player.club_badge_url} alt="" className="w-7 h-7 object-contain drop-shadow-lg" />
@@ -666,17 +667,17 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
                             {isEditing && (
                                 <div className="w-full flex flex-col gap-2 mt-2">
                                     <div className="relative">
-                                        <input 
-                                            type="text" 
-                                            placeholder="Paste image URL here..." 
+                                        <input
+                                            type="text"
+                                            placeholder="Paste image URL here..."
                                             value={formData.image && !formData.image.startsWith('data:') ? formData.image : ''}
                                             onChange={(e) => setFormData(prev => ({ ...prev, image: e.target.value }))}
                                             className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-[10px] text-white focus:border-ef-accent/40 focus:bg-white/10 transition-all font-bold placeholder:opacity-20"
                                         />
                                         <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] opacity-20">🔗</span>
                                     </div>
-                                    <div 
-                                        onPaste={handlePaste} 
+                                    <div
+                                        onPaste={handlePaste}
                                         className="w-full py-3 bg-white/5 border border-white/10 border-dashed rounded-xl flex items-center justify-center gap-2 hover:bg-white/10 transition-all cursor-pointer"
                                         tabIndex="0"
                                     >
@@ -685,124 +686,116 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
                                     </div>
                                 </div>
                             )}
-
-                            {/* Identity Section */}
-                            {!isEditing && (
-                                <div className="flex flex-col items-center text-center gap-1.5 w-full">
-                                    <h1 className="text-2xl md:text-3xl font-black text-white uppercase tracking-tighter leading-tight drop-shadow-lg">
-                                        {formData.name}
-                                    </h1>
-                                    <div className="flex items-center gap-3">
-                                        <div className="flex items-center gap-1.5 px-3 py-1 bg-ef-accent rounded-full text-ef-dark shadow-lg shadow-ef-accent/10">
-                                            <span className="text-[10px] font-black uppercase tracking-widest">{formData.position}</span>
-                                        </div>
-                                        {formData.secondaryPosition && (
-                                            <span className="text-[11px] font-black text-ef-accent/40 uppercase tracking-widest">{formData.secondaryPosition}</span>
-                                        )}
-                                    </div>
-                                    {formData.playstyle && formData.playstyle !== 'None' && (
-                                        <span className="mt-2 text-[8px] font-black uppercase tracking-[0.3em] text-ef-accent/60 bg-ef-accent/5 px-4 py-1.5 rounded-full border border-ef-accent/10">
-                                            {formData.playstyle}
-                                        </span>
-                                    )}
-
-                                    {/* Tags Pill Container */}
-                                    {formData.tags && formData.tags.length > 0 && (
-                                        <div className="flex flex-wrap items-center justify-center gap-1.5 mt-4 max-w-full px-4">
-                                            {formData.tags.map(tag => (
-                                                <span key={tag} className="px-2 py-0.5 bg-white/5 border border-white/10 rounded-md text-[7px] font-black uppercase tracking-widest text-white/40 hover:text-ef-accent hover:border-ef-accent/30 transition-all">
-                                                    #{tag}
-                                                </span>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Quick Stats Grid - Fixed UI below photo */}
-                        <div className="grid grid-cols-4 gap-2 w-full px-1 shrink-0">
-                            {[
-                                { label: 'Age', value: formData.age || '-', sub: 'yrs' },
-                                { label: 'Foot', value: formData.strongFoot ? (typeof formData.strongFoot === 'string' ? formData.strongFoot.charAt(0) : '-') : '-', sub: 'Side' },
-                                { label: 'Height', value: formData.height || '-', sub: 'cm' },
-                                { label: 'Weight', value: formData.weight || '-', sub: 'kg' }
-                            ].map((stat, i) => (
-                                <div key={i} className="bg-white/5 border border-white/10 rounded-2xl py-2 px-1 flex flex-col items-center justify-center transition-all hover:bg-white/10 hover:border-white/20 group">
-                                    <div className="flex items-baseline gap-0.5">
-                                        <span className="text-xs md:text-sm font-black text-white group-hover:text-ef-accent transition-colors">{stat.value}</span>
-                                        {stat.value !== '-' && <span className="text-[7px] font-bold opacity-30">{stat.sub}</span>}
-                                    </div>
-                                    <span className="text-[6px] font-black uppercase tracking-widest text-white/20 mt-0.5">{stat.label}</span>
-                                </div>
-                            ))}
-                        </div>
-
-                        {/* Detailed List Header */}
-                        <div className="flex items-center gap-3 mt-4 shrink-0">
-                            <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent to-white/10"></div>
-                            <span className="text-[8px] font-black uppercase tracking-[0.4em] text-white/20 whitespace-nowrap">Player Dossier</span>
-                            <div className="h-[1px] flex-1 bg-gradient-to-l from-transparent to-white/10"></div>
                         </div>
 
                         {/* Player Details List */}
                         <div className="space-y-1 pr-1 pb-8">
-                        {/* Affiliation Section */}
-                        <div className="space-y-1 mb-4">
-                            {[
-                                { label: 'Club', value: formData.club, icon: formData.logos?.club },
-                                { label: 'Country', value: formData.nationality || formData.Country || '-', icon: formData.logos?.country, isFlag: true },
-                                { label: 'League', value: formData.league, icon: formData.logos?.league }
-                            ].map((item, i) => (
-                                <div key={i} className="flex items-center justify-between p-2 rounded-xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.05] transition-colors">
-                                    <span className="text-[9px] font-black uppercase tracking-widest opacity-30">{item.label}</span>
-                                    <div className="flex items-center gap-2 max-w-[140px]">
-                                        {item.icon && <img src={item.icon} className={`${item.isFlag ? 'w-5 h-3.5 object-cover rounded-sm' : 'w-4 h-4 object-contain'} opacity-80`} alt="" />}
-                                        <span className="text-[10px] font-bold text-white/90 truncate">{item.value || 'N/A'}</span>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
+                            {/* Detailed List Header */}
+                            <div className="flex items-center gap-3 mt-4 shrink-0">
+                                <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent to-white/10"></div>
+                                <span className="text-[8px] font-black uppercase tracking-[0.4em] text-white/20 whitespace-nowrap">Technical Specs</span>
+                                <div className="h-[1px] flex-1 bg-gradient-to-l from-transparent to-white/10"></div>
+                            </div>
 
-                        {/* Technical Specs Section */}
-                        <div className="space-y-1">
-                            {[
-                                { label: 'Card Type', value: formData.cardType, color: true },
-                                { label: 'Player ID', value: formData.playerId || formData.pesdb_id, mono: true },
-                                { label: 'Form', value: formData['Form'] || 'Standard', highlight: true },
-                                { label: 'Trained Pos.', value: formData.additionalPositions || '-' },
-                                { label: 'Weak Foot Use', value: formData['Weak Foot Usage'] },
-                                { label: 'Weak Foot Acc', value: formData['Weak Foot Accuracy'] },
-                                { label: 'Injury Res.', value: formData['Injury Resistance'] },
-                                { label: 'Featured Pack', value: formData['Featured Players'], blue: true },
-                                { label: 'Date Added', value: (() => { const d = parseEfDate(formData['Date Added']); return d ? d.toLocaleDateString() : 'Unknown'; })() },
-                                { label: 'Uploaded', value: formData.createdAt ? new Date(formData.createdAt).toLocaleDateString() : 'N/A', dim: true }
-                            ].map((item, i) => (
-                                <div key={i} className={`flex items-center justify-between p-2 rounded-xl border-b border-white/5 last:border-0 ${item.dim ? 'opacity-40' : ''}`}>
-                                    <span className="text-[9px] font-black uppercase tracking-widest opacity-20">{item.label}</span>
-                                    <span className={`text-[10px] font-bold ${
-                                        item.color ? (
-                                            formData.cardType === 'Legendary' ? 'text-yellow-400' :
-                                            formData.cardType === 'Epic' ? 'text-green-400' :
-                                            formData.cardType === 'Featured' ? 'text-purple-400' :
-                                            formData.cardType === 'POTW' ? 'text-cyan-400' : 'text-blue-400'
-                                        ) : 
-                                        item.mono ? 'font-mono opacity-50 text-[9px]' :
-                                        item.highlight ? 'text-ef-accent' :
-                                        item.blue ? 'text-ef-blue/80' : 
-                                        'text-white/70'
-                                    }`}>
-                                        {item.value || '-'}
-                                    </span>
-                                </div>
-                            ))}
+                            <div className="space-y-1">
+                                {[
+                                    { label: 'Player ID', value: formData.playerId || formData.pesdb_id, mono: true },
+                                    { label: 'Form', value: formData['Form'] || 'Standard', highlight: true },
+                                    { label: 'Trained Pos.', value: formData.additionalPositions || '-' },
+                                    { label: 'Weak Foot Use', value: formData['Weak Foot Usage'] },
+                                    { label: 'Weak Foot Acc', value: formData['Weak Foot Accuracy'] },
+                                    { label: 'Injury Res.', value: formData['Injury Resistance'] },
+                                    { label: 'Featured Pack', value: formData['Featured Players'], blue: true },
+                                    { label: 'Date Added', value: (() => { const d = parseEfDate(formData['Date Added']); return d ? d.toLocaleDateString() : 'Unknown'; })() },
+                                    { label: 'Uploaded', value: formData.createdAt ? new Date(formData.createdAt).toLocaleDateString() : 'N/A', dim: true }
+                                ].map((item, i) => (
+                                    <div key={i} className={`flex items-center justify-between p-[3px] rounded-xl border-b border-white/5 last:border-0 ${item.dim ? 'opacity-40' : ''}`}>
+                                        <span className="text-[9px] font-black uppercase tracking-widest opacity-20">{item.label}</span>
+                                        <span className={`text-[10px] font-bold ${item.mono ? 'font-mono opacity-50 text-[9px]' :
+
+                                            item.highlight ? 'text-ef-accent' :
+                                                item.blue ? 'text-ef-blue/80' :
+                                                    'text-white/70'
+                                            }`}>
+                                            {item.value || '-'}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
+
 
                 {/* Right Side: Details / Edit Form */}
-                <div className="w-full md:w-2/3 p-8 md:p-12 pt-24 md:pt-28 bg-black flex flex-col justify-start relative overflow-hidden group/modal overflow-y-auto custom-scrollbar">
+                <div className="w-full md:w-2/3 p-4 md:p-8 pt-8 bg-black flex flex-col justify-start relative overflow-hidden group/modal overflow-y-auto custom-scrollbar">
+                    {/* Identity Section */}
+                    {!isEditing && (
+                        <div className="flex flex-col items-start text-left gap-2 w-full px-4 md:px-6 mb-6">
+                            <div className="flex flex-wrap items-baseline gap-x-4 gap-y-2">
+                                <h1 className="text-3xl md:text-4xl font-black text-white uppercase tracking-tighter leading-tight drop-shadow-lg">
+                                    {formData.name}
+                                </h1>
+                                <div className="flex items-center gap-2.5">
+                                    <div className="flex items-center gap-1.5 px-2.5 py-0.5 bg-ef-accent rounded-md text-ef-dark shadow-lg shadow-ef-accent/10">
+                                        <span className="text-[10px] font-black uppercase tracking-widest">{formData.position}</span>
+                                    </div>
+                                    {formData.secondaryPosition && (
+                                        <span className="text-[10px] font-black text-ef-accent/30 uppercase tracking-widest">{formData.secondaryPosition}</span>
+                                    )}
+                                    {formData.playstyle && formData.playstyle !== 'None' && (
+                                        <div className="flex items-center gap-2.5">
+                                            <span className="text-white/10 text-[10px] font-black">/</span>
+                                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-ef-accent/60 italic">
+                                                {formData.playstyle}
+                                            </span>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="flex flex-wrap items-center gap-x-4 gap-y-3 mt-4 max-w-full">
+                                {[
+                                    { label: 'Age', value: formData.age || '-', sub: 'yrs' },
+                                    { label: 'Foot', value: formData.strongFoot || '-', highlight: true },
+                                    { label: 'Height', value: formData.height ? `${formData.height}cm` : '-' },
+                                    { label: 'Weight', value: formData.weight ? `${formData.weight}kg` : '-' },
+                                    { label: 'Club', value: formData.club, icon: formData.logos?.club },
+                                    { label: 'Nation', value: formData.nationality, icon: formData.logos?.country, isFlag: true },
+                                    { label: 'League', value: formData.league, icon: formData.logos?.league },
+                                    { label: 'Type', value: formData.cardType, isType: true }
+                                ].map((item, i) => (
+                                    <div key={i} className="flex items-center gap-2 px-3 py-1.5 bg-white/[0.03] border border-white/10 rounded-xl hover:bg-white/[0.08] transition-all">
+                                        <span className="text-[7px] font-black uppercase tracking-widest opacity-20">{item.label}</span>
+                                        <div className="flex items-center gap-1.5">
+                                            {item.icon && <img src={item.icon} className={`${item.isFlag ? 'w-4 h-2.5 object-cover rounded-sm' : 'w-3.5 h-3.5 object-contain'} opacity-80`} alt="" />}
+                                            <span className={`text-[10px] font-bold ${item.highlight ? 'text-ef-accent' :
+                                                item.isType ? (
+                                                    formData.cardType === 'Legendary' ? 'text-yellow-400' :
+                                                        formData.cardType === 'Epic' ? 'text-green-400' :
+                                                            formData.cardType === 'Featured' ? 'text-purple-400' :
+                                                                formData.cardType === 'POTW' ? 'text-cyan-400' : 'text-blue-400'
+                                                ) : 'text-white/80'}`}>
+                                                {item.value || 'N/A'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* Tags Pill Container */}
+                            {formData.tags && formData.tags.length > 0 && (
+                                <div className="flex flex-wrap items-center gap-1.5 mt-3 max-w-full">
+                                    {formData.tags.map(tag => (
+                                        <span key={tag} className="px-2 py-0.5 bg-ef-accent/5 border border-ef-accent/10 rounded-md text-[7px] font-black uppercase tracking-widest text-ef-accent/40 hover:text-ef-accent hover:border-ef-accent/30 transition-all">
+                                            #{tag}
+                                        </span>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
+
                     {isEditing ? (
                         <form onSubmit={handleSubmit} onPaste={handlePaste} className="h-full flex flex-col">
                             <div className="flex items-center justify-between mb-6">
@@ -1398,69 +1391,69 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
                                                 <span className="text-ef-accent">🪄</span> Player Skills
                                             </h3>
                                             <div className="flex items-center gap-2">
-                                                     {isEditingSkills && (
-                                                            <button
-                                                                onClick={() => {
-                                                                    if (isBulkEditingSkills) {
-                                                                        // Process bulk skills
-                                                                        const inputSkills = bulkSkillsInput.split('\n').map(s => s.trim()).filter(Boolean);
-                                                                        const matchedSkills = [];
-                                                                        const normalize = (s) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+                                                {isEditingSkills && (
+                                                    <button
+                                                        onClick={() => {
+                                                            if (isBulkEditingSkills) {
+                                                                // Process bulk skills
+                                                                const inputSkills = bulkSkillsInput.split('\n').map(s => s.trim()).filter(Boolean);
+                                                                const matchedSkills = [];
+                                                                const normalize = (s) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
 
-                                                                        const officialNormalized = ALL_SKILLS.map(s => ({ original: s, normalized: normalize(s) }));
+                                                                const officialNormalized = ALL_SKILLS.map(s => ({ original: s, normalized: normalize(s) }));
 
-                                                                        inputSkills.forEach(input => {
-                                                                            const normInput = normalize(input);
-                                                                            const match = officialNormalized.find(o => o.normalized === normInput);
-                                                                            if (match) {
-                                                                                if (!matchedSkills.includes(match.original) && !skills.includes(match.original)) {
-                                                                                    matchedSkills.push(match.original);
-                                                                                }
-                                                                            }
-                                                                        });
-
-                                                                        if (matchedSkills.length > 0) {
-                                                                            const nextSkills = [...skills, ...matchedSkills];
-                                                                            setSkills(nextSkills);
-                                                                            // Also update parent
-                                                                            onUpdate(player._id, {
-                                                                                skills: nextSkills.map(s => s?.trim()).filter(s => s && s !== '')
-                                                                            }, false);
+                                                                inputSkills.forEach(input => {
+                                                                    const normInput = normalize(input);
+                                                                    const match = officialNormalized.find(o => o.normalized === normInput);
+                                                                    if (match) {
+                                                                        if (!matchedSkills.includes(match.original) && !skills.includes(match.original)) {
+                                                                            matchedSkills.push(match.original);
                                                                         }
-                                                                        setBulkSkillsInput('');
-                                                                        setIsBulkEditingSkills(false);
-                                                                    } else {
-                                                                        setIsBulkEditingSkills(true);
                                                                     }
-                                                                }}
-                                                                className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border transition-all ${isBulkEditingSkills
-                                                                    ? 'bg-ef-accent text-ef-dark border-ef-accent'
-                                                                    : 'bg-ef-accent/10 border-ef-accent/20 text-ef-accent hover:bg-ef-accent/20'
-                                                                    }`}
-                                                            >
-                                                                {isBulkEditingSkills ? '✓ Save Bulk' : '📋 Bulk Edit'}
-                                                            </button>
-                                                        )}
-                                                        <button
-                                                            onClick={() => {
-                                                                if (isEditingSkills) {
+                                                                });
+
+                                                                if (matchedSkills.length > 0) {
+                                                                    const nextSkills = [...skills, ...matchedSkills];
+                                                                    setSkills(nextSkills);
+                                                                    // Also update parent
                                                                     onUpdate(player._id, {
-                                                                        skills: skills.map(s => s?.trim()).filter(s => s && s !== ''),
-                                                                        additionalSkills: additionalSkills.map(s => s?.trim()).filter(s => s && s !== '')
+                                                                        skills: nextSkills.map(s => s?.trim()).filter(s => s && s !== '')
                                                                     }, false);
-                                                                    setShowAddCoreSkill(false);
-                                                                    setCoreSkillSearch('');
                                                                 }
-                                                                setIsEditingSkills(e => !e);
-                                                                if (isBulkEditingSkills) setIsBulkEditingSkills(false);
-                                                            }}
-                                                            className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border transition-all ${isEditingSkills
-                                                                ? 'bg-ef-accent/20 border-ef-accent/40 text-ef-accent'
-                                                                : 'bg-white/5 border-white/10 text-white/40 hover:text-white hover:bg-white/10'
-                                                                }`}
-                                                        >
-                                                            {isEditingSkills ? '✓ Done' : '✏ Edit'}
-                                                        </button>
+                                                                setBulkSkillsInput('');
+                                                                setIsBulkEditingSkills(false);
+                                                            } else {
+                                                                setIsBulkEditingSkills(true);
+                                                            }
+                                                        }}
+                                                        className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border transition-all ${isBulkEditingSkills
+                                                            ? 'bg-ef-accent text-ef-dark border-ef-accent'
+                                                            : 'bg-ef-accent/10 border-ef-accent/20 text-ef-accent hover:bg-ef-accent/20'
+                                                            }`}
+                                                    >
+                                                        {isBulkEditingSkills ? '✓ Save Bulk' : '📋 Bulk Edit'}
+                                                    </button>
+                                                )}
+                                                <button
+                                                    onClick={() => {
+                                                        if (isEditingSkills) {
+                                                            onUpdate(player._id, {
+                                                                skills: skills.map(s => s?.trim()).filter(s => s && s !== ''),
+                                                                additionalSkills: additionalSkills.map(s => s?.trim()).filter(s => s && s !== '')
+                                                            }, false);
+                                                            setShowAddCoreSkill(false);
+                                                            setCoreSkillSearch('');
+                                                        }
+                                                        setIsEditingSkills(e => !e);
+                                                        if (isBulkEditingSkills) setIsBulkEditingSkills(false);
+                                                    }}
+                                                    className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border transition-all ${isEditingSkills
+                                                        ? 'bg-ef-accent/20 border-ef-accent/40 text-ef-accent'
+                                                        : 'bg-white/5 border-white/10 text-white/40 hover:text-white hover:bg-white/10'
+                                                        }`}
+                                                >
+                                                    {isEditingSkills ? '✓ Done' : '✏ Edit'}
+                                                </button>
 
                                                 <button onClick={() => { setModalPage(0); setIsBulkEditingSkills(false); setIsEditingSkills(false); }} className="text-[10px] font-black uppercase tracking-widest text-white/40 hover:text-white transition-colors">
                                                     ✕ Back
@@ -1486,234 +1479,234 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
 
                                         <div className="grid grid-cols-2 gap-4 flex-1 min-h-0">
 
-                                                {/* ── Left: Core Skills ── */}
-                                                <div className="flex flex-col gap-2 min-h-0">
-                                                    <div className="flex items-center gap-2 mb-1">
-                                                        <span className="text-[9px] font-black uppercase tracking-widest text-ef-accent">Core Skills</span>
-                                                        <div className="h-px bg-white/10 flex-1"></div>
-                                                        <span className="text-[9px] font-black text-white/20">{skills.length}</span>
-                                                    </div>
-                                                    <div className="space-y-1.5 overflow-y-auto pr-1 custom-scrollbar flex-1">
-                                                        {skills.length > 0 ? skills.map((skill, i) => {
-                                                            const isSpecial = SPECIAL_SKILLS.includes(skill);
-                                                            return (
-                                                                <div key={i} className={`flex items-center gap-2 px-3 py-2.5 h-[30px] border rounded-xl transition-all group ${isSpecial
-                                                                    ? 'bg-red-500/10 border-red-500/30 hover:bg-red-500/20 shadow-[0_0_12px_rgba(239,68,68,0.12)]'
-                                                                    : 'bg-white/5 border-white/10 hover:bg-white/8'
-                                                                    }`}>
-                                                                    <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${isSpecial ? 'bg-red-400 shadow-[0_0_6px_rgba(239,68,68,0.8)]' : 'bg-ef-accent'}`} />
-                                                                    <span className={`text-[10px] font-bold uppercase tracking-tight leading-tight flex-1 ${isSpecial ? 'text-red-300' : 'text-white'}`}>
-                                                                        {typeof skill === 'object' ? (skill.name || skill.label || JSON.stringify(skill)) : skill}
-                                                                    </span>
-                                                                    {isEditingSkills ? (
-                                                                        <button
-                                                                            onClick={() => {
-                                                                                const next = skills.filter((_, si) => si !== i);
-                                                                                setSkills(next);
-                                                                            }}
-                                                                            className="text-white/20 hover:text-red-400 text-xs leading-none flex-shrink-0 transition-colors active:scale-90"
-                                                                        >✕</button>
-                                                                    ) : (
-                                                                        isSpecial && <span className="ml-auto text-[6px] font-black bg-red-500/20 text-red-400 px-1.5 py-0.5 rounded-full border border-red-500/20 flex-shrink-0">🔥</span>
-                                                                    )}
-                                                                </div>
-                                                            );
-                                                        }) : (
-                                                            <div className="text-center py-6 opacity-30 text-[9px] uppercase font-black tracking-widest italic">No core skills found</div>
-                                                        )}
-
-                                                        {/* Add Skill row (edit mode only) */}
-                                                        {isEditingSkills && (
-                                                            <div className="relative">
-                                                                <button
-                                                                    onClick={() => { setShowAddCoreSkill(s => !s); setCoreSkillSearch(''); }}
-                                                                    className="w-full flex items-center gap-2 px-3 py-2.5 border border-dashed border-ef-accent/30 rounded-xl bg-ef-accent/5 hover:bg-ef-accent/10 transition-all text-[10px] font-bold text-ef-accent/60 hover:text-ef-accent"
-                                                                >
-                                                                    <span className="text-base leading-none">+</span> Add Skill
-                                                                </button>
-                                                                {showAddCoreSkill && (
-                                                                    <div className="absolute bottom-full mb-1 left-0 right-0 bg-[#18181c] border border-white/15 rounded-xl shadow-[0_-10px_40px_rgba(0,0,0,0.7)] z-[80] overflow-hidden">
-                                                                        <div className="p-2 border-b border-white/5">
-                                                                            <input
-                                                                                autoFocus
-                                                                                value={coreSkillSearch}
-                                                                                onChange={e => setCoreSkillSearch(e.target.value)}
-                                                                                placeholder="Search all skills..."
-                                                                                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-[10px] text-white placeholder-white/20 focus:outline-none focus:border-ef-accent/40"
-                                                                                onClick={e => e.stopPropagation()}
-                                                                            />
-                                                                        </div>
-                                                                        <div className="overflow-y-auto max-h-[160px] custom-scrollbar">
-                                                                            {ALL_SKILLS
-                                                                                .filter(s => !skills.includes(s))
-                                                                                .filter(s => !coreSkillSearch || s.toLowerCase().includes(coreSkillSearch.toLowerCase()))
-                                                                                .map(skill => {
-                                                                                    const isSp = SPECIAL_SKILLS.includes(skill);
-                                                                                    return (
-                                                                                        <button key={skill}
-                                                                                            onClick={() => {
-                                                                                                setSkills(prev => [...prev, skill]);
-                                                                                                setShowAddCoreSkill(false);
-                                                                                                setCoreSkillSearch('');
-                                                                                            }}
-                                                                                            className={`w-full text-left px-3 py-2 text-[10px] font-bold flex items-center gap-2 border-b border-white/5 last:border-0 transition-all ${isSp ? 'text-red-300 hover:bg-red-500/10' : 'text-white/60 hover:text-white hover:bg-white/5'
-                                                                                                }`}>
-                                                                                            <span className={`w-1 h-1 rounded-full flex-shrink-0 ${isSp ? 'bg-red-400' : 'bg-ef-accent/40'}`}></span>
-                                                                                            {skill}
-                                                                                            {isSp && <span className="ml-auto text-[6px] bg-red-500/20 text-red-400 px-1.5 py-0.5 rounded font-black">🔥</span>}
-                                                                                        </button>
-                                                                                    );
-                                                                                })
-                                                                            }
-                                                                            {ALL_SKILLS.filter(s => !skills.includes(s)).filter(s => !coreSkillSearch || s.toLowerCase().includes(coreSkillSearch.toLowerCase())).length === 0 && (
-                                                                                <div className="px-3 py-4 text-center text-[9px] text-white/30 font-black uppercase tracking-widest">All skills added</div>
-                                                                            )}
-                                                                        </div>
-                                                                    </div>
+                                            {/* ── Left: Core Skills ── */}
+                                            <div className="flex flex-col gap-2 min-h-0">
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <span className="text-[9px] font-black uppercase tracking-widest text-ef-accent">Core Skills</span>
+                                                    <div className="h-px bg-white/10 flex-1"></div>
+                                                    <span className="text-[9px] font-black text-white/20">{skills.length}</span>
+                                                </div>
+                                                <div className="space-y-1.5 overflow-y-auto pr-1 custom-scrollbar flex-1">
+                                                    {skills.length > 0 ? skills.map((skill, i) => {
+                                                        const isSpecial = SPECIAL_SKILLS.includes(skill);
+                                                        return (
+                                                            <div key={i} className={`flex items-center gap-2 px-3 py-2.5 h-[30px] border rounded-xl transition-all group ${isSpecial
+                                                                ? 'bg-red-500/10 border-red-500/30 hover:bg-red-500/20 shadow-[0_0_12px_rgba(239,68,68,0.12)]'
+                                                                : 'bg-white/5 border-white/10 hover:bg-white/8'
+                                                                }`}>
+                                                                <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${isSpecial ? 'bg-red-400 shadow-[0_0_6px_rgba(239,68,68,0.8)]' : 'bg-ef-accent'}`} />
+                                                                <span className={`text-[10px] font-bold uppercase tracking-tight leading-tight flex-1 ${isSpecial ? 'text-red-300' : 'text-white'}`}>
+                                                                    {typeof skill === 'object' ? (skill.name || skill.label || JSON.stringify(skill)) : skill}
+                                                                </span>
+                                                                {isEditingSkills ? (
+                                                                    <button
+                                                                        onClick={() => {
+                                                                            const next = skills.filter((_, si) => si !== i);
+                                                                            setSkills(next);
+                                                                        }}
+                                                                        className="text-white/20 hover:text-red-400 text-xs leading-none flex-shrink-0 transition-colors active:scale-90"
+                                                                    >✕</button>
+                                                                ) : (
+                                                                    isSpecial && <span className="ml-auto text-[6px] font-black bg-red-500/20 text-red-400 px-1.5 py-0.5 rounded-full border border-red-500/20 flex-shrink-0">🔥</span>
                                                                 )}
                                                             </div>
-                                                        )}
-                                                    </div>
-                                                </div>
+                                                        );
+                                                    }) : (
+                                                        <div className="text-center py-6 opacity-30 text-[9px] uppercase font-black tracking-widest italic">No core skills found</div>
+                                                    )}
 
-                                                {/* ── Right: Additional Skills ── */}
-                                                <div className="flex flex-col gap-2 min-h-0">
-                                                    <div className="flex items-center gap-2 mb-1">
-                                                        <span className="text-[9px] font-black uppercase tracking-widest text-blue-400">Additional</span>
-                                                        <div className="h-px bg-white/10 flex-1"></div>
-                                                        <span className="text-[9px] font-black text-white/20">{additionalSkills.filter(Boolean).length}/5</span>
-                                                    </div>
-                                                    <div className="space-y-1.5">
-                                                        {additionalSkills.map((addedSkill, idx) => (
-                                                            <div key={idx} className="relative">
-                                                                {/* Slot button */}
-                                                                <div
-                                                                    onClick={() => { setActiveAdditionalSlot(activeAdditionalSlot === idx ? null : idx); setSkillSearch(''); }}
-                                                                    className={`flex items-center gap-2 px-3 py-2.5 h-[30px] border rounded-xl cursor-pointer transition-all group ${addedSkill
-                                                                        ? 'bg-blue-500/10 border-blue-500/30 hover:bg-blue-500/15'
-                                                                        : 'bg-white/3 border-white/10 border-dashed hover:border-blue-400/40 hover:bg-blue-500/5'
-                                                                        }`}
-                                                                >
-                                                                    <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${addedSkill ? 'bg-blue-400' : 'bg-white/15'}`} />
-                                                                    <span className={`text-[10px] font-bold uppercase tracking-tight flex-1 leading-tight ${addedSkill ? 'text-white' : 'text-white/25 italic'
-                                                                        }`}>{addedSkill || `Empty Slot ${idx + 1}`}</span>
-                                                                    {addedSkill ? (
-                                                                        <button
-                                                                            onClick={(e) => {
-                                                                                e.stopPropagation();
-                                                                                const next = [...additionalSkills];
-                                                                                next[idx] = '';
-                                                                                setAdditionalSkills(next);
-                                                                                setActiveAdditionalSlot(null);
-                                                                                if (player._id) onUpdate(player._id, { additionalSkills: next.filter(Boolean) }, false);
-                                                                            }}
-                                                                            className="text-white/20 hover:text-white text-xs leading-none flex-shrink-0 active:scale-90 transition-all"
-                                                                        >✕</button>
-                                                                    ) : (
-                                                                        <span className="text-[9px] text-white/15">+</span>
-                                                                    )}
-                                                                </div>
-
-                                                                 {/* Dropdown for this slot */}
-                                                                 {activeAdditionalSlot === idx && (
-                                                                     <div className="absolute top-full mt-1 left-0 right-0 bg-[#18181c] border border-white/15 rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.7)] z-[70] overflow-hidden">
-                                                                         <div className="p-2 border-b border-white/5">
-                                                                             <input
-                                                                                 autoFocus
-                                                                                 value={skillSearch}
-                                                                                 onChange={e => setSkillSearch(e.target.value)}
-                                                                                 placeholder="Search skills..."
-                                                                                 className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-[10px] text-white placeholder-white/20 focus:outline-none focus:border-blue-400/40"
-                                                                                 onClick={e => e.stopPropagation()}
-                                                                             />
-                                                                         </div>
-                                                                         <div className="overflow-y-auto max-h-[180px] custom-scrollbar">
-                                                                             {PLAYER_SKILLS
-                                                                                 .filter(s => !skills.includes(s) && !additionalSkills.includes(s))
-                                                                                 .filter(s => !skillSearch || s.toLowerCase().includes(skillSearch.toLowerCase()))
-                                                                                 .map(skill => (
-                                                                                     <button 
-                                                                                        key={skill} 
+                                                    {/* Add Skill row (edit mode only) */}
+                                                    {isEditingSkills && (
+                                                        <div className="relative">
+                                                            <button
+                                                                onClick={() => { setShowAddCoreSkill(s => !s); setCoreSkillSearch(''); }}
+                                                                className="w-full flex items-center gap-2 px-3 py-2.5 border border-dashed border-ef-accent/30 rounded-xl bg-ef-accent/5 hover:bg-ef-accent/10 transition-all text-[10px] font-bold text-ef-accent/60 hover:text-ef-accent"
+                                                            >
+                                                                <span className="text-base leading-none">+</span> Add Skill
+                                                            </button>
+                                                            {showAddCoreSkill && (
+                                                                <div className="absolute bottom-full mb-1 left-0 right-0 bg-[#18181c] border border-white/15 rounded-xl shadow-[0_-10px_40px_rgba(0,0,0,0.7)] z-[80] overflow-hidden">
+                                                                    <div className="p-2 border-b border-white/5">
+                                                                        <input
+                                                                            autoFocus
+                                                                            value={coreSkillSearch}
+                                                                            onChange={e => setCoreSkillSearch(e.target.value)}
+                                                                            placeholder="Search all skills..."
+                                                                            className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-[10px] text-white placeholder-white/20 focus:outline-none focus:border-ef-accent/40"
+                                                                            onClick={e => e.stopPropagation()}
+                                                                        />
+                                                                    </div>
+                                                                    <div className="overflow-y-auto max-h-[160px] custom-scrollbar">
+                                                                        {ALL_SKILLS
+                                                                            .filter(s => !skills.includes(s))
+                                                                            .filter(s => !coreSkillSearch || s.toLowerCase().includes(coreSkillSearch.toLowerCase()))
+                                                                            .map(skill => {
+                                                                                const isSp = SPECIAL_SKILLS.includes(skill);
+                                                                                return (
+                                                                                    <button key={skill}
                                                                                         onClick={() => {
-                                                                                            const next = [...additionalSkills];
-                                                                                            next[idx] = skill;
-                                                                                            setAdditionalSkills(next);
-                                                                                            setActiveAdditionalSlot(null);
-                                                                                            setSkillSearch('');
-                                                                                            if (player._id) onUpdate(player._id, { additionalSkills: next.filter(Boolean) }, false);
+                                                                                            setSkills(prev => [...prev, skill]);
+                                                                                            setShowAddCoreSkill(false);
+                                                                                            setCoreSkillSearch('');
                                                                                         }}
-                                                                                        className="w-full text-left px-3 py-2 text-[10px] font-bold text-white/60 hover:text-white hover:bg-white/5 flex items-center gap-2 border-b border-white/5 last:border-0 transition-all"
-                                                                                    >
-                                                                                        <span className="w-1 h-1 rounded-full flex-shrink-0 bg-ef-accent/40"></span>
+                                                                                        className={`w-full text-left px-3 py-2 text-[10px] font-bold flex items-center gap-2 border-b border-white/5 last:border-0 transition-all ${isSp ? 'text-red-300 hover:bg-red-500/10' : 'text-white/60 hover:text-white hover:bg-white/5'
+                                                                                            }`}>
+                                                                                        <span className={`w-1 h-1 rounded-full flex-shrink-0 ${isSp ? 'bg-red-400' : 'bg-ef-accent/40'}`}></span>
                                                                                         {skill}
+                                                                                        {isSp && <span className="ml-auto text-[6px] bg-red-500/20 text-red-400 px-1.5 py-0.5 rounded font-black">🔥</span>}
                                                                                     </button>
-                                                                                 ))
-                                                                             }
-                                                                             {PLAYER_SKILLS
-                                                                                 .filter(s => !skills.includes(s) && !additionalSkills.includes(s))
-                                                                                 .filter(s => !skillSearch || s.toLowerCase().includes(skillSearch.toLowerCase()))
-                                                                                 .length === 0 && (
-                                                                                     <div className="px-3 py-4 text-center text-[9px] text-white/30 font-black uppercase tracking-widest">No skills available</div>
-                                                                                 )}
-                                                                         </div>
-                                                                     </div>
-                                                                 )}
-                                                             </div>
-                                                        ))}
+                                                                                );
+                                                                            })
+                                                                        }
+                                                                        {ALL_SKILLS.filter(s => !skills.includes(s)).filter(s => !coreSkillSearch || s.toLowerCase().includes(coreSkillSearch.toLowerCase())).length === 0 && (
+                                                                            <div className="px-3 py-4 text-center text-[9px] text-white/30 font-black uppercase tracking-widest">All skills added</div>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            {/* ── Right: Additional Skills ── */}
+                                            <div className="flex flex-col gap-2 min-h-0">
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <span className="text-[9px] font-black uppercase tracking-widest text-blue-400">Additional</span>
+                                                    <div className="h-px bg-white/10 flex-1"></div>
+                                                    <span className="text-[9px] font-black text-white/20">{additionalSkills.filter(Boolean).length}/5</span>
+                                                </div>
+                                                <div className="space-y-1.5">
+                                                    {additionalSkills.map((addedSkill, idx) => (
+                                                        <div key={idx} className="relative">
+                                                            {/* Slot button */}
+                                                            <div
+                                                                onClick={() => { setActiveAdditionalSlot(activeAdditionalSlot === idx ? null : idx); setSkillSearch(''); }}
+                                                                className={`flex items-center gap-2 px-3 py-2.5 h-[30px] border rounded-xl cursor-pointer transition-all group ${addedSkill
+                                                                    ? 'bg-blue-500/10 border-blue-500/30 hover:bg-blue-500/15'
+                                                                    : 'bg-white/3 border-white/10 border-dashed hover:border-blue-400/40 hover:bg-blue-500/5'
+                                                                    }`}
+                                                            >
+                                                                <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${addedSkill ? 'bg-blue-400' : 'bg-white/15'}`} />
+                                                                <span className={`text-[10px] font-bold uppercase tracking-tight flex-1 leading-tight ${addedSkill ? 'text-white' : 'text-white/25 italic'
+                                                                    }`}>{addedSkill || `Empty Slot ${idx + 1}`}</span>
+                                                                {addedSkill ? (
+                                                                    <button
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            const next = [...additionalSkills];
+                                                                            next[idx] = '';
+                                                                            setAdditionalSkills(next);
+                                                                            setActiveAdditionalSlot(null);
+                                                                            if (player._id) onUpdate(player._id, { additionalSkills: next.filter(Boolean) }, false);
+                                                                        }}
+                                                                        className="text-white/20 hover:text-white text-xs leading-none flex-shrink-0 active:scale-90 transition-all"
+                                                                    >✕</button>
+                                                                ) : (
+                                                                    <span className="text-[9px] text-white/15">+</span>
+                                                                )}
+                                                            </div>
+
+                                                            {/* Dropdown for this slot */}
+                                                            {activeAdditionalSlot === idx && (
+                                                                <div className="absolute top-full mt-1 left-0 right-0 bg-[#18181c] border border-white/15 rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.7)] z-[70] overflow-hidden">
+                                                                    <div className="p-2 border-b border-white/5">
+                                                                        <input
+                                                                            autoFocus
+                                                                            value={skillSearch}
+                                                                            onChange={e => setSkillSearch(e.target.value)}
+                                                                            placeholder="Search skills..."
+                                                                            className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-[10px] text-white placeholder-white/20 focus:outline-none focus:border-blue-400/40"
+                                                                            onClick={e => e.stopPropagation()}
+                                                                        />
+                                                                    </div>
+                                                                    <div className="overflow-y-auto max-h-[180px] custom-scrollbar">
+                                                                        {PLAYER_SKILLS
+                                                                            .filter(s => !skills.includes(s) && !additionalSkills.includes(s))
+                                                                            .filter(s => !skillSearch || s.toLowerCase().includes(skillSearch.toLowerCase()))
+                                                                            .map(skill => (
+                                                                                <button
+                                                                                    key={skill}
+                                                                                    onClick={() => {
+                                                                                        const next = [...additionalSkills];
+                                                                                        next[idx] = skill;
+                                                                                        setAdditionalSkills(next);
+                                                                                        setActiveAdditionalSlot(null);
+                                                                                        setSkillSearch('');
+                                                                                        if (player._id) onUpdate(player._id, { additionalSkills: next.filter(Boolean) }, false);
+                                                                                    }}
+                                                                                    className="w-full text-left px-3 py-2 text-[10px] font-bold text-white/60 hover:text-white hover:bg-white/5 flex items-center gap-2 border-b border-white/5 last:border-0 transition-all"
+                                                                                >
+                                                                                    <span className="w-1 h-1 rounded-full flex-shrink-0 bg-ef-accent/40"></span>
+                                                                                    {skill}
+                                                                                </button>
+                                                                            ))
+                                                                        }
+                                                                        {PLAYER_SKILLS
+                                                                            .filter(s => !skills.includes(s) && !additionalSkills.includes(s))
+                                                                            .filter(s => !skillSearch || s.toLowerCase().includes(skillSearch.toLowerCase()))
+                                                                            .length === 0 && (
+                                                                                <div className="px-3 py-4 text-center text-[9px] text-white/30 font-black uppercase tracking-widest">No skills available</div>
+                                                                            )}
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="mt-4 pt-4 border-t border-white/5">
+                                            <button
+                                                onClick={() => setModalPage(0)}
+                                                className="w-full py-3 bg-white/5 border border-white/10 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] text-white hover:bg-white/10 transition-all active:scale-95"
+                                            >
+                                                Back to Overview
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* Page 3: Builds / Progressions */}
+                                    <div className={`flex-1 flex flex-col transition-all duration-500 transform overflow-y-auto no-scrollbar ${modalPage === 3 ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0 pointer-events-none absolute inset-0 p-4 md:p-6'} `}>
+                                        <div className="flex-1 flex flex-col items-center justify-center text-center p-6 bg-white/5 rounded-3xl border border-white/10 backdrop-blur-md">
+                                            <div className="w-20 h-20 bg-ef-accent/10 rounded-full flex items-center justify-center mb-6 border border-ef-accent/20">
+                                                <span className="text-4xl text-ef-accent">📊</span>
+                                            </div>
+                                            <h3 className="text-xl font-black text-white uppercase tracking-widest mb-2">Saved Builds</h3>
+                                            <p className="text-[10px] text-white/40 uppercase font-black tracking-widest leading-relaxed max-w-[200px] mb-8">
+                                                View and manage your optimized progression paths for {formData.name}
+                                            </p>
+
+                                            <button
+                                                onClick={() => setShowProgressions(true)}
+                                                className="w-full py-4 bg-ef-accent text-ef-dark rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-[0_0_30px_rgba(0,255,136,0.2)] hover:scale-[1.02] active:scale-95 transition-all"
+                                            >
+                                                Open Progressions Manager
+                                            </button>
+
+                                            {player.progressions?.length > 0 ? (
+                                                <div className="mt-8 pt-8 border-t border-white/5 w-full">
+                                                    <div className="flex justify-between items-center mb-4 px-2">
+                                                        <span className="text-[8px] font-black uppercase tracking-widest opacity-20 text-white">Active Build Status</span>
+                                                        <span className="px-2 py-0.5 bg-ef-accent/20 text-ef-accent rounded text-[8px] font-black">{player.progressions.length} Builds Saved</span>
+                                                    </div>
+                                                    <div className="text-[9px] text-white/30 font-bold italic">
+                                                        Tap the button above to view all saved progression sets.
                                                     </div>
                                                 </div>
-                                             </div>
-
-                                         <div className="mt-4 pt-4 border-t border-white/5">
-                                             <button
-                                                 onClick={() => setModalPage(0)}
-                                                 className="w-full py-3 bg-white/5 border border-white/10 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] text-white hover:bg-white/10 transition-all active:scale-95"
-                                             >
-                                                 Back to Overview
-                                             </button>
-                                         </div>
-                                     </div>
-
-                                     {/* Page 3: Builds / Progressions */}
-                                     <div className={`flex-1 flex flex-col transition-all duration-500 transform overflow-y-auto no-scrollbar ${modalPage === 3 ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0 pointer-events-none absolute inset-0 p-4 md:p-6'} `}>
-                                         <div className="flex-1 flex flex-col items-center justify-center text-center p-6 bg-white/5 rounded-3xl border border-white/10 backdrop-blur-md">
-                                             <div className="w-20 h-20 bg-ef-accent/10 rounded-full flex items-center justify-center mb-6 border border-ef-accent/20">
-                                                 <span className="text-4xl text-ef-accent">📊</span>
-                                             </div>
-                                             <h3 className="text-xl font-black text-white uppercase tracking-widest mb-2">Saved Builds</h3>
-                                             <p className="text-[10px] text-white/40 uppercase font-black tracking-widest leading-relaxed max-w-[200px] mb-8">
-                                                 View and manage your optimized progression paths for {formData.name}
-                                             </p>
-
-                                             <button
-                                                 onClick={() => setShowProgressions(true)}
-                                                 className="w-full py-4 bg-ef-accent text-ef-dark rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-[0_0_30px_rgba(0,255,136,0.2)] hover:scale-[1.02] active:scale-95 transition-all"
-                                             >
-                                                 Open Progressions Manager
-                                             </button>
-
-                                             {player.progressions?.length > 0 ? (
-                                                 <div className="mt-8 pt-8 border-t border-white/5 w-full">
-                                                     <div className="flex justify-between items-center mb-4 px-2">
-                                                         <span className="text-[8px] font-black uppercase tracking-widest opacity-20 text-white">Active Build Status</span>
-                                                         <span className="px-2 py-0.5 bg-ef-accent/20 text-ef-accent rounded text-[8px] font-black">{player.progressions.length} Builds Saved</span>
-                                                     </div>
-                                                     <div className="text-[9px] text-white/30 font-bold italic">
-                                                         Tap the button above to view all saved progression sets.
-                                                     </div>
-                                                 </div>
-                                             ) : (
-                                                 <div className="mt-8 opacity-20 text-[8px] font-black uppercase tracking-widest">No builds saved yet</div>
-                                             )}
-                                         </div>
-                                      </div>
-                                  </div>
-                              </div>
-                          </div>
-                   )}
-               </div>
-           </div>
-       </div>
+                                            ) : (
+                                                <div className="mt-8 opacity-20 text-[8px] font-black uppercase tracking-widest">No builds saved yet</div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
     );
 };
 

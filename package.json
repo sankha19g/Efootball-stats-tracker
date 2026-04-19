@@ -1,4 +1,8 @@
 {
+  "scripts": {
+    "dev": "run_local.bat",
+    "install-all": "npm install && cd client && npm install && cd ../server && npm install"
+  },
   "dependencies": {
     "cheerio": "^1.2.0",
     "dotenv": "^17.4.1",
