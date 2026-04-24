@@ -7,8 +7,8 @@ export default {
     theme: {
         extend: {
             colors: {
-                'ef-dark': '#0f172a',
-                'ef-card': 'rgba(30, 41, 59, 0.7)',
+                'ef-dark': '#000000',
+                'ef-card': 'rgba(10, 10, 12, 0.7)',
                 'ef-accent': '#00ff88',
                 'ef-blue': '#00d4ff',
             },

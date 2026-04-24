@@ -1,7 +1,23 @@
 import { useState } from 'react';
 
-const SidebarNav = ({ view, setView, setShowAddPlayer, setShowDatabase, setShowScreenshots, setShowLinks, setShowSettings, user, setShowLogin, handleLogout, showAlert, setShowProfileStats, setShowSocial, setShowBrochure }) => {
-    const [isOpen, setIsOpen] = useState(false);
+const SidebarNav = ({ 
+    isOpen, 
+    setIsOpen, 
+    view, 
+    setView, 
+    setShowAddPlayer, 
+    setShowDatabase, 
+    setShowScreenshots, 
+    setShowLinks, 
+    setShowSettings, 
+    user, 
+    setShowLogin, 
+    handleLogout, 
+    showAlert, 
+    setShowProfileStats, 
+    setShowSocial, 
+    setShowBrochure 
+}) => {
 
     const isSubView = view !== 'list';
 
@@ -75,27 +91,7 @@ const SidebarNav = ({ view, setView, setShowAddPlayer, setShowDatabase, setShowS
 
     return (
         <>
-            {/* Context-aware Button - Back or Hamburger */}
-            <button
-                onClick={() => isSubView ? setView('list') : setIsOpen(true)}
-                className="fixed top-5 left-4 z-[100] w-10 h-10 bg-white/10 backdrop-blur-2xl border border-white/20 rounded-xl flex items-center justify-center hover:bg-white/20 hover:border-ef-accent/50 transition-all active:scale-95 group shadow-2xl"
-            >
-                {isSubView ? (
-                    <div className="relative flex items-center justify-center w-full h-full">
-                        <span className="text-xl text-white group-hover:text-ef-accent transition-all duration-300 group-hover:-translate-x-1">←</span>
-                    </div>
-                ) : (
-                    <div className="relative flex flex-col items-center justify-center w-6 h-6 group-hover:scale-110 transition-transform duration-500">
-                        {/* Kinetic Hamburger Bars */}
-                        <div className="w-5 h-[2px] bg-white group-hover:bg-ef-accent rounded-full transition-all duration-300 translate-y-[-4px] group-hover:w-3 group-hover:translate-x-[-1px]"></div>
-                        <div className="w-4 h-[2px] bg-white group-hover:bg-ef-accent rounded-full transition-all duration-300 opacity-80 group-hover:w-5"></div>
-                        <div className="w-5 h-[2px] bg-white group-hover:bg-ef-accent rounded-full transition-all duration-300 translate-y-[4px] group-hover:w-3 group-hover:translate-x-[1px]"></div>
 
-                        {/* Tech Ring Accent */}
-                        <div className="absolute inset-[-4px] border border-ef-accent/0 group-hover:border-ef-accent/20 rounded-full transition-all duration-500 scale-50 group-hover:scale-100 opacity-0 group-hover:opacity-100"></div>
-                    </div>
-                )}
-            </button>
 
             {/* Side Drawer Overlay */}
             <div className={`fixed inset-0 z-[110] pointer-events-none ${isOpen ? 'pointer-events-auto' : ''}`}>
@@ -116,10 +112,7 @@ const SidebarNav = ({ view, setView, setShowAddPlayer, setShowDatabase, setShowS
                     <div className="p-6 sm:p-8 border-b border-white/5">
                         <div className="flex items-center justify-between mb-6">
                             <div>
-                                <h2 className="text-2xl font-black bg-gradient-to-r from-ef-accent to-ef-blue bg-clip-text text-transparent tracking-tighter">
-                                    NAVIGATION
-                                </h2>
-                                <p className="text-[10px] uppercase font-black tracking-widest opacity-30">Management Hub</p>
+                                {/* Header titles removed as per request */}
                             </div>
                             <button
                                 onClick={() => setIsOpen(false)}
@@ -129,31 +122,13 @@ const SidebarNav = ({ view, setView, setShowAddPlayer, setShowDatabase, setShowS
                             </button>
                         </div>
 
-                        {/* User Profile Section */}
-                        {user ? (
-                            <div className="flex items-center gap-3 bg-white/5 p-2.5 rounded-xl border border-white/5 group hover:bg-white/10 transition-all">
-                                <img src={user.picture} alt={user.name} className="w-9 h-9 rounded-full border-2 border-ef-accent shadow-[0_0_15px_rgba(0,255,136,0.3)]" />
-                                <div className="flex-1 min-w-0">
-                                    <h3 className="text-[11px] font-black text-white truncate">{user.name}</h3>
-                                    <p className="text-[8px] text-white/40 truncate">{user.email}</p>
-                                </div>
-                                <button
-                                    onClick={() => { handleLogout(); setIsOpen(false); }}
-                                    className="p-1.5 bg-red-500/10 text-red-500 rounded-lg hover:bg-red-500 hover:text-white transition-all"
-                                    title="Logout"
-                                >
-                                    ⎋
-                                </button>
-                            </div>
-                        ) : (
+                        {!user && (
                             <button
                                 onClick={() => { setShowLogin(true); setIsOpen(false); }}
-                                className="w-full flex items-center gap-3 bg-gradient-to-r from-ef-accent to-ef-blue p-2.5 rounded-xl shadow-lg hover:scale-[1.02] active:scale-95 transition-all text-white"
+                                className="w-full flex items-center gap-3 bg-gradient-to-r from-ef-accent to-green-400 p-2.5 rounded-xl shadow-lg hover:scale-[1.02] active:scale-95 transition-all text-black"
                             >
-                                <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center text-lg">🔐</div>
-                                <div className="text-left">
+                                <div className="text-left flex-1">
                                     <p className="text-[10px] font-black uppercase tracking-widest">Sign In</p>
-                                    <p className="text-[8px] font-bold opacity-70">Unlock squad sync</p>
                                 </div>
                             </button>
                         )}
@@ -167,32 +142,35 @@ const SidebarNav = ({ view, setView, setShowAddPlayer, setShowDatabase, setShowS
                                 onClick={item.onClick}
                                 className={`
                                     w-full group relative flex items-center gap-4 p-2 sm:p-2.5 rounded-none sm:rounded-xl transition-all duration-300
-                                    ${item.view && item.view === view ? 'bg-gradient-to-br from-blue-600/10 to-indigo-600/5 sm:bg-gradient-to-br sm:from-blue-600/20 sm:to-indigo-600/10 border-b sm:border border-white/5 sm:border-blue-500/30' :
+                                    ${item.view && item.view === view ? 'bg-ef-accent/10 border-b sm:border border-white/5 sm:border-ef-accent/30 shadow-[0_0_20px_rgba(0,255,136,0.05)]' :
                                         'hover:bg-white/5 border-b sm:border border-white/5 sm:border-transparent sm:hover:border-white/10'}
                                     text-left last:border-0
                                 `}
                             >
-                                <div className={`
-                                    w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center text-lg sm:text-xl transition-transform duration-300 group-hover:scale-110
-                                    ${item.view && item.view === view ? 'bg-blue-600/80 sm:bg-blue-600 text-white shadow-lg' : 'bg-white/5 text-white/60'}
-                                `}>
-                                    {item.icon}
-                                </div>
-                                <div className="flex flex-col">
-                                    <span className={`text-[9px] sm:text-[10px] font-black uppercase tracking-widest ${item.view && item.view === view ? 'text-white' : 'text-white/80 group-hover:text-ef-accent'}`}>
+                                <div className="flex flex-col flex-1">
+                                    <span className={`text-[10px] sm:text-xs font-black uppercase tracking-[0.1em] ${item.view && item.view === view ? 'text-white' : 'text-white/80 group-hover:text-ef-accent'} transition-colors`}>
                                         {item.label}
-                                    </span>
-                                    <span className="text-[7px] sm:text-[8px] font-bold opacity-30 group-hover:opacity-50 transition-opacity">
-                                        {item.desc}
                                     </span>
                                 </div>
 
                                 {item.view && item.view === view && (
-                                    <div className="ml-auto w-1 h-6 sm:h-8 rounded-full bg-blue-500 hidden sm:group-hover:block transition-all animate-pulse"></div>
+                                    <div className="ml-auto w-1 h-6 sm:h-8 rounded-full bg-ef-accent hidden sm:group-hover:block transition-all animate-pulse"></div>
                                 )}
                             </button>
                         ))}
                     </div>
+
+                    {/* Bottom Actions Section */}
+                    {user && (
+                        <div className="p-4 sm:p-5 border-t border-white/5">
+                            <button
+                                onClick={() => { handleLogout(); setIsOpen(false); }}
+                                className="w-full flex items-center justify-center p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white transition-all duration-300 font-black text-[10px] uppercase tracking-[0.2em] shadow-lg shadow-red-500/10"
+                            >
+                                Log Out
+                            </button>
+                        </div>
+                    )}
 
                     {/* Simple Footer */}
                     <div className="p-6 border-t border-white/5 bg-black/20 text-center">

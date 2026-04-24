@@ -20,6 +20,7 @@ import { PLAYSTYLES, ALL_SKILLS, PLAYER_SKILLS, SPECIAL_SKILLS } from './constan
 
 // Lazy Load Heavy Components
 const SidebarNav = lazy(() => import('./components/SidebarNav'));
+const TopNav = lazy(() => import('./components/TopNav'));
 const PlayerForm = lazy(() => import('./components/PlayerForm'));
 const Leaderboard = lazy(() => import('./components/Leaderboard'));
 const PlayerDetailsModal = lazy(() => import('./components/PlayerDetailsModal'));
@@ -60,6 +61,7 @@ function App() {
   const [players, setPlayers] = useState([]);
   const [squads, setSquads] = useState([]);
   const [view, setView] = useState(() => localStorage.getItem('ef-app-view') || 'list'); // 'list', 'leaderboard', or 'squad-builder'
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   // Persist App View
   useEffect(() => {
@@ -1414,112 +1416,45 @@ function App() {
   );
 
   return (
-    <div className={`min-h-screen p-3 md:p-8 transition-colors duration-500 ${settings.highPerf ? 'eco-mode ![animation:none] ![transition:none] *:![animation:none] *:![transition:none]' : ''}`}>
-      {view !== 'badges' && (
-        <header className="max-w-6xl mx-auto mb-8 sm:mb-12">
-          {/* Mobile Top Bar (following sketch) */}
-          <div className="flex md:hidden items-center gap-3 mb-4 pt-1.5 pl-12">
-            <img src={settings.appLogo || "/favicon.jpg"} alt="Logo" className="w-6 h-6 object-contain rounded-md" />
-            <h1 className="text-2xl font-black text-white tracking-tighter uppercase italic">
-              eFootball <span className="text-ef-accent">Stats</span>
-            </h1>
-          </div>
+    <div className={`min-h-screen pt-24 md:pt-24 p-3 md:p-8 transition-colors duration-500 ${settings.highPerf ? 'eco-mode ![animation:none] ![transition:none] *:![animation:none] *:![transition:none]' : ''}`}>
+      <TopNav 
+        searchQuery={searchQuery} 
+        setSearchQuery={setSearchQuery} 
+        setIsOpen={setIsSidebarOpen} 
+        isSubView={view !== 'list'} 
+        setView={setView} 
+        view={view}
+        settings={settings}
+        totalPlayers={processedPlayers.length}
+      />
 
-          {/* Desktop Title Section */}
-          <div className="hidden md:flex flex-col md:flex-row justify-between items-center gap-8 mb-12">
-            <div className="flex flex-col items-center md:items-start group">
-              <h1 className="flex items-center gap-4 text-4xl md:text-6xl font-black text-white tracking-tighter leading-none transition-transform duration-500 group-hover:scale-[1.02]">
-                <img src={settings.appLogo || "/favicon.jpg"} alt="Logo" className="w-10 h-10 md:w-16 md:h-16 object-contain rounded-xl shadow-2xl" />
-                <span>eFOOTBALL <span className="text-ef-accent bg-gradient-to-r from-ef-accent to-ef-blue bg-clip-text text-transparent">STATS.</span></span>
-              </h1>
-              <div className="mt-4 flex items-center gap-3">
-                <div className="h-1 w-12 bg-ef-accent rounded-full"></div>
-                <p className="text-[10px] md:text-xs font-black uppercase tracking-[0.4em] opacity-40">Squad Management Hub v1.0.4</p>
-              </div>
-            </div>
+      <Suspense fallback={<LoadingFallback />}>
+        <SidebarNav 
+          isOpen={isSidebarOpen} 
+          setIsOpen={setIsSidebarOpen} 
+          view={view} 
+          setView={setView}
+          setShowAddPlayer={setShowAddPlayer}
+          setShowDatabase={setShowDatabase}
+          setShowScreenshots={setShowScreenshots}
+          setShowLinks={setShowLinks}
+          setShowSettings={setShowSettings}
+          user={user}
+          setShowLogin={setShowLogin}
+          handleLogout={handleLogout}
+          showAlert={showAlert}
+          setShowProfileStats={setShowProfileStats}
+          setShowSocial={setShowSocial}
+          setShowBrochure={setShowBrochure}
+        />
+      </Suspense>
 
-            <div className="flex items-center gap-2">
-              {/* Total box relocated from action hub */}
-              <div className="flex flex-col items-center justify-center px-5 py-2 bg-white/5 border border-white/10 rounded-xl min-w-[80px]">
-                <span className="text-[8px] font-black uppercase tracking-tighter opacity-30">Total</span>
-                <span className="text-sm font-black text-ef-accent leading-tight">{processedPlayers.length}</span>
-              </div>
 
-              <div className="flex bg-white/5 rounded-xl p-1 border border-white/5">
-                <button
-                  onClick={() => setView('list')}
-                  className={`px-6 py-2 rounded-lg transition text-sm font-bold ${view === 'list' ? 'bg-ef-accent text-ef-dark shadow-lg shadow-ef-accent/20' : 'text-white/40 hover:text-white'}`}
-                >
-                  Squad
-                </button>
-                <button
-                  onClick={() => setView('leaderboard')}
-                  className={`px-6 py-2 rounded-lg transition text-sm font-bold ${view === 'leaderboard' ? 'bg-ef-accent text-ef-dark shadow-lg shadow-ef-accent/20' : 'text-white/40 hover:text-white'}`}
-                >
-                  Ranks
-                </button>
-                <button
-                  onClick={() => setView('squad-builder')}
-                  className={`px-6 py-2 rounded-lg transition text-sm font-bold ${view === 'squad-builder' ? 'bg-ef-accent text-ef-dark shadow-lg shadow-ef-accent/20' : 'text-white/40 hover:text-white'}`}
-                >
-                  Formations
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Mobile Tab Switcher */}
-          <nav className="md:hidden grid grid-cols-3 gap-2 p-1 bg-white/5 border border-white/10 rounded-2xl mb-4">
-            <button
-              onClick={() => setView('list')}
-              className={`py-2 rounded-xl font-black text-xs uppercase tracking-widest transition-all ${view === 'list' ? 'bg-ef-accent text-black shadow-lg shadow-ef-accent/20' : 'text-white/40 bg-transparent'}`}
-            >
-              Squad
-            </button>
-            <button
-              onClick={() => setView('leaderboard')}
-              className={`py-2 rounded-xl font-black text-xs uppercase tracking-widest transition-all ${view === 'leaderboard' ? 'bg-ef-accent text-black shadow-lg shadow-ef-accent/20' : 'text-white/40 bg-transparent'}`}
-            >
-              Ranks
-            </button>
-            <button
-              onClick={() => setView('squad-builder')}
-              className={`py-2 rounded-xl font-black text-xs uppercase tracking-widest transition-all ${view === 'squad-builder' ? 'bg-ef-accent text-black shadow-lg shadow-ef-accent/20' : 'text-white/40 bg-transparent'}`}
-            >
-              Formations
-            </button>
-          </nav>
-        </header>
-      )}
-
-      {/* Standalone Search Bar Section */}
-      {
-        view === 'list' && (
-          <div className="max-w-6xl mx-auto mb-4 flex flex-col gap-4">
-            {/* Search row (Responsive: Grid on Mobile, Flex on Desktop) */}
-            <div className="flex flex-row items-stretch gap-2 md:gap-4 overflow-x-auto no-scrollbar pb-2 md:pb-0">
-              {/* Search input (Flexible width) */}
-              <div className="relative flex-1 min-w-[150px] group">
-                <input
-                  type="text"
-                  placeholder={window.innerWidth < 640 ? "Search..." : "Search players by name, club, position..."}
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl md:rounded-2xl px-10 md:px-12 py-3 md:py-4 text-white focus:outline-none focus:border-ef-accent/50 focus:bg-white/10 transition-all font-bold placeholder:text-white/20 shadow-xl text-xs md:text-sm"
-                />
-                <span className="absolute left-3 md:left-4 top-1/2 -translate-y-1/2 opacity-20 text-sm md:text-xl">🔍</span>
-                {searchQuery && (
-                  <button
-                    onClick={() => setSearchQuery('')}
-                    className="absolute right-3 md:right-4 top-1/2 -translate-y-1/2 w-5 h-5 md:w-6 md:h-6 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white/40 hover:text-white transition-all overflow-hidden"
-                  >
-                    ✕
-                  </button>
-                )}
-              </div>
-
-              {/* Action Buttons Hub */}
-              <div className="flex items-center gap-2 pr-4 md:pr-0">
+      {/* Action Buttons Section */}
+      {view === 'list' && (
+        <div className="max-w-6xl mx-auto mb-4 flex flex-col gap-4">
+          <div className="flex flex-row items-stretch gap-2 md:gap-4 overflow-x-auto no-scrollbar pb-2 md:pb-0">
+            <div className="flex items-center gap-2 pr-4 md:pr-0">
                 {/* Quick Update Button */}
                 {user && (
                   <button
@@ -1617,11 +1552,10 @@ function App() {
                     )}
                   </div>
                 )}
-              </div>
             </div>
           </div>
-        )
-      }
+        </div>
+      )}
 
       {/* Bulk Edit Modal */}
       {showBulkEdit && (
