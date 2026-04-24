@@ -1416,16 +1416,27 @@ function App() {
   );
 
   return (
-    <div className={`min-h-screen pt-24 md:pt-24 p-3 md:p-8 transition-colors duration-500 ${settings.highPerf ? 'eco-mode ![animation:none] ![transition:none] *:![animation:none] *:![transition:none]' : ''}`}>
+    <div className={`min-h-screen bg-[#000000] selection:bg-ef-accent selection:text-black ${settings.highPerf ? 'eco-mode ![animation:none] ![transition:none] *:![animation:none] *:![transition:none]' : ''}`}>
       <TopNav 
         searchQuery={searchQuery} 
         setSearchQuery={setSearchQuery} 
         setIsOpen={setIsSidebarOpen} 
+        isOpen={isSidebarOpen}
         isSubView={view !== 'list'} 
         setView={setView} 
         view={view}
         settings={settings}
         totalPlayers={processedPlayers.length}
+        user={user}
+        setShowRemainder={setShowRemainder}
+        setShowFilters={setShowFilters}
+        showFilters={showFilters}
+        isSelectionMode={isSelectionMode}
+        setIsSelectionMode={setIsSelectionMode}
+        selectedIds={selectedIds}
+        setSelectedIds={setSelectedIds}
+        setShowBulkEdit={setShowBulkEdit}
+        handleBulkDelete={handleBulkDelete}
       />
 
       <Suspense fallback={<LoadingFallback />}>
@@ -1449,113 +1460,16 @@ function App() {
         />
       </Suspense>
 
-
-      {/* Action Buttons Section */}
-      {view === 'list' && (
-        <div className="max-w-6xl mx-auto mb-4 flex flex-col gap-4">
-          <div className="flex flex-row items-stretch gap-2 md:gap-4 overflow-x-auto no-scrollbar pb-2 md:pb-0">
-            <div className="flex items-center gap-2 pr-4 md:pr-0">
-                {/* Quick Update Button */}
-                {user && (
-                  <button
-                    onClick={() => setView('quick-stats')}
-                    className="flex flex-col items-center justify-center px-4 md:px-6 py-1.5 md:py-2 bg-ef-accent border border-ef-accent/20 rounded-xl md:rounded-2xl shadow-xl hover:scale-105 active:scale-95 transition-all text-ef-dark group"
-                    title="Quickly update player stats"
-                  >
-                    <span className="text-xs md:text-lg">⚡</span>
-                    <span className="text-[7px] md:text-[8px] font-black uppercase tracking-tighter">Stats</span>
-                  </button>
-                )}
-
-                {/* Remainder Button */}
-                {user && (
-                  <button
-                    onClick={() => setShowRemainder(true)}
-                    className="flex flex-col items-center justify-center px-4 md:px-6 py-1.5 md:py-2 bg-white/5 border border-white/10 rounded-xl md:rounded-2xl shadow-xl hover:bg-white/10 active:scale-95 transition-all text-white/40 hover:text-white group"
-                    title="Reminders & Notes"
-                  >
-                    <span className="text-xs md:text-lg">🔔</span>
-                    <span className="text-[7px] md:text-[8px] font-black uppercase tracking-tighter">Remainder</span>
-                  </button>
-                )}
-
-                {/* Filter button (Mobile-only icon + Text) */}
-                <button
-                  onClick={() => setShowFilters(!showFilters)}
-                  className={`flex items-center justify-center px-4 md:px-6 py-3 md:py-4 rounded-xl md:rounded-2xl font-black uppercase tracking-widest transition-all border shadow-xl text-[10px] md:text-xs ${showFilters ? 'bg-ef-accent text-ef-dark border-ef-accent' : 'bg-white/5 text-white/40 border-white/10 hover:bg-white/10 hover:text-white'}`}
-                  title="Filter & Sort"
-                >
-                  <span className={`transition-transform duration-500 ${showFilters ? 'rotate-90' : ''}`}>
-                    {showFilters ? (
-                      <span className="text-sm">✕</span>
-                    ) : (
-                      <svg className="w-4 h-4 md:w-5 md:h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <line x1="4" y1="21" x2="4" y2="14" />
-                        <line x1="4" y1="10" x2="4" y2="3" />
-                        <line x1="12" y1="21" x2="12" y2="12" />
-                        <line x1="12" y1="8" x2="12" y2="3" />
-                        <line x1="20" y1="21" x2="20" y2="16" />
-                        <line x1="20" y1="12" x2="20" y2="3" />
-                        <line x1="2" y1="14" x2="6" y2="14" />
-                        <line x1="10" y1="8" x2="14" y2="8" />
-                        <line x1="18" y1="16" x2="22" y2="16" />
-                      </svg>
-                    )}
-                  </span>
-                  <span className="hidden md:inline ml-3">Filter & Sort</span>
-                  <span className={`hidden md:inline ml-2 text-xs transition-transform duration-300 ${showFilters ? 'rotate-180' : ''}`}>▼</span>
-                </button>
+      {/* Main Content Area (Pushed by Sidebar) */}
+      <div 
+        className={`
+          transition-all duration-500 ease-in-out
+          ${isSidebarOpen ? 'ml-[280px] sm:ml-80 w-[calc(100%-280px)] sm:w-[calc(100%-320px)]' : 'ml-0 w-full'}
+          min-h-screen pt-24 md:pt-28 p-3 md:p-8
+        `}
+      >
 
 
-
-                {/* Select button (Mobile-only icon + Text on Select) */}
-                {user && (
-                  <div className="flex items-center gap-2">
-                    {isSelectionMode && selectedIds.size > 0 && (
-                      <button
-                        onClick={() => setShowBulkEdit(true)}
-                        className="flex items-center justify-center px-4 md:px-6 py-3 md:py-4 rounded-xl md:rounded-2xl font-black uppercase tracking-widest text-[10px] md:text-xs transition-all border shadow-xl bg-ef-blue text-white border-ef-blue/50 hover:bg-ef-blue/80"
-                      >
-                        <span>📝</span>
-                        <span className="hidden md:inline ml-3">Bulk Edit</span>
-                      </button>
-                    )}
-                    {/* Delete button - only shows when players are selected */}
-                    {isSelectionMode && selectedIds.size > 0 && (
-                      <button
-                        onClick={() => handleBulkDelete()}
-                        className="flex items-center justify-center px-4 md:px-6 py-3 md:py-4 rounded-xl md:rounded-2xl font-black uppercase tracking-widest text-[10px] md:text-xs transition-all border shadow-xl bg-red-500 text-white border-red-500 hover:bg-red-600 active:scale-95"
-                      >
-                        <span>🗑️</span>
-                        <span className="hidden md:inline ml-3">Del ({selectedIds.size})</span>
-                        <span className="md:hidden ml-1">{selectedIds.size}</span>
-                      </button>
-                    )}
-                    {/* Cancel button - shows in selection mode */}
-                    {isSelectionMode ? (
-                      <button
-                        onClick={() => { setIsSelectionMode(false); setSelectedIds(new Set()); }}
-                        className="flex items-center justify-center px-4 md:px-6 py-3 md:py-4 rounded-xl md:rounded-2xl font-black uppercase tracking-widest text-[10px] md:text-xs transition-all border shadow-xl bg-white/10 text-white/60 border-white/20 hover:bg-white/20 hover:text-white active:scale-95"
-                        title="Cancel Selection"
-                      >
-                        <span>✕</span>
-                        <span className="hidden md:inline ml-2">Cancel</span>
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => setIsSelectionMode(true)}
-                        className="flex items-center justify-center px-4 md:px-6 py-3 md:py-4 rounded-xl md:rounded-2xl font-black uppercase tracking-widest text-[10px] md:text-xs transition-all border shadow-xl bg-white/5 text-white/60 border-white/10 hover:bg-white/10"
-                      >
-                        <span>✓</span>
-                        <span className="hidden md:inline ml-3">Select</span>
-                      </button>
-                    )}
-                  </div>
-                )}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Bulk Edit Modal */}
       {showBulkEdit && (
@@ -2768,6 +2682,7 @@ function App() {
           onClose={() => setShowSocial(false)}
         />
       </Suspense>
+    </div>
     </div >
   );
 }
