@@ -56,29 +56,29 @@ const SidebarNav = ({
             view: 'squad-builder'
         },
         {
-            label: 'Quick Stats Update',
+            label: 'Quick stats update',
             icon: Zap,
             onClick: () => { setView('quick-stats'); setIsOpen(false); },
             view: 'quick-stats'
         },
         {
-            label: 'Add Player from DB',
+            label: 'Add player from db',
             icon: PlusSquare,
             onClick: () => { setShowDatabase(true); setIsOpen(false); }
         },
         {
-            label: 'My Squad DB',
+            label: 'My squad db',
             icon: ClipboardList,
             onClick: () => { setView('squad-db'); setIsOpen(false); },
             view: 'squad-db'
         },
         {
-            label: 'Manual Entry',
+            label: 'Manual entry',
             icon: PenTool,
             onClick: () => { setShowAddPlayer(true); setIsOpen(false); }
         },
         {
-            label: 'My Profile Statistics',
+            label: 'My profile statistics',
             icon: BarChart3,
             onClick: () => { setShowProfileStats(true); setIsOpen(false); }
         },
@@ -93,7 +93,7 @@ const SidebarNav = ({
             onClick: () => { setShowScreenshots(true); setIsOpen(false); }
         },
         {
-            label: 'Quick Links',
+            label: 'Quick links',
             icon: Link2,
             onClick: () => { setShowLinks(true); setIsOpen(false); }
         },
@@ -140,7 +140,7 @@ const SidebarNav = ({
                                 >
                                     <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-ef-accent' : 'text-white/40 group-hover:text-ef-accent'} transition-colors flex-shrink-0`} />
                                     <div className="flex flex-col flex-1 min-w-0">
-                                        <span className={`text-[13px] font-bold tracking-tight truncate ${isActive ? 'text-white' : 'text-white/80 group-hover:text-ef-accent'} transition-colors font-sans`}>
+                                        <span className={`text-[13px] font-medium tracking-tight truncate ${isActive ? 'text-white' : 'text-white/80 group-hover:text-ef-accent'} transition-colors font-inter`}>
                                             {item.label}
                                         </span>
                                     </div>
@@ -158,17 +158,17 @@ const SidebarNav = ({
                         <div className="p-4 sm:p-5 border-t border-white/5">
                             <button
                                 onClick={() => { handleLogout(); setIsOpen(false); }}
-                                className="w-full flex items-center justify-center gap-3 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white transition-all duration-300 font-black text-[10px] uppercase tracking-[0.2em] shadow-lg shadow-red-500/10 group"
+                                className="w-full flex items-center justify-center gap-3 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white transition-all duration-300 font-inter font-medium text-[12px] tracking-tight shadow-lg shadow-red-500/10 group"
                             >
                                 <LogOut className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-                                <span>Log Out</span>
+                                <span>Log out</span>
                             </button>
                         </div>
                     )}
 
                     {/* Simple Footer */}
-                    <div className="p-6 border-t border-white/5 bg-black/20 text-center">
-                        <p className="text-[10px] uppercase font-black tracking-[0.3em] opacity-20">Version 1.0.4</p>
+                    <div className="p-0 border-t border-white/5 bg-black/20 text-center">
+                        <p className="m-0 p-0 text-[10px] font-inter font-medium tracking-[0.1em] opacity-40">Version 1.0.4</p>
                     </div>
                 </div>
             </div>

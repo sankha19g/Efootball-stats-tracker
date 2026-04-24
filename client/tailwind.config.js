@@ -14,6 +14,9 @@ export default {
             },
             fontFamily: {
                 sans: ['Inter', 'sans-serif'],
+                serif: ['Inter', 'serif'],
+                mono: ['Inter', 'monospace'],
+                inter: ['Inter', 'sans-serif'],
             },
             keyframes: {
                 fadeIn: {
