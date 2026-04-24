@@ -1234,7 +1234,7 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
 
                                         {/* Action Buttons */}
                                         <div className="mt-auto flex flex-col gap-3 pt-4">
-                                            <button onClick={() => setIsEditing(true)} className="w-full py-3 rounded-xl bg-white/5 border border-white/10 hover:border-ef-accent/50 hover:bg-white/10 hover:text-ef-accent transition-all font-black text-[9px] tracking-widest uppercase flex items-center justify-center gap-2">
+                                            <button onClick={() => setIsEditing(true)} className="w-[150px] mx-auto py-3 rounded-xl bg-white/5 border border-white/10 hover:border-ef-accent/50 hover:bg-white/10 hover:text-ef-accent transition-all font-black text-[9px] tracking-widest uppercase flex items-center justify-center gap-2">
                                                 <span>⚡</span> Edit Data
                                             </button>
                                         </div>
