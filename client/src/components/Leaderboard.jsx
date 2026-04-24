@@ -4,16 +4,16 @@ import { normalizeString } from '../services/footballApi';
 const getDisplayPosition = (player, activePositions = [], includeSecondary = false) => {
     if (activePositions.length > 0 && includeSecondary && !activePositions.includes(player.position)) {
         // Check secondaryPosition (can be string or array)
-        const secondary = Array.isArray(player.secondaryPosition) 
-            ? player.secondaryPosition 
+        const secondary = Array.isArray(player.secondaryPosition)
+            ? player.secondaryPosition
             : (player.secondaryPosition || '').split(/[,\s]+/).map(s => s.trim().toUpperCase());
-        
+
         const additional = Array.isArray(player.additionalPositions)
             ? player.additionalPositions
             : (player.additionalPositions || '').toString().split(/[,\s]+/).map(s => s.trim().toUpperCase());
 
         const allSecondary = [...new Set([...secondary, ...additional])].filter(Boolean);
-        
+
         const matchedSec = activePositions.find(pos =>
             allSecondary.includes(pos.toUpperCase())
         );

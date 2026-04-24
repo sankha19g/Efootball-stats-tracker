@@ -51,14 +51,14 @@ const PlayerCard = memo(({ player, players = [], isSelectionMode, isSelected, on
                         {isSelected && <span className="text-ef-dark font-black text-xs">✓</span>}
                     </div>
                 )}
-                
+
                 {/* Secondary Position Match Indicator */}
                 {secondaryMatch && !isSelectionMode && (
-                   <div className="absolute top-0 right-0 z-20 bg-black/80 backdrop-blur-md rounded-bl-[10px] border-l border-b border-white/10 shadow-lg px-2 py-0.5">
-                       <span className="text-[10px] font-black text-ef-accent italic uppercase tracking-tighter leading-none pulse-ef">
-                           {secondaryMatch}
-                       </span>
-                   </div>
+                    <div className="absolute top-0 right-0 z-20 bg-black/80 backdrop-blur-md rounded-bl-[10px] border-l border-b border-white/10 shadow-lg px-2 py-0.5">
+                        <span className="text-[10px] font-black text-ef-accent italic uppercase tracking-tighter leading-none pulse-ef">
+                            {secondaryMatch}
+                        </span>
+                    </div>
                 )}
 
                 {/* Optional Club/Nation badges aligned left, right below position if enabled */}
