@@ -11,6 +11,11 @@ A comprehensive application for tracking player stats, managing squads, and anal
 | **Database** | Firebase Firestore | Managed via Firebase Console |
 
 ---
+Firebase Hosting  →  Frontend (React/Vite)
+Firebase Auth     →  Login / Register
+Firebase Firestore →  All user data (players, squads, links, etc.)
+Vercel            →  Backend API (search, scraping, skills lookup)
+
 
 ## 🏗️ Project Structure & Components
 
