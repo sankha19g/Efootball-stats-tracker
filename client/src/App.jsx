@@ -1464,7 +1464,7 @@ function App() {
       <div 
         className={`
           transition-all duration-500 ease-in-out
-          ${isSidebarOpen ? 'ml-[280px] sm:ml-80 w-[calc(100%-280px)] sm:w-[calc(100%-320px)]' : 'ml-0 w-full'}
+          ${isSidebarOpen ? 'ml-[200px] w-[calc(100%-200px)]' : 'ml-0 w-full'}
           min-h-screen pt-24 md:pt-28 p-3 md:p-8
         `}
       >
@@ -2125,23 +2125,8 @@ function App() {
         )
       }
 
+
       <Suspense fallback={<LoadingFallback />}>
-        <SidebarNav
-          view={view}
-          setView={setView}
-          setShowAddPlayer={setShowAddPlayer}
-          setShowDatabase={setShowDatabase}
-          setShowScreenshots={setShowScreenshots}
-          setShowLinks={setShowLinks}
-          setShowSettings={setShowSettings}
-          user={user}
-          setShowLogin={setShowLogin}
-          handleLogout={handleLogout}
-          showAlert={showAlert}
-          setShowProfileStats={setShowProfileStats}
-          setShowSocial={setShowSocial}
-          setShowBrochure={setShowBrochure}
-        />
         <main className="max-w-6xl mx-auto animate-fade-in pb-20 pt-4 md:pt-0">
 
 
@@ -2271,17 +2256,22 @@ function App() {
               <>
                 {view === 'list' && (
                   <>
-                    <div className={`grid ${settings.cardSize === 'mini' ? 'grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-3 md:gap-4' :
-                      settings.cardSize === 'xs' ? 'grid-cols-5 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-1' :
-                        settings.cardSize === 'sm' ? 'grid-cols-4 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-2 md:gap-3' :
-                          settings.cardSize === 'md' ? 'grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-4' :
-                            'grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6'
-                      } ${settings.highPerf ? '![animation:none]' : ''}`}>
+                    <div className={`flex flex-wrap justify-center gap-3 md:gap-4 ${settings.highPerf ? '![animation:none]' : ''}`}>
                       {(settings.enablePagination
                         ? processedPlayers.slice((currentPage - 1) * settings.itemsPerPage, currentPage * settings.itemsPerPage)
                         : processedPlayers
                       ).map(player => (
-                        <div key={player._id} onClick={() => !isSelectionMode && setSelectedPlayer(player)}>
+                        <div 
+                          key={player._id}
+                          className={`${
+                            settings.cardSize === 'mini' ? 'w-[85px] sm:w-[100px]' :
+                            settings.cardSize === 'xs' ? 'w-[105px] sm:w-[125px]' :
+                            settings.cardSize === 'sm' ? 'w-[145px] sm:w-[165px]' :
+                            settings.cardSize === 'md' ? 'w-[185px] sm:w-[210px]' :
+                            'w-[230px] sm:w-[260px]'
+                          } transition-all duration-300`}
+                          onClick={() => !isSelectionMode && setSelectedPlayer(player)}
+                        >
                           <PlayerCard
                             player={player}
                             players={players}
@@ -2303,56 +2293,65 @@ function App() {
                     {/* Pagination Controls */}
                     {settings.enablePagination && processedPlayers.length > settings.itemsPerPage && (
                       <div className="mt-12 flex flex-col items-center gap-6 pb-12">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-5">
                           <button
                             disabled={currentPage === 1}
                             onClick={() => {
                               setCurrentPage(p => Math.max(1, p - 1));
                               window.scrollTo({ top: 0, behavior: 'smooth' });
                             }}
-                            className={`w-12 h-12 rounded-2xl flex items-center justify-center border transition-all ${currentPage === 1 ? 'opacity-10 border-white/5 cursor-not-allowed' : 'bg-white/5 border-white/10 text-white hover:bg-ef-blue hover:text-white hover:border-ef-blue hover:scale-105 active:scale-95 shadow-xl'}`}
+                            className={`transition-all ${currentPage === 1 ? 'opacity-10 cursor-not-allowed' : 'text-white/40 hover:text-white active:scale-90'}`}
                           >
-                            <span className="text-xl">←</span>
+                            <span className="text-xl font-light">‹</span>
                           </button>
 
-                          <div className="flex items-center gap-1.5 px-4 h-12 bg-white/5 border border-white/10 rounded-2xl shadow-xl">
+                          <div className="flex items-center gap-2">
                             {(() => {
                               const totalPages = Math.ceil(processedPlayers.length / settings.itemsPerPage);
-                              const pages = [];
-                              let start = Math.max(1, currentPage - 1);
-                              let end = Math.min(totalPages, start + 2);
-                              if (end === totalPages) start = Math.max(1, end - 2);
-
-                              for (let i = start; i <= end; i++) {
-                                pages.push(
+                              const items = [];
+                              
+                              const addPage = (page) => {
+                                items.push(
                                   <button
-                                    key={i}
+                                    key={page}
                                     onClick={() => {
-                                      setCurrentPage(i);
+                                      setCurrentPage(page);
                                       window.scrollTo({ top: 0, behavior: 'smooth' });
                                     }}
-                                    className={`w-9 h-9 rounded-xl text-xs font-black transition-all ${currentPage === i ? 'bg-ef-blue text-white shadow-lg' : 'text-white/30 hover:text-white hover:bg-white/5'}`}
+                                    className={`w-10 h-10 rounded-xl text-sm font-bold transition-all flex items-center justify-center ${currentPage === page ? 'bg-white/10 text-white border border-white/10 shadow-lg' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
                                   >
-                                    {i}
+                                    {page}
                                   </button>
                                 );
+                              };
+
+                              const addEllipsis = (key) => {
+                                items.push(<span key={key} className="text-white/20 px-1 font-bold">...</span>);
+                              };
+
+                              if (totalPages <= 7) {
+                                for (let i = 1; i <= totalPages; i++) addPage(i);
+                              } else {
+                                if (currentPage <= 4) {
+                                  for (let i = 1; i <= 5; i++) addPage(i);
+                                  addEllipsis('end');
+                                  addPage(totalPages);
+                                } else if (currentPage >= totalPages - 3) {
+                                  addPage(1);
+                                  addEllipsis('start');
+                                  for (let i = totalPages - 4; i <= totalPages; i++) addPage(i);
+                                } else {
+                                  addPage(1);
+                                  addEllipsis('start');
+                                  addPage(currentPage - 1);
+                                  addPage(currentPage);
+                                  addPage(currentPage + 1);
+                                  addEllipsis('end');
+                                  addPage(totalPages);
+                                }
                               }
-                              return pages;
+                              return items;
                             })()}
-                            {Math.ceil(processedPlayers.length / settings.itemsPerPage) > 3 && currentPage < Math.ceil(processedPlayers.length / settings.itemsPerPage) - 1 && (
-                              <>
-                                <span className="text-white/10 px-1 italic text-[10px]">..</span>
-                                <button
-                                  onClick={() => {
-                                    setCurrentPage(Math.ceil(processedPlayers.length / settings.itemsPerPage));
-                                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                                  }}
-                                  className={`w-9 h-9 rounded-xl text-xs font-black text-white/30 hover:text-white hover:bg-white/5 transition-all`}
-                                >
-                                  {Math.ceil(processedPlayers.length / settings.itemsPerPage)}
-                                </button>
-                              </>
-                            )}
                           </div>
 
                           <button
@@ -2361,16 +2360,14 @@ function App() {
                               setCurrentPage(p => Math.min(Math.ceil(processedPlayers.length / settings.itemsPerPage), p + 1));
                               window.scrollTo({ top: 0, behavior: 'smooth' });
                             }}
-                            className={`w-12 h-12 rounded-2xl flex items-center justify-center border transition-all ${currentPage === Math.ceil(processedPlayers.length / settings.itemsPerPage) ? 'opacity-10 border-white/5 cursor-not-allowed' : 'bg-white/5 border-white/10 text-white hover:bg-ef-blue hover:text-white hover:border-ef-blue hover:scale-105 active:scale-95 shadow-xl'}`}
+                            className={`transition-all ${currentPage === Math.ceil(processedPlayers.length / settings.itemsPerPage) ? 'opacity-10 cursor-not-allowed' : 'text-white/40 hover:text-white active:scale-90'}`}
                           >
-                            <span className="text-xl">→</span>
+                            <span className="text-xl font-light">›</span>
                           </button>
                         </div>
-                        <p className="text-[10px] font-black uppercase tracking-[0.4em] opacity-20">
-                          Showing {(currentPage - 1) * settings.itemsPerPage + 1} - {Math.min(currentPage * settings.itemsPerPage, processedPlayers.length)} of {processedPlayers.length} Players
-                        </p>
                       </div>
                     )}
+
                   </>
                 )}
 

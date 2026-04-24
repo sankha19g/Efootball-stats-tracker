@@ -116,7 +116,7 @@ const SidebarNav = ({
             <div className={`fixed inset-y-0 left-0 z-[90] pointer-events-none transition-all duration-300 ${isOpen ? 'pointer-events-auto' : ''}`}>
                 {/* Drawer Content */}
                 <div className={`
-                    absolute inset-y-0 left-0 w-[280px] sm:w-80 bg-[#0a0a0c] border-r border-white/5 pt-16
+                    absolute inset-y-0 left-0 w-[200px] bg-[#0a0a0c] border-r border-white/5 pt-16
                     transform transition-transform duration-300 cubic-bezier(0.16, 1, 0.3, 1)
                     ${isOpen ? 'translate-x-0' : '-translate-x-full'}
                     flex flex-col shadow-2xl
