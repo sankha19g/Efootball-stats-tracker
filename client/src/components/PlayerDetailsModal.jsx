@@ -1096,7 +1096,7 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
                             <div className="absolute top-0 right-0 w-64 h-64 bg-ef-accent/5 rounded-full blur-3xl -z-10 translate-x-1/3 -translate-y-1/3"></div>
 
                             {/* Tab Navigation */}
-                            <div className="flex items-center gap-1 p-1 bg-white/5 rounded-2xl mx-4 md:mx-6 mt-4 md:mt-6 mb-2 border border-white/5 backdrop-blur-md z-30">
+                            <div className="flex items-center gap-1 p-1 bg-white/5 rounded-2xl mx-4 mt-4 md:mt-6 mb-2 border border-white/5 backdrop-blur-md z-30">
                                 {[
                                     { id: 0, label: 'Identity', icon: '👤' },
                                     { id: 1, label: 'Analytics', icon: '📊' },
@@ -1118,10 +1118,10 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
                             </div>
 
                             <div className="flex-1 relative overflow-hidden">
-                                <div className="absolute inset-0 p-4 md:p-6 overflow-y-auto no-scrollbar">
+                                <div className="absolute inset-0 p-4 md:p-4 overflow-y-auto no-scrollbar">
 
                                     {/* Page 0: Full Player Details */}
-                                    <div className={`flex-1 flex flex-col transition-all duration-500 transform overflow-y-auto no-scrollbar ${modalPage === 0 ? 'translate-x-0 opacity-100' : '-translate-x-full opacity-0 pointer-events-none absolute inset-0 p-4 md:p-6'} `}>
+                                    <div className={`flex-1 flex flex-col transition-all duration-500 transform overflow-y-auto no-scrollbar ${modalPage === 0 ? 'translate-x-0 opacity-100' : '-translate-x-full opacity-0 pointer-events-none absolute inset-0 p-4 md:p-4'} `}>
 
                                         {/* Main Stats Grid */}
                                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
@@ -1233,15 +1233,15 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
                                         </div>
 
                                         {/* Action Buttons */}
-                                        <div className="mt-auto grid grid-cols-3 gap-1.5 pt-4">
-                                            <button onClick={() => setIsEditing(true)} className="py-2.5 rounded-xl bg-white/5 border border-white/10 hover:border-ef-accent/50 hover:bg-white/10 hover:text-ef-accent transition-all font-black text-[7px] tracking-tighter uppercase flex items-center justify-center gap-1">
-                                                <span>⚡</span> Edit
+                                        <div className="mt-auto flex flex-row justify-center gap-1.5 pt-4">
+                                            <button onClick={() => setIsEditing(true)} className="w-[100px] py-3 rounded-xl bg-white/5 border border-white/10 hover:border-ef-accent/50 hover:bg-white/10 hover:text-ef-accent transition-all font-black text-[8px] tracking-tighter uppercase flex items-center justify-center gap-1">
+                                                <span>⚡</span> Edit Data
                                             </button>
                                             <a 
                                                 href={`https://pesdb.net/efootball/?id=${player.pesdb_id || player.playerId}`} 
                                                 target="_blank" 
                                                 rel="noopener noreferrer"
-                                                className="py-2.5 rounded-xl bg-ef-blue/10 border border-ef-blue/20 hover:border-ef-blue/50 hover:bg-ef-blue/20 text-ef-blue transition-all font-black text-[7px] tracking-tighter uppercase flex items-center justify-center gap-1"
+                                                className="w-[100px] py-3 rounded-xl bg-ef-blue/10 border border-ef-blue/20 hover:border-ef-blue/50 hover:bg-ef-blue/20 text-ef-blue transition-all font-black text-[8px] tracking-tighter uppercase flex items-center justify-center gap-1"
                                             >
                                                 <span>🌐</span> PESDB
                                             </a>
@@ -1249,7 +1249,7 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
                                                 href={`https://efhub.com/players/${player.pesdb_id || player.playerId}`} 
                                                 target="_blank" 
                                                 rel="noopener noreferrer"
-                                                className="py-2.5 rounded-xl bg-ef-accent/10 border border-ef-accent/20 hover:border-ef-accent/50 hover:bg-ef-accent/20 text-ef-accent transition-all font-black text-[7px] tracking-tighter uppercase flex items-center justify-center gap-1"
+                                                className="w-[100px] py-3 rounded-xl bg-ef-accent/10 border border-ef-accent/20 hover:border-ef-accent/50 hover:bg-ef-accent/20 text-ef-accent transition-all font-black text-[8px] tracking-tighter uppercase flex items-center justify-center gap-1"
                                             >
                                                 <span>📱</span> efHUB
                                             </a>

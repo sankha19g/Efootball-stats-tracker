@@ -196,6 +196,15 @@ const DatabasePlayerList = ({ onAddPlayers, onBack, settings, ownersPlayers = []
                         <span className="text-sm group-hover:scale-110 transition-transform">🕸️</span>
                         <span className="hidden sm:inline">Scrape Data</span>
                     </button>
+                    <a
+                        href="https://pesdb.net/efootball/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="h-full aspect-square bg-white/5 hover:bg-white/10 text-white rounded-2xl transition-all shadow-inner border border-white/10 flex items-center justify-center group shrink-0"
+                        title="Open PESDB Website"
+                    >
+                        <span className="text-sm group-hover:scale-110 transition-transform">🌐</span>
+                    </a>
                 </div>
 
                 <div className="flex items-center gap-3 w-full md:w-auto">
