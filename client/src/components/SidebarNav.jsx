@@ -132,21 +132,21 @@ const SidebarNav = ({
                                     key={index}
                                     onClick={item.onClick}
                                     className={`
-                                        w-full group relative flex items-center gap-4 p-3 transition-all duration-300
+                                        w-full group relative flex items-center gap-3 px-[10px] h-[26px] transition-all duration-300
                                         ${isActive ? 'bg-ef-accent/10 border-l-4 border-ef-accent shadow-[inset_0_0_20px_rgba(0,255,136,0.05)]' :
                                             'hover:bg-white/5 border-l-4 border-transparent'}
-                                        text-left
+                                        text-left whitespace-nowrap
                                     `}
                                 >
-                                    <Icon className={`w-4 h-4 ${isActive ? 'text-ef-accent' : 'text-white/40 group-hover:text-ef-accent'} transition-colors`} />
-                                    <div className="flex flex-col flex-1">
-                                        <span className={`text-[10px] sm:text-xs font-black uppercase tracking-[0.1em] ${isActive ? 'text-white' : 'text-white/80 group-hover:text-ef-accent'} transition-colors`}>
+                                    <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-ef-accent' : 'text-white/40 group-hover:text-ef-accent'} transition-colors flex-shrink-0`} />
+                                    <div className="flex flex-col flex-1 min-w-0">
+                                        <span className={`text-[13px] font-bold tracking-tight truncate ${isActive ? 'text-white' : 'text-white/80 group-hover:text-ef-accent'} transition-colors font-sans`}>
                                             {item.label}
                                         </span>
                                     </div>
 
                                     {isActive && (
-                                        <div className="ml-auto w-1 h-6 sm:h-8 rounded-full bg-ef-accent hidden sm:group-hover:block transition-all animate-pulse"></div>
+                                        <div className="ml-auto w-1 h-3 rounded-full bg-ef-accent hidden sm:group-hover:block transition-all animate-pulse"></div>
                                     )}
                                 </button>
                             );
