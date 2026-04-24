@@ -1233,10 +1233,18 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
                                         </div>
 
                                         {/* Action Buttons */}
-                                        <div className="mt-auto flex flex-col gap-3 pt-4">
-                                            <button onClick={() => setIsEditing(true)} className="w-[150px] mx-auto py-3 rounded-xl bg-white/5 border border-white/10 hover:border-ef-accent/50 hover:bg-white/10 hover:text-ef-accent transition-all font-black text-[9px] tracking-widest uppercase flex items-center justify-center gap-2">
+                                        <div className="mt-auto flex flex-row justify-center gap-2 pt-4">
+                                            <button onClick={() => setIsEditing(true)} className="flex-1 max-w-[135px] py-3 rounded-xl bg-white/5 border border-white/10 hover:border-ef-accent/50 hover:bg-white/10 hover:text-ef-accent transition-all font-black text-[9px] tracking-widest uppercase flex items-center justify-center gap-2">
                                                 <span>⚡</span> Edit Data
                                             </button>
+                                            <a 
+                                                href={`https://pesdb.net/efootball/?id=${player.pesdb_id || player.playerId}`} 
+                                                target="_blank" 
+                                                rel="noopener noreferrer"
+                                                className="flex-1 max-w-[135px] py-3 rounded-xl bg-ef-blue/10 border border-ef-blue/20 hover:border-ef-blue/50 hover:bg-ef-blue/20 text-ef-blue transition-all font-black text-[9px] tracking-widest uppercase flex items-center justify-center gap-2"
+                                            >
+                                                <span>🌐</span> PESDB
+                                            </a>
                                         </div>
                                     </div>
 
