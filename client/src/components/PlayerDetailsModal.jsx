@@ -1233,17 +1233,25 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
                                         </div>
 
                                         {/* Action Buttons */}
-                                        <div className="mt-auto flex flex-row justify-center gap-2 pt-4">
-                                            <button onClick={() => setIsEditing(true)} className="flex-1 max-w-[135px] py-3 rounded-xl bg-white/5 border border-white/10 hover:border-ef-accent/50 hover:bg-white/10 hover:text-ef-accent transition-all font-black text-[9px] tracking-widest uppercase flex items-center justify-center gap-2">
-                                                <span>⚡</span> Edit Data
+                                        <div className="mt-auto grid grid-cols-3 gap-1.5 pt-4">
+                                            <button onClick={() => setIsEditing(true)} className="py-2.5 rounded-xl bg-white/5 border border-white/10 hover:border-ef-accent/50 hover:bg-white/10 hover:text-ef-accent transition-all font-black text-[7px] tracking-tighter uppercase flex items-center justify-center gap-1">
+                                                <span>⚡</span> Edit
                                             </button>
                                             <a 
                                                 href={`https://pesdb.net/efootball/?id=${player.pesdb_id || player.playerId}`} 
                                                 target="_blank" 
                                                 rel="noopener noreferrer"
-                                                className="flex-1 max-w-[135px] py-3 rounded-xl bg-ef-blue/10 border border-ef-blue/20 hover:border-ef-blue/50 hover:bg-ef-blue/20 text-ef-blue transition-all font-black text-[9px] tracking-widest uppercase flex items-center justify-center gap-2"
+                                                className="py-2.5 rounded-xl bg-ef-blue/10 border border-ef-blue/20 hover:border-ef-blue/50 hover:bg-ef-blue/20 text-ef-blue transition-all font-black text-[7px] tracking-tighter uppercase flex items-center justify-center gap-1"
                                             >
                                                 <span>🌐</span> PESDB
+                                            </a>
+                                            <a 
+                                                href={`https://efhub.com/players/${player.pesdb_id || player.playerId}`} 
+                                                target="_blank" 
+                                                rel="noopener noreferrer"
+                                                className="py-2.5 rounded-xl bg-ef-accent/10 border border-ef-accent/20 hover:border-ef-accent/50 hover:bg-ef-accent/20 text-ef-accent transition-all font-black text-[7px] tracking-tighter uppercase flex items-center justify-center gap-1"
+                                            >
+                                                <span>📱</span> efHUB
                                             </a>
                                         </div>
                                     </div>
