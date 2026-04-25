@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { PLAYSTYLES } from '../constants';
 
-const QuickStatsView = ({ players, onUpdate, onClose, user, activeSquad }) => {
+const QuickStatsView = ({ players, onUpdate, onClose, user, activeSquad, isSidebarOpen }) => {
     const [search, setSearch] = useState('');
     const [isManualMode, setIsManualMode] = useState(false);
     const [isRatingsUnlocked, setIsRatingsUnlocked] = useState(false);
@@ -116,7 +116,11 @@ const QuickStatsView = ({ players, onUpdate, onClose, user, activeSquad }) => {
     };
 
     return (
-        <div className="min-h-screen bg-[#0a0a0c] flex animate-fade-in fixed inset-0 z-[2000]">
+        <div className={`
+            min-h-screen bg-[#0a0a0c] flex animate-fade-in fixed inset-0 z-[2000]
+            transition-all duration-500 ease-in-out
+            ${isSidebarOpen ? 'ml-[200px] w-[calc(100%-200px)]' : 'ml-0 w-full'}
+        `}>
             <div className="w-full h-full bg-[#0a0a0c] overflow-hidden flex relative">
 
                 {/* Sidebar Navigation */}

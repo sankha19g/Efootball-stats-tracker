@@ -697,25 +697,23 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
                                 <div className="h-[1px] flex-1 bg-gradient-to-l from-transparent to-white/10"></div>
                             </div>
 
-                            <div className="space-y-1">
+                            <div className="space-y-0">
                                 {[
                                     { label: 'Player ID', value: formData.playerId || formData.pesdb_id, mono: true },
                                     { label: 'Form', value: formData['Form'] || 'Standard', highlight: true },
-                                    { label: 'Trained Pos.', value: formData.additionalPositions || '-' },
-                                    { label: 'Weak Foot Use', value: formData['Weak Foot Usage'] },
-                                    { label: 'Weak Foot Acc', value: formData['Weak Foot Accuracy'] },
-                                    { label: 'Injury Res.', value: formData['Injury Resistance'] },
+                                    { label: 'Trained Positions', value: formData.additionalPositions || '-' },
+                                    { label: 'Weak Foot Usage', value: formData['Weak Foot Usage'] },
+                                    { label: 'Weak Foot Accuracy', value: formData['Weak Foot Accuracy'] },
+                                    { label: 'Injury Resistance', value: formData['Injury Resistance'] },
                                     { label: 'Featured Pack', value: formData['Featured Players'], blue: true },
                                     { label: 'Date Added', value: (() => { const d = parseEfDate(formData['Date Added']); return d ? d.toLocaleDateString() : 'Unknown'; })() },
                                     { label: 'Uploaded', value: formData.createdAt ? new Date(formData.createdAt).toLocaleDateString() : 'N/A', dim: true }
                                 ].map((item, i) => (
-                                    <div key={i} className={`flex items-center justify-between p-[3px] rounded-xl border-b border-white/5 last:border-0 ${item.dim ? 'opacity-40' : ''}`}>
-                                        <span className="text-[9px] font-black uppercase tracking-widest opacity-20">{item.label}</span>
-                                        <span className={`text-[10px] font-bold ${item.mono ? 'font-mono opacity-50 text-[9px]' :
-
-                                            item.highlight ? 'text-ef-accent' :
-                                                item.blue ? 'text-ef-blue/80' :
-                                                    'text-white/70'
+                                    <div key={i} className="w-full flex items-center justify-between px-[10px] h-[26px] transition-all duration-300 border-l-4 border-transparent hover:bg-white/5 group/spec">
+                                        <span className="text-[13px] font-medium tracking-tight text-white/40 font-inter group-hover/spec:text-ef-accent transition-colors">{item.label}</span>
+                                        <span className={`text-[13px] font-medium tracking-tight font-inter ${item.mono ? 'font-mono text-[12px]' : ''} ${item.highlight ? 'text-ef-accent' :
+                                            item.blue ? 'text-ef-blue' :
+                                                'text-white'
                                             }`}>
                                             {item.value || '-'}
                                         </span>
@@ -728,25 +726,25 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
 
 
                 {/* Right Side: Details / Edit Form */}
-                <div className="w-full md:w-2/3 p-4 md:p-8 pt-8 bg-black flex flex-col justify-start relative overflow-hidden group/modal overflow-y-auto custom-scrollbar">
+                <div className="w-full md:w-2/3 p-4 md:p-6 pt-4 bg-black flex flex-col justify-start relative overflow-hidden group/modal overflow-y-auto custom-scrollbar">
                     {/* Identity Section */}
                     {!isEditing && (
-                        <div className="flex flex-col items-start text-left gap-2 w-full px-4 md:px-6 mb-6">
+                        <div className="flex flex-col items-start text-left gap-2 w-full px-4 md:px-6 mb-2">
                             <div className="flex flex-wrap items-baseline gap-x-4 gap-y-2">
                                 <h1 className="text-3xl md:text-4xl font-black text-white uppercase tracking-tighter leading-tight drop-shadow-lg">
                                     {formData.name}
                                 </h1>
                                 <div className="flex items-center gap-2.5">
-                                    <div className="flex items-center gap-1.5 px-2.5 py-0.5 bg-ef-accent rounded-md text-ef-dark shadow-lg shadow-ef-accent/10">
-                                        <span className="text-[10px] font-black uppercase tracking-widest">{formData.position}</span>
+                                    <div className="flex items-center h-[26px] px-[10px] bg-ef-accent rounded-md text-ef-dark shadow-lg shadow-ef-accent/10">
+                                        <span className="text-[13px] font-medium tracking-tight font-inter">{formData.position}</span>
                                     </div>
                                     {formData.secondaryPosition && (
-                                        <span className="text-[10px] font-black text-ef-accent/30 uppercase tracking-widest">{formData.secondaryPosition}</span>
+                                        <span className="text-[13px] font-medium text-ef-accent/30 tracking-tight font-inter">{formData.secondaryPosition}</span>
                                     )}
                                     {formData.playstyle && formData.playstyle !== 'None' && (
                                         <div className="flex items-center gap-2.5">
-                                            <span className="text-white/10 text-[10px] font-black">/</span>
-                                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-ef-accent/60 italic">
+                                            <span className="text-white/10 text-[13px] font-medium">/</span>
+                                            <span className="text-[13px] font-medium tracking-tight text-ef-accent/60 italic font-inter">
                                                 {formData.playstyle}
                                             </span>
                                         </div>
@@ -765,11 +763,11 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
                                     { label: 'League', value: formData.league, icon: formData.logos?.league },
                                     { label: 'Type', value: formData.cardType, isType: true }
                                 ].map((item, i) => (
-                                    <div key={i} className="flex items-center gap-2 px-3 py-1.5 bg-white/[0.03] border border-white/10 rounded-xl hover:bg-white/[0.08] transition-all">
-                                        <span className="text-[7px] font-black uppercase tracking-widest opacity-20">{item.label}</span>
+                                    <div key={i} className="flex items-center h-[26px] gap-2 px-[10px] bg-white/[0.03] border border-white/10 rounded-md hover:bg-white/[0.08] transition-all">
+                                        <span className="text-[13px] font-medium tracking-tight text-white/40 font-inter">{item.label}</span>
                                         <div className="flex items-center gap-1.5">
                                             {item.icon && <img src={item.icon} className={`${item.isFlag ? 'w-4 h-2.5 object-cover rounded-sm' : 'w-3.5 h-3.5 object-contain'} opacity-80`} alt="" />}
-                                            <span className={`text-[10px] font-bold ${item.highlight ? 'text-ef-accent' :
+                                            <span className={`text-[13px] font-medium tracking-tight font-inter ${item.highlight ? 'text-ef-accent' :
                                                 item.isType ? (
                                                     formData.cardType === 'Legendary' ? 'text-yellow-400' :
                                                         formData.cardType === 'Epic' ? 'text-green-400' :
@@ -787,7 +785,7 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
                             {formData.tags && formData.tags.length > 0 && (
                                 <div className="flex flex-wrap items-center gap-1.5 mt-3 max-w-full">
                                     {formData.tags.map(tag => (
-                                        <span key={tag} className="px-2 py-0.5 bg-ef-accent/5 border border-ef-accent/10 rounded-md text-[7px] font-black uppercase tracking-widest text-ef-accent/40 hover:text-ef-accent hover:border-ef-accent/30 transition-all">
+                                        <span key={tag} className="flex items-center h-[26px] px-[10px] bg-ef-accent/5 border border-ef-accent/10 rounded-md text-[13px] font-medium tracking-tight text-ef-accent/40 hover:text-ef-accent hover:border-ef-accent/30 transition-all font-inter">
                                             #{tag}
                                         </span>
                                     ))}
@@ -1096,23 +1094,22 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
                             <div className="absolute top-0 right-0 w-64 h-64 bg-ef-accent/5 rounded-full blur-3xl -z-10 translate-x-1/3 -translate-y-1/3"></div>
 
                             {/* Tab Navigation */}
-                            <div className="flex items-center gap-1 p-1 bg-white/5 rounded-2xl mx-4 mt-4 md:mt-6 mb-2 border border-white/5 backdrop-blur-md z-30">
+                            <div className="flex items-center gap-1 p-1 bg-white/5 rounded-xl mx-4 mt-2 mb-2 border border-white/5 backdrop-blur-md z-30">
                                 {[
-                                    { id: 0, label: 'Identity', icon: '👤' },
-                                    { id: 1, label: 'Analytics', icon: '📊' },
-                                    { id: 2, label: 'Skills', icon: '🪄' },
-                                    { id: 3, label: 'Builds', icon: '📈' }
+                                    { id: 0, label: 'Identity' },
+                                    { id: 1, label: 'Analytics' },
+                                    { id: 2, label: 'Skills' },
+                                    { id: 3, label: 'Builds' }
                                 ].map((tab) => (
                                     <button
                                         key={tab.id}
                                         onClick={() => setModalPage(tab.id)}
-                                        className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 ${modalPage === tab.id
-                                            ? 'bg-ef-accent text-ef-dark shadow-[0_0_20px_rgba(0,255,136,0.2)]'
+                                        className={`flex-1 flex items-center justify-center h-[26px] rounded-lg text-[13px] font-medium tracking-tight transition-all duration-300 font-inter ${modalPage === tab.id
+                                            ? 'bg-white/10 text-white'
                                             : 'text-white/40 hover:text-white hover:bg-white/5'
                                             }`}
                                     >
-                                        <span>{tab.icon}</span>
-                                        <span className={modalPage === tab.id ? 'block' : 'hidden md:block'}>{tab.label}</span>
+                                        <span>{tab.label}</span>
                                     </button>
                                 ))}
                             </div>
@@ -1121,26 +1118,21 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
                                 <div className="absolute inset-0 p-4 md:p-4 overflow-y-auto no-scrollbar">
 
                                     {/* Page 0: Full Player Details */}
-                                    <div className={`flex-1 flex flex-col transition-all duration-500 transform overflow-y-auto no-scrollbar ${modalPage === 0 ? 'translate-x-0 opacity-100' : '-translate-x-full opacity-0 pointer-events-none absolute inset-0 p-4 md:p-4'} `}>
+                                    <div className={`flex-1 flex flex-col transition-opacity duration-150 overflow-y-auto no-scrollbar ${modalPage === 0 ? 'opacity-100 relative' : 'opacity-0 pointer-events-none absolute inset-0'} `}>
 
                                         {/* Main Stats Grid */}
-                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
-                                            <div className="bg-white/5 border border-white/10 rounded-xl p-3 flex flex-col items-center justify-center">
-                                                <span className="text-xl font-black text-white">{player.matches || 0}</span>
-                                                <span className="text-[8px] font-black uppercase tracking-widest opacity-30">Matches</span>
-                                            </div>
-                                            <div className="bg-ef-accent/10 border border-ef-accent/20 rounded-xl p-3 flex flex-col items-center justify-center text-ef-accent">
-                                                <span className="text-xl font-black">{player.goals + player.assists}</span>
-                                                <span className="text-[8px] font-black uppercase tracking-widest">G+A Total</span>
-                                            </div>
-                                            <div className="bg-ef-blue/10 border border-ef-blue/20 rounded-xl p-3 flex flex-col items-center justify-center">
-                                                <span className="text-xl font-black text-white">{player.goals}</span>
-                                                <span className="text-[8px] font-black uppercase tracking-widest text-ef-blue">Goals</span>
-                                            </div>
-                                            <div className="bg-white/5 border border-white/10 rounded-xl p-3 flex flex-col items-center justify-center">
-                                                <span className="text-xl font-black text-white">{player.assists}</span>
-                                                <span className="text-[8px] font-black uppercase tracking-widest opacity-30">Assists</span>
-                                            </div>
+                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+                                            {[
+                                                { label: 'Matches', value: player.matches || 0, color: 'text-white' },
+                                                { label: 'G+A Total', value: (player.goals || 0) + (player.assists || 0), color: 'text-white' },
+                                                { label: 'Goals', value: player.goals || 0, color: 'text-white' },
+                                                { label: 'Assists', value: player.assists || 0, color: 'text-white' }
+                                            ].map((stat, i) => (
+                                                <div key={i} className="bg-[#111111] border border-white/5 rounded-[0.5rem] p-5 flex flex-col items-start justify-center shadow-xl">
+                                                    <span className="text-[13px] font-medium tracking-tight text-white/40 font-inter mb-1">{stat.label}</span>
+                                                    <span className={`text-3xl font-black ${stat.color} tracking-tighter font-inter`}>{stat.value}</span>
+                                                </div>
+                                            ))}
                                         </div>
 
 
@@ -1152,7 +1144,7 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
                                             >
                                                 <div className="flex items-center gap-3">
                                                     <span className="text-base">{rankingOptions.find(opt => opt.id === rankingContext)?.icon}</span>
-                                                    <span className="text-[10px] font-black uppercase tracking-widest text-white">{rankingOptions.find(opt => opt.id === rankingContext)?.label}</span>
+                                                    <span className="text-[13px] font-medium tracking-tight text-white/80 font-inter">{rankingOptions.find(opt => opt.id === rankingContext)?.label}</span>
                                                 </div>
                                                 <span className="text-[8px] opacity-30">▼</span>
                                             </button>
@@ -1173,59 +1165,59 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
                                             )}
                                         </div>
 
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                                             {/* Analysis Box */}
-                                            <div className="space-y-2 bg-white/5 rounded-xl p-3 border border-white/5">
-                                                <h4 className="text-[8px] font-black uppercase tracking-[0.2em] opacity-20 border-b border-white/10 pb-1">Efficiency</h4>
+                                            <div className="space-y-4 bg-[#111111] rounded-[1.5rem] p-5 border border-white/5 shadow-xl">
+                                                <h4 className="text-[13px] font-medium tracking-tight text-white/40 font-inter border-b border-white/10 pb-1">Efficiency</h4>
                                                 <div className="space-y-1.5 pt-1">
                                                     <div className="flex justify-between items-center group">
-                                                        <span className="text-[9px] opacity-40 uppercase font-bold tracking-widest">Goals / GM</span>
+                                                        <span className="text-[13px] font-medium tracking-tight text-white/40 font-inter">Goals / GM</span>
                                                         <span className="font-mono text-sm font-black text-ef-accent">{(player.goals / (player.matches || 1)).toFixed(2)}</span>
                                                     </div>
                                                     <div className="flex justify-between items-center group">
-                                                        <span className="text-[9px] opacity-40 uppercase font-bold tracking-widest">Assists / GM</span>
+                                                        <span className="text-[13px] font-medium tracking-tight text-white/40 font-inter">Assists / GM</span>
                                                         <span className="font-mono text-sm font-black text-ef-blue">{(player.assists / (player.matches || 1)).toFixed(2)}</span>
                                                     </div>
                                                     <div className="flex justify-between items-center group">
-                                                        <span className="text-[9px] opacity-40 uppercase font-bold tracking-widest">G+A / GM</span>
+                                                        <span className="text-[13px] font-medium tracking-tight text-white/40 font-inter">G+A / GM</span>
                                                         <span className="font-mono text-sm font-black text-white">{((player.goals + player.assists) / (player.matches || 1)).toFixed(2)}</span>
                                                     </div>
                                                 </div>
                                             </div>
 
                                             {/* Ranking Box */}
-                                            <div className="space-y-2 bg-white/5 rounded-xl p-3 border border-white/5">
-                                                <h4 className="text-[8px] font-black uppercase tracking-[0.2em] opacity-20 border-b border-white/10 pb-1 flex justify-between">
+                                            <div className="space-y-4 bg-[#111111] rounded-[1.5rem] p-5 border border-white/5 shadow-xl">
+                                                <h4 className="text-[13px] font-medium tracking-tight text-white/40 font-inter border-b border-white/10 pb-1 flex justify-between">
                                                     <span>RANKING OUT OF</span>
-                                                    <span className="text-ef-accent">{rankInfo.total}</span>
+                                                    <span className="text-ef-accent font-inter">{rankInfo.total}</span>
                                                 </h4>
                                                 <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 pt-0.5">
                                                     <div className="flex justify-between items-center">
-                                                        <span className="text-[8px] opacity-40 font-bold uppercase">Matches</span>
-                                                        <span className="font-mono text-[11px] font-black">#{rankInfo.matches}</span>
+                                                        <span className="text-[13px] font-medium tracking-tight text-white/40 font-inter">Matches</span>
+                                                        <span className="font-mono text-[11px] font-black text-white/80">#{rankInfo.matches}</span>
                                                     </div>
                                                     <div className="flex justify-between items-center text-ef-accent">
-                                                        <span className="text-[8px] opacity-40 font-bold uppercase">G+A</span>
-                                                        <span className="font-mono text-[11px] font-black">#{rankInfo.ga}</span>
+                                                        <span className="text-[13px] font-medium tracking-tight text-ef-accent/60 font-inter">G+A</span>
+                                                        <span className="font-mono text-[11px] font-black text-ef-accent">#{rankInfo.ga}</span>
                                                     </div>
                                                     <div className="flex justify-between items-center">
-                                                        <span className="text-[8px] opacity-40 font-bold uppercase">Goals</span>
-                                                        <span className="font-mono text-[11px] font-black">#{rankInfo.goals}</span>
+                                                        <span className="text-[13px] font-medium tracking-tight text-white/40 font-inter">Goals</span>
+                                                        <span className="font-mono text-[11px] font-black text-white/80">#{rankInfo.goals}</span>
                                                     </div>
                                                     <div className="flex justify-between items-center">
-                                                        <span className="text-[8px] opacity-40 font-bold uppercase">Assists</span>
-                                                        <span className="font-mono text-[11px] font-black">#{rankInfo.assists}</span>
+                                                        <span className="text-[13px] font-medium tracking-tight text-white/40 font-inter">Assists</span>
+                                                        <span className="font-mono text-[11px] font-black text-white/80">#{rankInfo.assists}</span>
                                                     </div>
                                                     <div className="flex justify-between items-center border-t border-white/5 pt-1">
-                                                        <span className="text-[8px] opacity-40 font-bold uppercase">Goals/GM</span>
+                                                        <span className="text-[13px] font-medium tracking-tight text-white/40 font-inter">Goals/GM</span>
                                                         <span className="font-mono text-[11px] font-black text-ef-accent">#{rankInfo.gpg}</span>
                                                     </div>
                                                     <div className="flex justify-between items-center border-t border-white/5 pt-1">
-                                                        <span className="text-[8px] opacity-40 font-bold uppercase">Ast/GM</span>
+                                                        <span className="text-[13px] font-medium tracking-tight text-white/40 font-inter">Ast/GM</span>
                                                         <span className="font-mono text-[11px] font-black text-ef-blue">#{rankInfo.apg}</span>
                                                     </div>
                                                     <div className="flex justify-between items-center col-span-2 bg-white/5 p-1 px-2 rounded">
-                                                        <span className="text-[8px] opacity-40 font-bold uppercase">G+A / Game</span>
+                                                        <span className="text-[13px] font-medium tracking-tight text-white/40 font-inter">G+A / Game</span>
                                                         <span className="font-mono text-[11px] font-black text-ef-accent">#{rankInfo.gapg}</span>
                                                     </div>
                                                 </div>
@@ -1234,22 +1226,22 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
 
                                         {/* Action Buttons */}
                                         <div className="mt-auto flex flex-row justify-center gap-1.5 pt-4">
-                                            <button onClick={() => setIsEditing(true)} className="w-[100px] py-3 rounded-xl bg-white/5 border border-white/10 hover:border-ef-accent/50 hover:bg-white/10 hover:text-ef-accent transition-all font-black text-[8px] tracking-tighter uppercase flex items-center justify-center gap-1">
+                                            <button onClick={() => setIsEditing(true)} className="w-[100px] h-[32px] rounded-lg bg-white/5 border border-white/10 hover:border-ef-accent/50 hover:bg-white/10 hover:text-ef-accent transition-all font-medium text-[13px] tracking-tight flex items-center justify-center gap-2 font-inter">
                                                 <span>⚡</span> Edit Data
                                             </button>
-                                            <a 
-                                                href={`https://pesdb.net/efootball/?id=${player.pesdb_id || player.playerId}`} 
-                                                target="_blank" 
+                                            <a
+                                                href={`https://pesdb.net/efootball/?id=${player.pesdb_id || player.playerId}`}
+                                                target="_blank"
                                                 rel="noopener noreferrer"
-                                                className="w-[100px] py-3 rounded-xl bg-ef-blue/10 border border-ef-blue/20 hover:border-ef-blue/50 hover:bg-ef-blue/20 text-ef-blue transition-all font-black text-[8px] tracking-tighter uppercase flex items-center justify-center gap-1"
+                                                className="w-[100px] h-[32px] rounded-lg bg-ef-blue/10 border border-ef-blue/20 hover:border-ef-blue/50 hover:bg-ef-blue/20 text-ef-blue transition-all font-medium text-[13px] tracking-tight flex items-center justify-center gap-2 font-inter"
                                             >
                                                 <span>🌐</span> PESDB
                                             </a>
-                                            <a 
-                                                href={`https://efhub.com/players/${player.pesdb_id || player.playerId}`} 
-                                                target="_blank" 
+                                            <a
+                                                href={`https://efhub.com/players/${player.pesdb_id || player.playerId}`}
+                                                target="_blank"
                                                 rel="noopener noreferrer"
-                                                className="w-[100px] py-3 rounded-xl bg-ef-accent/10 border border-ef-accent/20 hover:border-ef-accent/50 hover:bg-ef-accent/20 text-ef-accent transition-all font-black text-[8px] tracking-tighter uppercase flex items-center justify-center gap-1"
+                                                className="w-[100px] h-[32px] rounded-lg bg-ef-accent/10 border border-ef-accent/20 hover:border-ef-accent/50 hover:bg-ef-accent/20 text-ef-accent transition-all font-medium text-[13px] tracking-tight flex items-center justify-center gap-2 font-inter"
                                             >
                                                 <span>📱</span> efHUB
                                             </a>
@@ -1257,7 +1249,7 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
                                     </div>
 
                                     {/* Page 1: Analytics / Comparison Graph */}
-                                    <div className={`flex-1 flex flex-col transition-all duration-500 transform overflow-y-auto no-scrollbar ${modalPage === 1 ? 'translate-x-0 opacity-100' : modalPage < 1 ? 'translate-x-full opacity-0 pointer-events-none absolute inset-0' : '-translate-x-full opacity-0 pointer-events-none absolute inset-0'} `}>
+                                    <div className={`flex-1 flex flex-col transition-opacity duration-150 overflow-y-auto no-scrollbar ${modalPage === 1 ? 'opacity-100 relative' : 'opacity-0 pointer-events-none absolute inset-0'} `}>
                                         <div className="flex items-center justify-between mb-4">
                                             <h3 className="text-sm font-black text-white uppercase tracking-widest flex items-center gap-2">
                                                 <span className="text-ef-accent">📊</span> Stat Ranking
@@ -1309,7 +1301,7 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
                                                                     className={`w-full flex items-center gap-2 px-3 py-2 transition-colors hover:bg-white/5 ${comparisonStat === opt.id ? 'bg-ef-accent/5' : ''} `}
                                                                 >
                                                                     <span className="text-xs">{opt.icon}</span>
-                                                                    <span className={`text-[9px] font-black uppercase tracking-widest ${comparisonStat === opt.id ? 'text-ef-accent' : 'text-white/50'} `}>{opt.label}</span>
+                                                                    <span className={`text-[13px] font-medium tracking-tight font-inter ${comparisonStat === opt.id ? 'text-ef-accent' : 'text-white/50'} `}>{opt.label}</span>
                                                                 </button>
                                                             ))}
                                                         </div>
@@ -1321,17 +1313,17 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
                                         {/* Graph Ranking Header */}
                                         <div className="flex items-center justify-between mb-2 px-2">
                                             <div className="flex flex-col">
-                                                <span className="text-[10px] font-black uppercase tracking-widest opacity-40">Ranked</span>
+                                                <span className="text-[13px] font-medium tracking-tight text-white/40 font-inter">Ranked</span>
                                                 <div className="flex items-baseline gap-1.5">
-                                                    <span className="text-2xl font-black text-white">#{comparisonData.rank}</span>
-                                                    <span className="text-[10px] font-bold opacity-40">of {comparisonData.total}</span>
+                                                    <span className="text-2xl font-black text-white font-inter">#{comparisonData.rank}</span>
+                                                    <span className="text-[13px] font-medium tracking-tight text-white/40 font-inter">of {comparisonData.total}</span>
                                                 </div>
                                             </div>
                                             <div className="flex flex-col items-end">
-                                                <span className="text-[10px] font-black uppercase tracking-widest opacity-40 text-right">{compContextOptions.find(o => o.id === comparisonContext)?.label}</span>
+                                                <span className="text-[13px] font-medium tracking-tight text-white/40 font-inter text-right">{compContextOptions.find(o => o.id === comparisonContext)?.label}</span>
                                                 <div className="flex items-center gap-1.5 text-ef-accent">
                                                     <span className="text-xs">{compOptions.find(o => o.id === comparisonStat)?.icon}</span>
-                                                    <span className="text-sm font-black uppercase">{compOptions.find(o => o.id === comparisonStat)?.label}</span>
+                                                    <span className="text-[13px] font-medium tracking-tight font-inter">{compOptions.find(o => o.id === comparisonStat)?.label}</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -1401,54 +1393,54 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
                                     </div>
 
                                     {/* Page 2: Player Skills */}
-                                    <div className={`flex-1 flex flex-col transition-all duration-500 transform overflow-y-auto no-scrollbar ${modalPage === 2 ? 'translate-x-0 opacity-100' : modalPage < 2 ? 'translate-x-full opacity-0 pointer-events-none absolute inset-0 p-4 md:p-6' : '-translate-x-full opacity-0 pointer-events-none absolute inset-0 p-4 md:p-6'} `}>
+                                    <div className={`flex-1 flex flex-col transition-opacity duration-150 overflow-y-auto no-scrollbar ${modalPage === 2 ? 'opacity-100 relative' : 'opacity-0 pointer-events-none absolute inset-0'} `}>
                                         <div className="flex items-center justify-between mb-4">
                                             <h3 className="text-xl font-black text-white uppercase tracking-tighter flex items-center gap-2">
                                                 <span className="text-ef-accent">🪄</span> Player Skills
                                             </h3>
                                             <div className="flex items-center gap-2">
                                                 {isEditingSkills && (
-                                                    <button
-                                                        onClick={() => {
-                                                            if (isBulkEditingSkills) {
-                                                                // Process bulk skills
-                                                                const inputSkills = bulkSkillsInput.split('\n').map(s => s.trim()).filter(Boolean);
-                                                                const matchedSkills = [];
-                                                                const normalize = (s) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+                                                        <button
+                                                            onClick={() => {
+                                                                if (isBulkEditingSkills) {
+                                                                    // Process bulk skills
+                                                                    const inputSkills = bulkSkillsInput.split('\n').map(s => s.trim()).filter(Boolean);
+                                                                    const matchedSkills = [];
+                                                                    const normalize = (s) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
 
-                                                                const officialNormalized = ALL_SKILLS.map(s => ({ original: s, normalized: normalize(s) }));
+                                                                    const officialNormalized = ALL_SKILLS.map(s => ({ original: s, normalized: normalize(s) }));
 
-                                                                inputSkills.forEach(input => {
-                                                                    const normInput = normalize(input);
-                                                                    const match = officialNormalized.find(o => o.normalized === normInput);
-                                                                    if (match) {
-                                                                        if (!matchedSkills.includes(match.original) && !skills.includes(match.original)) {
-                                                                            matchedSkills.push(match.original);
+                                                                    inputSkills.forEach(input => {
+                                                                        const normInput = normalize(input);
+                                                                        const match = officialNormalized.find(o => o.normalized === normInput);
+                                                                        if (match) {
+                                                                            if (!matchedSkills.includes(match.original) && !skills.includes(match.original)) {
+                                                                                matchedSkills.push(match.original);
+                                                                            }
                                                                         }
-                                                                    }
-                                                                });
+                                                                    });
 
-                                                                if (matchedSkills.length > 0) {
-                                                                    const nextSkills = [...skills, ...matchedSkills];
-                                                                    setSkills(nextSkills);
-                                                                    // Also update parent
-                                                                    onUpdate(player._id, {
-                                                                        skills: nextSkills.map(s => s?.trim()).filter(s => s && s !== '')
-                                                                    }, false);
+                                                                    if (matchedSkills.length > 0) {
+                                                                        const nextSkills = [...skills, ...matchedSkills];
+                                                                        setSkills(nextSkills);
+                                                                        // Also update parent
+                                                                        onUpdate(player._id, {
+                                                                            skills: nextSkills.map(s => s?.trim()).filter(s => s && s !== '')
+                                                                        }, false);
+                                                                    }
+                                                                    setBulkSkillsInput('');
+                                                                    setIsBulkEditingSkills(false);
+                                                                } else {
+                                                                    setIsBulkEditingSkills(true);
                                                                 }
-                                                                setBulkSkillsInput('');
-                                                                setIsBulkEditingSkills(false);
-                                                            } else {
-                                                                setIsBulkEditingSkills(true);
-                                                            }
-                                                        }}
-                                                        className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border transition-all ${isBulkEditingSkills
-                                                            ? 'bg-ef-accent text-ef-dark border-ef-accent'
-                                                            : 'bg-ef-accent/10 border-ef-accent/20 text-ef-accent hover:bg-ef-accent/20'
-                                                            }`}
-                                                    >
-                                                        {isBulkEditingSkills ? '✓ Save Bulk' : '📋 Bulk Edit'}
-                                                    </button>
+                                                            }}
+                                                            className={`px-3 h-[26px] rounded-lg text-[13px] font-medium tracking-tight border transition-all font-inter ${isBulkEditingSkills
+                                                                ? 'bg-ef-accent text-ef-dark border-ef-accent'
+                                                                : 'bg-ef-accent/10 border-ef-accent/20 text-ef-accent hover:bg-ef-accent/20'
+                                                                }`}
+                                                        >
+                                                            {isBulkEditingSkills ? '✓ Save Bulk' : '📋 Bulk Edit'}
+                                                        </button>
                                                 )}
                                                 <button
                                                     onClick={() => {
@@ -1463,7 +1455,7 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
                                                         setIsEditingSkills(e => !e);
                                                         if (isBulkEditingSkills) setIsBulkEditingSkills(false);
                                                     }}
-                                                    className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border transition-all ${isEditingSkills
+                                                    className={`px-3 h-[26px] rounded-lg text-[13px] font-medium tracking-tight border transition-all font-inter ${isEditingSkills
                                                         ? 'bg-ef-accent/20 border-ef-accent/40 text-ef-accent'
                                                         : 'bg-white/5 border-white/10 text-white/40 hover:text-white hover:bg-white/10'
                                                         }`}
@@ -1471,7 +1463,7 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
                                                     {isEditingSkills ? '✓ Done' : '✏ Edit'}
                                                 </button>
 
-                                                <button onClick={() => { setModalPage(0); setIsBulkEditingSkills(false); setIsEditingSkills(false); }} className="text-[10px] font-black uppercase tracking-widest text-white/40 hover:text-white transition-colors">
+                                                <button onClick={() => { setModalPage(0); setIsBulkEditingSkills(false); setIsEditingSkills(false); }} className="text-[13px] font-medium tracking-tight text-white/40 hover:text-white transition-colors font-inter">
                                                     ✕ Back
                                                 </button>
                                             </div>
@@ -1480,8 +1472,8 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
                                         {isBulkEditingSkills && (
                                             <div className="mb-4 animate-fade-in">
                                                 <div className="flex items-center justify-between mb-1.5">
-                                                    <span className="text-[8px] font-black uppercase tracking-widest text-ef-accent">Paste Skills List (One per line)</span>
-                                                    <button onClick={() => setIsBulkEditingSkills(false)} className="text-[8px] font-black text-white/30 hover:text-white">Cancel</button>
+                                                    <span className="text-[13px] font-medium tracking-tight text-ef-accent font-inter">Paste Skills List (One per line)</span>
+                                                    <button onClick={() => setIsBulkEditingSkills(false)} className="text-[13px] font-medium tracking-tight text-white/30 hover:text-white font-inter">Cancel</button>
                                                 </div>
                                                 <textarea
                                                     autoFocus
@@ -1498,9 +1490,9 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
                                             {/* ── Left: Core Skills ── */}
                                             <div className="flex flex-col gap-2 min-h-0">
                                                 <div className="flex items-center gap-2 mb-1">
-                                                    <span className="text-[9px] font-black uppercase tracking-widest text-ef-accent">Core Skills</span>
+                                                    <span className="text-[13px] font-medium tracking-tight text-ef-accent font-inter">Core Skills</span>
                                                     <div className="h-px bg-white/10 flex-1"></div>
-                                                    <span className="text-[9px] font-black text-white/20">{skills.length}</span>
+                                                    <span className="text-[13px] font-medium tracking-tight text-white/20 font-inter">{skills.length}</span>
                                                 </div>
                                                 <div className="space-y-1.5 overflow-y-auto pr-1 custom-scrollbar flex-1">
                                                     {skills.length > 0 ? skills.map((skill, i) => {
@@ -1511,7 +1503,7 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
                                                                 : 'bg-white/5 border-white/10 hover:bg-white/8'
                                                                 }`}>
                                                                 <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${isSpecial ? 'bg-red-400 shadow-[0_0_6px_rgba(239,68,68,0.8)]' : 'bg-ef-accent'}`} />
-                                                                <span className={`text-[10px] font-bold uppercase tracking-tight leading-tight flex-1 ${isSpecial ? 'text-red-300' : 'text-white'}`}>
+                                                                <span className={`text-[13px] font-medium tracking-tight font-inter flex-1 ${isSpecial ? 'text-red-300' : 'text-white'}`}>
                                                                     {typeof skill === 'object' ? (skill.name || skill.label || JSON.stringify(skill)) : skill}
                                                                 </span>
                                                                 {isEditingSkills ? (
@@ -1528,7 +1520,7 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
                                                             </div>
                                                         );
                                                     }) : (
-                                                        <div className="text-center py-6 opacity-30 text-[9px] uppercase font-black tracking-widest italic">No core skills found</div>
+                                                        <div className="text-center py-6 opacity-30 text-[13px] font-medium tracking-tight font-inter italic">No core skills found</div>
                                                     )}
 
                                                     {/* Add Skill row (edit mode only) */}
@@ -1536,7 +1528,7 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
                                                         <div className="relative">
                                                             <button
                                                                 onClick={() => { setShowAddCoreSkill(s => !s); setCoreSkillSearch(''); }}
-                                                                className="w-full flex items-center gap-2 px-3 py-2.5 border border-dashed border-ef-accent/30 rounded-xl bg-ef-accent/5 hover:bg-ef-accent/10 transition-all text-[10px] font-bold text-ef-accent/60 hover:text-ef-accent"
+                                                                className="w-full h-[30px] flex items-center gap-2 px-3 border border-dashed border-ef-accent/30 rounded-xl bg-ef-accent/5 hover:bg-ef-accent/10 transition-all text-[13px] font-medium tracking-tight font-inter text-ef-accent/60 hover:text-ef-accent"
                                                             >
                                                                 <span className="text-base leading-none">+</span> Add Skill
                                                             </button>
@@ -1548,7 +1540,7 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
                                                                             value={coreSkillSearch}
                                                                             onChange={e => setCoreSkillSearch(e.target.value)}
                                                                             placeholder="Search all skills..."
-                                                                            className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-[10px] text-white placeholder-white/20 focus:outline-none focus:border-ef-accent/40"
+                                                                            className="w-full h-[30px] bg-white/5 border border-white/10 rounded-lg px-3 text-[13px] font-medium tracking-tight font-inter text-white placeholder-white/20 focus:outline-none focus:border-ef-accent/40"
                                                                             onClick={e => e.stopPropagation()}
                                                                         />
                                                                     </div>
@@ -1565,7 +1557,7 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
                                                                                             setShowAddCoreSkill(false);
                                                                                             setCoreSkillSearch('');
                                                                                         }}
-                                                                                        className={`w-full text-left px-3 py-2 text-[10px] font-bold flex items-center gap-2 border-b border-white/5 last:border-0 transition-all ${isSp ? 'text-red-300 hover:bg-red-500/10' : 'text-white/60 hover:text-white hover:bg-white/5'
+                                                                                        className={`w-full text-left px-3 h-[30px] text-[13px] font-medium tracking-tight font-inter flex items-center gap-2 border-b border-white/5 last:border-0 transition-all ${isSp ? 'text-red-300 hover:bg-red-500/10' : 'text-white/60 hover:text-white hover:bg-white/5'
                                                                                             }`}>
                                                                                         <span className={`w-1 h-1 rounded-full flex-shrink-0 ${isSp ? 'bg-red-400' : 'bg-ef-accent/40'}`}></span>
                                                                                         {skill}
@@ -1575,7 +1567,7 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
                                                                             })
                                                                         }
                                                                         {ALL_SKILLS.filter(s => !skills.includes(s)).filter(s => !coreSkillSearch || s.toLowerCase().includes(coreSkillSearch.toLowerCase())).length === 0 && (
-                                                                            <div className="px-3 py-4 text-center text-[9px] text-white/30 font-black uppercase tracking-widest">All skills added</div>
+                                                                            <div className="px-3 py-4 text-center text-[13px] font-medium tracking-tight font-inter text-white/30">All skills added</div>
                                                                         )}
                                                                     </div>
                                                                 </div>
@@ -1588,9 +1580,9 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
                                             {/* ── Right: Additional Skills ── */}
                                             <div className="flex flex-col gap-2 min-h-0">
                                                 <div className="flex items-center gap-2 mb-1">
-                                                    <span className="text-[9px] font-black uppercase tracking-widest text-blue-400">Additional</span>
+                                                    <span className="text-[13px] font-medium tracking-tight text-blue-400 font-inter">Additional</span>
                                                     <div className="h-px bg-white/10 flex-1"></div>
-                                                    <span className="text-[9px] font-black text-white/20">{additionalSkills.filter(Boolean).length}/5</span>
+                                                    <span className="text-[13px] font-medium tracking-tight text-white/20 font-inter">{additionalSkills.filter(Boolean).length}/5</span>
                                                 </div>
                                                 <div className="space-y-1.5">
                                                     {additionalSkills.map((addedSkill, idx) => (
@@ -1604,7 +1596,7 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
                                                                     }`}
                                                             >
                                                                 <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${addedSkill ? 'bg-blue-400' : 'bg-white/15'}`} />
-                                                                <span className={`text-[10px] font-bold uppercase tracking-tight flex-1 leading-tight ${addedSkill ? 'text-white' : 'text-white/25 italic'
+                                                                <span className={`text-[13px] font-medium tracking-tight flex-1 font-inter ${addedSkill ? 'text-white' : 'text-white/25 italic'
                                                                     }`}>{addedSkill || `Empty Slot ${idx + 1}`}</span>
                                                                 {addedSkill ? (
                                                                     <button
@@ -1619,7 +1611,7 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
                                                                         className="text-white/20 hover:text-white text-xs leading-none flex-shrink-0 active:scale-90 transition-all"
                                                                     >✕</button>
                                                                 ) : (
-                                                                    <span className="text-[9px] text-white/15">+</span>
+                                                                    <span className="text-[13px] text-white/15 font-medium tracking-tight font-inter">+</span>
                                                                 )}
                                                             </div>
 
@@ -1632,7 +1624,7 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
                                                                             value={skillSearch}
                                                                             onChange={e => setSkillSearch(e.target.value)}
                                                                             placeholder="Search skills..."
-                                                                            className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-[10px] text-white placeholder-white/20 focus:outline-none focus:border-blue-400/40"
+                                                                            className="w-full bg-white/5 border border-white/10 rounded-lg px-[10px] h-[26px] text-[13px] font-medium tracking-tight font-inter text-white placeholder-white/20 focus:outline-none focus:border-blue-400/40"
                                                                             onClick={e => e.stopPropagation()}
                                                                         />
                                                                     </div>
@@ -1651,7 +1643,7 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
                                                                                         setSkillSearch('');
                                                                                         if (player._id) onUpdate(player._id, { additionalSkills: next.filter(Boolean) }, false);
                                                                                     }}
-                                                                                    className="w-full text-left px-3 py-2 text-[10px] font-bold text-white/60 hover:text-white hover:bg-white/5 flex items-center gap-2 border-b border-white/5 last:border-0 transition-all"
+                                                                                    className="w-full text-left px-[10px] h-[26px] text-[13px] font-medium tracking-tight font-inter text-white/60 hover:text-white hover:bg-white/5 flex items-center gap-2 border-b border-white/5 last:border-0 transition-all"
                                                                                 >
                                                                                     <span className="w-1 h-1 rounded-full flex-shrink-0 bg-ef-accent/40"></span>
                                                                                     {skill}
@@ -1662,7 +1654,7 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
                                                                             .filter(s => !skills.includes(s) && !additionalSkills.includes(s))
                                                                             .filter(s => !skillSearch || s.toLowerCase().includes(skillSearch.toLowerCase()))
                                                                             .length === 0 && (
-                                                                                <div className="px-3 py-4 text-center text-[9px] text-white/30 font-black uppercase tracking-widest">No skills available</div>
+                                                                                <div className="px-3 py-4 text-center text-[13px] font-medium tracking-tight text-white/30 font-inter">No skills available</div>
                                                                             )}
                                                                     </div>
                                                                 </div>
@@ -1676,7 +1668,7 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
                                         <div className="mt-4 pt-4 border-t border-white/5">
                                             <button
                                                 onClick={() => setModalPage(0)}
-                                                className="w-full py-3 bg-white/5 border border-white/10 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] text-white hover:bg-white/10 transition-all active:scale-95"
+                                                className="w-full h-[36px] bg-white/5 border border-white/10 rounded-xl text-[13px] font-medium tracking-tight text-white hover:bg-white/10 transition-all active:scale-95 font-inter"
                                             >
                                                 Back to Overview
                                             </button>
@@ -1684,13 +1676,13 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
                                     </div>
 
                                     {/* Page 3: Builds / Progressions */}
-                                    <div className={`flex-1 flex flex-col transition-all duration-500 transform overflow-y-auto no-scrollbar ${modalPage === 3 ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0 pointer-events-none absolute inset-0 p-4 md:p-6'} `}>
+                                    <div className={`flex-1 flex flex-col transition-opacity duration-150 overflow-y-auto no-scrollbar ${modalPage === 3 ? 'opacity-100 relative' : 'opacity-0 pointer-events-none absolute inset-0'} `}>
                                         <div className="flex-1 flex flex-col items-center justify-center text-center p-6 bg-white/5 rounded-3xl border border-white/10 backdrop-blur-md">
                                             <div className="w-20 h-20 bg-ef-accent/10 rounded-full flex items-center justify-center mb-6 border border-ef-accent/20">
                                                 <span className="text-4xl text-ef-accent">📊</span>
                                             </div>
                                             <h3 className="text-xl font-black text-white uppercase tracking-widest mb-2">Saved Builds</h3>
-                                            <p className="text-[10px] text-white/40 uppercase font-black tracking-widest leading-relaxed max-w-[200px] mb-8">
+                                            <p className="text-[13px] font-medium tracking-tight text-white/40 font-inter leading-relaxed max-w-[200px] mb-8">
                                                 View and manage your optimized progression paths for {formData.name}
                                             </p>
 
@@ -1704,7 +1696,7 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
                                             {player.progressions?.length > 0 ? (
                                                 <div className="mt-8 pt-8 border-t border-white/5 w-full">
                                                     <div className="flex justify-between items-center mb-4 px-2">
-                                                        <span className="text-[8px] font-black uppercase tracking-widest opacity-20 text-white">Active Build Status</span>
+                                                        <span className="text-[13px] font-medium tracking-tight text-white/40 font-inter">Active Build Status</span>
                                                         <span className="px-2 py-0.5 bg-ef-accent/20 text-ef-accent rounded text-[8px] font-black">{player.progressions.length} Builds Saved</span>
                                                     </div>
                                                     <div className="text-[9px] text-white/30 font-bold italic">

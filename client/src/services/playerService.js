@@ -18,7 +18,34 @@ import {
 } from 'firebase/firestore';
 
 const PLAYERS_COLLECTION = 'players';
+const ACTIVITY_LOGS_COLLECTION = 'activity_logs';
 const GLOBAL_DB_COLLECTION = 'global_database';
+
+const getDeviceType = () => {
+    const ua = navigator.userAgent;
+    if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true) {
+        return 'App (PWA)';
+    }
+    if (/Mobile|Android|iPhone/i.test(ua)) {
+        return 'Mobile Website';
+    }
+    return 'Desktop Website';
+};
+
+export const logActivity = async (userId, activity) => {
+    if (!userId) return;
+    try {
+        const logRef = collection(db, `users/${userId}/${ACTIVITY_LOGS_COLLECTION}`);
+        await addDoc(logRef, {
+            ...activity,
+            device: getDeviceType(),
+            timestamp: new Date().toISOString(),
+            storage: 'Firebase Cloud Firestore'
+        });
+    } catch (err) {
+        console.error("Error logging activity:", err);
+    }
+};
 const IMGBB_API_KEY = import.meta.env.VITE_IMGBB_API_KEY;
 
 export const saveToGlobalDatabase = async (players) => {
@@ -109,6 +136,44 @@ export const getRecentGlobalPlayers = async (limitNum = 50) => {
         const qFallback = query(collection(db, GLOBAL_DB_COLLECTION), firestoreLimit(limitNum));
         const snap = await getDocs(qFallback);
         return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    }
+};
+
+export const getActivityLogs = async (userId) => {
+    try {
+        const q = query(
+            collection(db, `users/${userId}/${ACTIVITY_LOGS_COLLECTION}`),
+            orderBy('timestamp', 'desc'),
+            limit(100)
+        );
+        const querySnapshot = await getDocs(q);
+        return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    } catch (error) {
+        console.error("Error getting activity logs:", error);
+        return [];
+    }
+};
+
+// Cleanup old logs (older than 2 days)
+export const cleanupActivityLogs = async (userId) => {
+    try {
+        const twoDaysAgo = new Date();
+        twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+        const twoDaysAgoStr = twoDaysAgo.toISOString();
+
+        const q = query(
+            collection(db, `users/${userId}/${ACTIVITY_LOGS_COLLECTION}`),
+            where('timestamp', '<', twoDaysAgoStr)
+        );
+
+        const querySnapshot = await getDocs(q);
+        const deletePromises = querySnapshot.docs.map(doc => deleteDoc(doc.ref));
+        await Promise.all(deletePromises);
+        
+        return querySnapshot.docs.length; // Return number of deleted logs
+    } catch (error) {
+        console.error("Error cleaning up logs:", error);
+        return 0;
     }
 };
 

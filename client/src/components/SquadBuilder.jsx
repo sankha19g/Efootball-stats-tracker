@@ -27,7 +27,7 @@ const FORMATIONS = {
     ]
 };
 
-const SquadBuilder = ({ players, squads, activeSquadId, onSetActive, onDuplicate, onSave, onDelete, onDeleteBulk, onUpdatePlayer, onAddPlayers, user }) => {
+const SquadBuilder = ({ players, squads, activeSquadId, onSetActive, onDuplicate, onSave, onDelete, onDeleteBulk, onUpdatePlayer, onAddPlayers, user, isSidebarOpen }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const [sortBy, setSortBy] = useState('updatedAt');
     const [isArchiveExpanded, setIsArchiveExpanded] = useState(false);
@@ -70,7 +70,7 @@ const SquadBuilder = ({ players, squads, activeSquadId, onSetActive, onDuplicate
 
     if (selectedSquad) {
         return (
-            <div className="fixed inset-0 z-[100] bg-[#0a0a0c] w-full h-full flex flex-col animate-slide-up">
+            <div className={`fixed inset-0 z-[100] bg-[#0a0a0c] h-full flex flex-col animate-slide-up transition-all duration-300 ${isSidebarOpen ? 'ml-[200px] w-[calc(100%-200px)]' : 'ml-0 w-full'}`}>
                 <SquadEditor
                     squad={selectedSquad}
                     players={players}

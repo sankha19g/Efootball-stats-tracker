@@ -12,6 +12,7 @@ import {
     Link2, 
     Shield, 
     Settings,
+    History,
     LogOut
 } from 'lucide-react';
 
@@ -24,7 +25,6 @@ const SidebarNav = ({
     setShowDatabase, 
     setShowScreenshots, 
     setShowLinks, 
-    setShowSettings, 
     user, 
     setShowLogin, 
     handleLogout, 
@@ -40,25 +40,25 @@ const SidebarNav = ({
         {
             label: 'Squad',
             icon: Users,
-            onClick: () => { setView('list'); setIsOpen(false); },
+            onClick: () => { setView('list'); },
             view: 'list'
         },
         {
             label: 'Ranks',
             icon: Trophy,
-            onClick: () => { setView('leaderboard'); setIsOpen(false); },
+            onClick: () => { setView('leaderboard'); },
             view: 'leaderboard'
         },
         {
             label: 'Tactics',
             icon: Layout,
-            onClick: () => { setView('squad-builder'); setIsOpen(false); },
+            onClick: () => { setView('squad-builder'); },
             view: 'squad-builder'
         },
         {
             label: 'Quick stats update',
             icon: Zap,
-            onClick: () => { setView('quick-stats'); setIsOpen(false); },
+            onClick: () => { setView('quick-stats'); },
             view: 'quick-stats'
         },
         {
@@ -69,7 +69,7 @@ const SidebarNav = ({
         {
             label: 'My squad db',
             icon: ClipboardList,
-            onClick: () => { setView('squad-db'); setIsOpen(false); },
+            onClick: () => { setView('squad-db'); },
             view: 'squad-db'
         },
         {
@@ -81,6 +81,12 @@ const SidebarNav = ({
             label: 'My profile statistics',
             icon: BarChart3,
             onClick: () => { setShowProfileStats(true); setIsOpen(false); }
+        },
+        {
+            label: 'Activity log',
+            icon: History,
+            onClick: () => { setView('activity-log'); },
+            view: 'activity-log'
         },
         {
             label: 'Brochure',
@@ -100,13 +106,14 @@ const SidebarNav = ({
         {
             label: 'Badges',
             icon: Shield,
-            onClick: () => { setView('badges'); setIsOpen(false); },
+            onClick: () => { setView('badges'); },
             view: 'badges'
         },
         {
             label: 'Settings',
             icon: Settings,
-            onClick: () => { setShowSettings(true); setIsOpen(false); }
+            onClick: () => { setView('settings'); },
+            view: 'settings'
         }
     ];
 

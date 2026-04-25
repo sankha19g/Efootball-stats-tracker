@@ -11,7 +11,10 @@ import {
   addPlayersBulk,
   updatePlayersBulk,
   batchUpdatePlayers,
-  batchAddPlayers
+  batchAddPlayers,
+  logActivity,
+  getActivityLogs,
+  cleanupActivityLogs
 } from './services/playerService';
 import { getApps, addApp, deleteApp } from './services/miscService';
 import { getSquads, saveSquad, deleteSquad } from './services/squadService';
@@ -39,6 +42,7 @@ const BadgesView = lazy(() => import('./components/BadgesView'));
 const SocialDrawer = lazy(() => import('./components/SocialDrawer'));
 const BrochureModal = lazy(() => import('./components/BrochureModal'));
 const MySquadDB = lazy(() => import('./components/MySquadDB'));
+const ActivityLog = lazy(() => import('./components/ActivityLog'));
 
 const parseEfDate = (dateStr) => {
   if (!dateStr) return null;
@@ -61,11 +65,20 @@ function App() {
   const [players, setPlayers] = useState([]);
   const [squads, setSquads] = useState([]);
   const [view, setView] = useState(() => localStorage.getItem('ef-app-view') || 'list'); // 'list', 'leaderboard', or 'squad-builder'
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(() => localStorage.getItem('ef-sidebar-open') === 'true');
+
+  // Persist Sidebar State
+  useEffect(() => {
+    localStorage.setItem('ef-sidebar-open', isSidebarOpen);
+  }, [isSidebarOpen]);
 
   // Persist App View
   useEffect(() => {
     localStorage.setItem('ef-app-view', view);
+    // Auto-open sidebar when entering settings
+    if (view === 'settings') {
+      setIsSidebarOpen(true);
+    }
   }, [view]);
 
   const [loading, setLoading] = useState(true);
@@ -75,7 +88,6 @@ function App() {
   const [showAddPlayer, setShowAddPlayer] = useState(false);
   const [showScreenshots, setShowScreenshots] = useState(false);
   const [showLinks, setShowLinks] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
   const [showDatabase, setShowDatabase] = useState(false);
   const [showProfileStats, setShowProfileStats] = useState(false);
   const [showRemainder, setShowRemainder] = useState(false);
@@ -248,6 +260,37 @@ function App() {
   const [filterClub, setFilterClub] = useState('');
   const [filterNationality, setFilterNationality] = useState('');
   const [filterRating, setFilterRating] = useState('');
+  const [activityLogs, setActivityLogs] = useState([]);
+
+  // Fetch Activity Logs
+  useEffect(() => {
+    const fetchLogs = async () => {
+      if (view === 'activity-log' && user?.uid) {
+        // Run cleanup first
+        await cleanupActivityLogs(user.uid);
+        
+        let logs = await getActivityLogs(user.uid);
+        
+        // If no logs exist, backfill from existing players for immediate feedback
+        if (logs.length === 0 && players.length > 0) {
+          const backfill = players.slice(0, 10).map(p => ({
+            id: `backfill-${p._id}`,
+            type: 'player_add',
+            title: 'Existing Squad Member',
+            description: `${p.name} (${p.position}) is part of your squad.`,
+            timestamp: p.createdAt || p.dateAdded || new Date().toISOString(),
+            device: 'System Migration',
+            storage: 'Firebase Cloud Firestore',
+            player: { id: p._id, name: p.name, position: p.position, rating: p.rating, image: p.image }
+          }));
+          logs = backfill;
+        }
+        
+        setActivityLogs(logs);
+      }
+    };
+    fetchLogs();
+  }, [view, user, players]);
   const [filterPlaystyle, setFilterPlaystyle] = useState('All');
   const [filterSkill, setFilterSkill] = useState('All');
   const [includeSecondary, setIncludeSecondary] = useState(false);
@@ -604,6 +647,18 @@ function App() {
 
       const addedPlayer = await addPlayer(user.uid, playerToAdd);
 
+      // Log Activity
+      const newLog = await logActivity(user.uid, {
+        type: 'player_add',
+        title: 'Player Added',
+        description: `${addedPlayer.name} (${addedPlayer.position}) was added to your squad.`,
+        player: { id: addedPlayer._id, name: addedPlayer.name, position: addedPlayer.position, rating: addedPlayer.rating, image: addedPlayer.image }
+      });
+
+      if (newLog) {
+        setActivityLogs(prev => [newLog, ...prev]);
+      }
+
       setPlayers(prev => [addedPlayer, ...prev]);
 
       // Only switch to list view if it's NOT a badge template
@@ -657,6 +712,17 @@ function App() {
           Array.from(selectedIds).map(id => deletePlayer(user.uid, id))
         );
 
+        // Log Activity
+        const newLog = await logActivity(user.uid, {
+          type: 'player_delete_bulk',
+          title: 'Bulk Deletion',
+          description: `Removed ${selectedIds.size} players from your squad.`
+        });
+
+        if (newLog) {
+          setActivityLogs(prev => [newLog, ...prev]);
+        }
+
         // Cleanup
         setPlayers(prev => prev.filter(p => !selectedIds.has(p._id)));
         setSelectedIds(new Set());
@@ -707,6 +773,13 @@ function App() {
     try {
       const idArray = Array.from(selectedIds);
       await updatePlayersBulk(user.uid, idArray, updates);
+
+      // Log Activity
+      await logActivity(user.uid, {
+        type: 'player_edit_bulk',
+        title: 'Bulk Update',
+        description: `Updated ${idArray.length} players. Fields: ${Object.keys(updates).join(', ')}.`
+      });
 
       // Update local state
       setPlayers(prev => prev.map(p => {
@@ -895,6 +968,13 @@ function App() {
           await batchAddPlayers(user.uid, toAdd.slice(i, i + 500));
         }
       }
+
+      // Log Activity
+      await logActivity(user.uid, {
+        type: 'player_import',
+        title: 'Squad Import',
+        description: `Imported squad data: ${toAdd.length} new players, ${toUpdate.length} updates.`
+      });
 
       const updatedPlayersList = await getPlayers(user.uid);
       setPlayers(updatedPlayersList);
@@ -1263,6 +1343,70 @@ function App() {
 
       await updatePlayer(user.uid, id, updatesToSave);
 
+      // Log Activity
+      const originalPlayer = players.find(p => p._id === id);
+      if (originalPlayer) {
+        const changes = [];
+        const fieldNames = {
+          rating: 'Rating',
+          goals: 'Goals',
+          assists: 'Assists',
+          name: 'Name',
+          position: 'Position',
+          additionalPositions: 'Additional Positions',
+          secondaryPosition: 'Secondary Positions',
+          additionalSkills: 'Additional Skills',
+          dateAdded: 'Date Added',
+          playstyle: 'Playstyle',
+          cardType: 'Card Type'
+        };
+
+        Object.keys(updatesToSave).forEach(k => {
+          if (fieldNames[k]) {
+            const oldVal = originalPlayer[k];
+            const newVal = updatesToSave[k];
+            
+            // Normalize values for comparison
+            const normalize = (val) => {
+              if (val === null || val === undefined) return '';
+              if (Array.isArray(val)) {
+                const filtered = val.filter(v => v && String(v).trim() !== '' && String(v).trim().toLowerCase() !== 'none');
+                return filtered.length === 0 ? '' : filtered.join(', ');
+              }
+              const s = String(val).trim();
+              if (s === '' || s.toLowerCase() === 'none' || s.toLowerCase() === 'undefined' || s.toLowerCase() === 'null') return '';
+              return s;
+            };
+
+            const normOld = normalize(oldVal);
+            const normNew = normalize(newVal);
+
+            if (normOld !== normNew) {
+              // Ensure we don't show "None -> None" or similar no-op labels
+              const displayOld = normOld || 'None';
+              const displayNew = normNew || 'None';
+              
+              if (displayOld !== displayNew) {
+                changes.push(`${fieldNames[k]} (${displayOld} → ${displayNew})`);
+              }
+            }
+          }
+        });
+
+        if (changes.length > 0) {
+          const newLog = await logActivity(user.uid, {
+            type: 'player_edit',
+            title: 'Player Updated',
+            description: `${originalPlayer.name}: Updated ${changes.join(', ')}.`,
+            player: { id: originalPlayer._id, name: originalPlayer.name, position: originalPlayer.position, rating: updatesToSave.rating || originalPlayer.rating, image: updatesToSave.image || originalPlayer.image }
+          });
+          
+          if (newLog) {
+            setActivityLogs(prev => [newLog, ...prev]);
+          }
+        }
+      }
+
       setPlayers(prev => prev.map(p => p._id === id ? { ...p, ...updatesToSave } : p));
 
       if (shouldClose) {
@@ -1449,7 +1593,6 @@ function App() {
           setShowDatabase={setShowDatabase}
           setShowScreenshots={setShowScreenshots}
           setShowLinks={setShowLinks}
-          setShowSettings={setShowSettings}
           user={user}
           setShowLogin={setShowLogin}
           handleLogout={handleLogout}
@@ -1458,16 +1601,54 @@ function App() {
           setShowSocial={setShowSocial}
           setShowBrochure={setShowBrochure}
         />
-      </Suspense>
+      
 
       {/* Main Content Area (Pushed by Sidebar) */}
-      <div 
+      <main 
         className={`
           transition-all duration-500 ease-in-out
           ${isSidebarOpen ? 'ml-[200px] w-[calc(100%-200px)]' : 'ml-0 w-full'}
-          min-h-screen pt-24 md:pt-28 p-3 md:p-8
+          min-h-screen ${view === 'settings' ? 'pt-12 p-0' : 'pt-24 md:pt-28 p-3 md:p-8'}
         `}
       >
+        {view === 'settings' && (
+          <SettingsModal
+            settings={settings}
+            setSettings={setSettings}
+            user={user}
+            players={players}
+            setPlayers={setPlayers}
+            onClose={() => setView('list')}
+          />
+        )}
+
+        {view === 'squad-db' && (
+          <MySquadDB
+            players={players}
+            onBack={() => setView('list')}
+            onImport={handleImportSquadJSON}
+            onPlayerClick={setSelectedPlayer}
+            isSidebarOpen={isSidebarOpen}
+          />
+        )}
+
+        {view === 'quick-stats' && (
+          <QuickStatsView
+            players={players}
+            user={user}
+            activeSquad={activeSquad}
+            onUpdate={(id, updates) => handleUpdatePlayer(id, updates, false)}
+            onClose={() => setView('list')}
+            isSidebarOpen={isSidebarOpen}
+          />
+        )}
+
+        {view === 'activity-log' && (
+          <ActivityLog 
+            activities={activityLogs} 
+            isSidebarOpen={isSidebarOpen}
+          />
+        )}
 
 
 
@@ -2126,10 +2307,6 @@ function App() {
       }
 
 
-      <Suspense fallback={<LoadingFallback />}>
-        <main className="max-w-6xl mx-auto animate-fade-in pb-20 pt-4 md:pt-0">
-
-
 
           {showAddPlayer && (
             <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 animate-fade-in backdrop-blur-sm">
@@ -2188,17 +2365,6 @@ function App() {
 
           {showLinks && (
             <LinksModal user={user} onClose={() => setShowLinks(false)} onAddApp={handleAddApp} showAlert={showAlert} showConfirm={showConfirm} />
-          )}
-
-          {showSettings && (
-            <SettingsModal
-              settings={settings}
-              setSettings={setSettings}
-              onClose={() => setShowSettings(false)}
-              user={user}
-              players={players}
-              setPlayers={setPlayers}
-            />
           )}
 
           {showLogin && (
@@ -2622,6 +2788,7 @@ function App() {
                     onUpdatePlayer={handleUpdatePlayer}
                     onAddPlayers={handleBulkAddPlayers}
                     user={user}
+                    isSidebarOpen={isSidebarOpen}
                   />
                 )}
 
@@ -2636,7 +2803,6 @@ function App() {
               </>
             )}
           </div>
-        </main>
         {showDatabase && (
           <DatabasePlayerList
             onAddPlayers={handleBulkAddPlayers}
@@ -2648,39 +2814,22 @@ function App() {
           />
         )}
 
-        {view === 'squad-db' && (
-          <MySquadDB
-            players={players}
-            onBack={() => setView('list')}
-            onImport={handleImportSquadJSON}
-            onPlayerClick={setSelectedPlayer}
-          />
-        )}
-
-        {view === 'quick-stats' && (
-          <QuickStatsView
-            players={players}
-            user={user}
-            activeSquad={activeSquad}
-            onUpdate={(id, updates) => handleUpdatePlayer(id, updates, false)}
-            onClose={() => setView('list')}
-          />
-        )}
-        {showRemainder && (
-          <RemainderModal
-            user={user}
-            onClose={() => setShowRemainder(false)}
-            showAlert={showAlert}
-            showConfirm={showConfirm}
-          />
-        )}
-        <SocialDrawer
-          isOpen={showSocial}
-          onClose={() => setShowSocial(false)}
+      </main>
+      
+      {showRemainder && (
+        <RemainderModal
+          user={user}
+          onClose={() => setShowRemainder(false)}
+          showAlert={showAlert}
+          showConfirm={showConfirm}
         />
-      </Suspense>
+      )}
+      <SocialDrawer
+        isOpen={showSocial}
+        onClose={() => setShowSocial(false)}
+      />
+    </Suspense>
     </div>
-    </div >
   );
 }
 

@@ -18,7 +18,7 @@ const parseEfDate = (dateStr) => {
     return null;
 };
 
-const MySquadDB = ({ players, onBack, onImport, onPlayerClick }) => {
+const MySquadDB = ({ players, onBack, onImport, onPlayerClick, isSidebarOpen }) => {
     const [search, setSearch] = useState('');
 
     const [showSettings, setShowSettings] = useState(false);
@@ -305,7 +305,11 @@ const MySquadDB = ({ players, onBack, onImport, onPlayerClick }) => {
     };
 
     return (
-        <div className="fixed inset-0 z-[120] bg-[#0a0f16] flex flex-col text-white animate-fade-in font-outfit">
+        <div className={`
+            fixed inset-0 z-[120] bg-[#0a0f16] flex flex-col text-white animate-fade-in font-outfit
+            transition-all duration-500 ease-in-out
+            ${isSidebarOpen ? 'ml-[200px] w-[calc(100%-200px)]' : 'ml-0 w-full'}
+        `}>
             {/* Header */}
             <header className="p-4 md:p-6 border-b border-white/10 bg-[#0a0a0c]/80 backdrop-blur-xl flex flex-col md:flex-row gap-4 items-center justify-between sticky top-0 z-[130]">
                 <div className="flex items-center gap-4 w-full md:w-auto">
