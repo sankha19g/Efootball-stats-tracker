@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { History, UserPlus, Zap, Clock, Database, Smartphone, Laptop, Trash2, Edit3, ShieldAlert } from 'lucide-react';
 
-const ActivityLog = ({ activities, isSidebarOpen }) => {
+const ActivityLog = ({ activities, isSidebarOpen, settings }) => {
     
     const formatDate = (dateStr) => {
         try {
@@ -126,11 +126,18 @@ const ActivityLog = ({ activities, isSidebarOpen }) => {
                                         {item.player && (
                                             <div className="flex items-center gap-4 p-3 bg-black/30 rounded-xl border border-white/5 group-hover:border-white/10 transition-colors">
                                                 <div className="w-10 h-10 rounded-lg bg-black/40 overflow-hidden border border-white/10 shrink-0">
-                                                    {item.player.image ? (
-                                                        <img src={item.player.image} alt="" className="w-full h-full object-cover" />
-                                                    ) : (
-                                                        <div className="w-full h-full flex items-center justify-center opacity-20">👤</div>
-                                                    )}
+                                                    {(() => {
+                                                        const img = settings?.preferredImageSource === 2 ? (item.player.image2 || item.player.image) : (item.player.image || item.player.image2);
+                                                        return img ? (
+                                                            <img 
+                                                                src={img} 
+                                                                alt="" 
+                                                                className="w-full h-full object-cover" 
+                                                            />
+                                                        ) : (
+                                                            <div className="w-full h-full flex items-center justify-center opacity-20">👤</div>
+                                                        );
+                                                    })()}
                                                 </div>
                                                 <div className="flex-1 min-w-0">
                                                     <p className="text-xs font-black text-white uppercase truncate">{item.player.name}</p>

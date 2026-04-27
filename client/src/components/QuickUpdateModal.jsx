@@ -1,7 +1,18 @@
 import { useState, useMemo, useEffect } from 'react';
 import { PLAYSTYLES } from '../constants';
 
-const QuickStatsView = ({ players, onUpdate, onClose, user, activeSquad, isSidebarOpen }) => {
+const QuickStatsView = ({ players, onUpdate, onClose, user, activeSquad, isSidebarOpen, settings }) => {
+    const getPlayerImage = (player) => {
+        if (settings?.preferredImageSource === 3) {
+            const pid = player.playerId || player.pesdb_id || player.id || player.ID;
+            return pid ? `https://efimg.com/efootballhub22/images/player_cards/${pid}_l.png` : (player.image || player.image2);
+        }
+        if (settings?.preferredImageSource === 2) {
+            return player.image2 || player.image;
+        }
+        return player.image || player.image2;
+    };
+
     const [search, setSearch] = useState('');
     const [isManualMode, setIsManualMode] = useState(false);
     const [isRatingsUnlocked, setIsRatingsUnlocked] = useState(false);
@@ -9,7 +20,7 @@ const QuickStatsView = ({ players, onUpdate, onClose, user, activeSquad, isSideb
     const [filterSpecialChars, setFilterSpecialChars] = useState(false);
     const [sortBy, setSortBy] = useState('date');
     const [showMy11, setShowMy11] = useState(false);
-    const [activePage, setActivePage] = useState(0); // 0: Stats, 2: Photo, 3: Sec Pos, 4: Rename, 5: Date Added
+    const [activePage, setActivePage] = useState(0); // 0: Stats, 2: Photo, 3: Sec Pos, 4: Rename, 5: Date Added, 6: Image Source 2
     const [activeFilters, setActiveFilters] = useState({
         position: '',
         club: '',
@@ -159,6 +170,20 @@ const QuickStatsView = ({ players, onUpdate, onClose, user, activeSquad, isSideb
                         title="Date Added"
                     >
                         <span className="text-xl">📅</span>
+                    </button>
+                    <button
+                        onClick={() => { setActivePage(6); setEditingPlayerId(null); }}
+                        className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${activePage === 6 ? 'bg-ef-accent text-ef-dark shadow-lg shadow-ef-accent/20 scale-110' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
+                        title="Image Source 2 URL"
+                    >
+                        <span className="text-xl">🖼️</span>
+                    </button>
+                    <button
+                        onClick={() => { setActivePage(7); setEditingPlayerId(null); }}
+                        className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${activePage === 7 ? 'bg-ef-blue text-white shadow-lg shadow-ef-blue/20 scale-110' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
+                        title="Update Age"
+                    >
+                        <span className="text-xl">👶</span>
                     </button>
                 </div>
 
@@ -337,7 +362,7 @@ const QuickStatsView = ({ players, onUpdate, onClose, user, activeSquad, isSideb
                                                 {/* Photo & Basic Info */}
                                                 <div className="flex items-center gap-3 w-1/4 min-w-0">
                                                     <div className="w-10 h-10 md:w-12 md:h-12 flex-shrink-0 rounded-xl overflow-hidden border border-white/10 bg-black/40">
-                                                        <img src={player.image} alt="" className="w-full h-full object-cover object-top" />
+                                                        <img src={getPlayerImage(player)} alt="" className="w-full h-full object-cover object-top" />
                                                     </div>
                                                     <div className="truncate">
                                                         <h4 className="text-xs md:text-sm font-black text-white truncate uppercase tracking-tight">{player.name}</h4>
@@ -445,7 +470,7 @@ const QuickStatsView = ({ players, onUpdate, onClose, user, activeSquad, isSideb
                                 ) : (
                                     <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
                                         {paginatedPlayers.map(player => (
-                                            <PhotoUploadCard key={player._id} player={player} onUpdate={onUpdate} />
+                                            <PhotoUploadCard key={player._id} player={player} onUpdate={onUpdate} settings={settings} />
                                         ))}
                                     </div>
                                 )}
@@ -466,7 +491,7 @@ const QuickStatsView = ({ players, onUpdate, onClose, user, activeSquad, isSideb
                                             {/* Photo & Info */}
                                             <div className="flex items-center gap-3 w-1/3 min-w-0">
                                                 <div className="w-10 h-10 flex-shrink-0 rounded-lg overflow-hidden border border-white/10 bg-black/40">
-                                                    <img src={player.image} alt="" className="w-full h-full object-cover object-top" />
+                                                    <img src={getPlayerImage(player)} alt="" className="w-full h-full object-cover object-top" />
                                                 </div>
                                                 <div className="truncate">
                                                     <h4 className="text-xs font-black text-white truncate uppercase tracking-tight">{player.name}</h4>
@@ -510,7 +535,7 @@ const QuickStatsView = ({ players, onUpdate, onClose, user, activeSquad, isSideb
                                             {/* Photo & Basic Info */}
                                             <div className="flex items-center gap-3 w-1/3 min-w-0">
                                                 <div className="w-10 h-10 flex-shrink-0 rounded-lg overflow-hidden border border-white/10 bg-black/40">
-                                                    <img src={player.image} alt="" className="w-full h-full object-cover object-top" />
+                                                    <img src={getPlayerImage(player)} alt="" className="w-full h-full object-cover object-top" />
                                                 </div>
                                                 <div className="truncate">
                                                     <h4 className="text-xs font-black text-white truncate uppercase tracking-tight">{player.name}</h4>
@@ -554,7 +579,7 @@ const QuickStatsView = ({ players, onUpdate, onClose, user, activeSquad, isSideb
                                             {/* Photo & Info */}
                                             <div className="flex items-center gap-3 w-1/3 min-w-0">
                                                 <div className="w-10 h-10 flex-shrink-0 rounded-lg overflow-hidden border border-white/10 bg-black/40">
-                                                    <img src={player.image} alt="" className="w-full h-full object-cover object-top" />
+                                                    <img src={getPlayerImage(player)} alt="" className="w-full h-full object-cover object-top" />
                                                 </div>
                                                 <div className="truncate">
                                                     <h4 className="text-xs font-black text-white truncate uppercase tracking-tight">{player.name}</h4>
@@ -575,6 +600,94 @@ const QuickStatsView = ({ players, onUpdate, onClose, user, activeSquad, isSideb
                                                     />
                                                     <div className="absolute right-3 top-1/2 -translate-y-1/2 opacity-20 text-[8px] font-black uppercase tracking-widest group-focus-within/input:opacity-0 transition-opacity pointer-events-none">
                                                         DATE ADDED
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Page 6: Image Source 2 URL */}
+                        <div className={`absolute inset-0 flex flex-col transition-all duration-500 transform ${activePage === 6 ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0 pointer-events-none'}`}>
+                            <div className="flex-1 overflow-y-auto custom-scrollbar p-2 md:p-4 space-y-2">
+                                {paginatedPlayers.length === 0 ? (
+                                    <div className="h-60 flex flex-col items-center justify-center opacity-20">
+                                        <span className="text-4xl mb-2">👤</span>
+                                        <p className="text-xs font-black uppercase tracking-widest">No players found</p>
+                                    </div>
+                                ) : (
+                                    paginatedPlayers.map(player => (
+                                        <div key={player._id} className="group bg-white/5 hover:bg-white/10 border border-white/5 rounded-2xl p-[3px] flex items-center justify-between gap-4 transition-all hover:border-white/10">
+                                            {/* Photo & Info */}
+                                            <div className="flex items-center gap-3 w-1/3 min-w-0">
+                                                <div className="w-10 h-10 flex-shrink-0 rounded-lg overflow-hidden border border-white/10 bg-black/40">
+                                                    <img src={getPlayerImage(player)} alt="" className="w-full h-full object-cover object-top" />
+                                                </div>
+                                                <div className="truncate">
+                                                    <h4 className="text-xs font-black text-white truncate uppercase tracking-tight">{player.name}</h4>
+                                                    <div className="flex items-center gap-1.5 mt-0.5">
+                                                        <span className="text-[8px] opacity-40 font-black uppercase tracking-widest leading-none">{player.position}</span>
+                                                        <span className="text-[9px] opacity-20 font-black">•</span>
+                                                        <span className="text-[9px] opacity-20 font-bold uppercase truncate leading-none">{player.club}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Image 2 Input */}
+                                            <div className="flex-1 max-w-sm">
+                                                <div className="relative group/input">
+                                                    <Image2Input
+                                                        value={player.image2}
+                                                        onUpdate={(val) => onUpdate(player._id, { image2: val })}
+                                                    />
+                                                    <div className="absolute right-3 top-1/2 -translate-y-1/2 opacity-20 text-[8px] font-black uppercase tracking-widest group-focus-within/input:opacity-0 transition-opacity pointer-events-none">
+                                                        SOURCE 2
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Page 7: Age Update */}
+                        <div className={`absolute inset-0 flex flex-col transition-all duration-500 transform ${activePage === 7 ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0 pointer-events-none'}`}>
+                            <div className="flex-1 overflow-y-auto custom-scrollbar p-2 md:p-4 space-y-2">
+                                {paginatedPlayers.length === 0 ? (
+                                    <div className="h-60 flex flex-col items-center justify-center opacity-20">
+                                        <span className="text-4xl mb-2">👤</span>
+                                        <p className="text-xs font-black uppercase tracking-widest">No players found</p>
+                                    </div>
+                                ) : (
+                                    paginatedPlayers.map(player => (
+                                        <div key={player._id} className="group bg-white/5 hover:bg-white/10 border border-white/5 rounded-2xl p-[3px] flex items-center justify-between gap-4 transition-all hover:border-white/10">
+                                            {/* Photo & Info */}
+                                            <div className="flex items-center gap-3 w-1/3 min-w-0">
+                                                <div className="w-10 h-10 flex-shrink-0 rounded-lg overflow-hidden border border-white/10 bg-black/40">
+                                                    <img src={getPlayerImage(player)} alt="" className="w-full h-full object-cover object-top" />
+                                                </div>
+                                                <div className="truncate">
+                                                    <h4 className="text-xs font-black text-white truncate uppercase tracking-tight">{player.name}</h4>
+                                                    <div className="flex items-center gap-1.5 mt-0.5">
+                                                        <span className="text-[8px] opacity-40 font-black uppercase tracking-widest leading-none">{player.position}</span>
+                                                        <span className="text-[9px] opacity-20 font-black">•</span>
+                                                        <span className="text-[9px] opacity-20 font-bold uppercase truncate leading-none">{player.club}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Age Input */}
+                                            <div className="w-24 mr-4">
+                                                <div className="relative group/input">
+                                                    <AgeInput
+                                                        value={player.age}
+                                                        onUpdate={(val) => onUpdate(player._id, { age: val })}
+                                                    />
+                                                    <div className="absolute right-2 top-1/2 -translate-y-1/2 opacity-20 text-[7px] font-black uppercase tracking-widest group-focus-within/input:opacity-0 transition-opacity pointer-events-none">
+                                                        AGE
                                                     </div>
                                                 </div>
                                             </div>
@@ -723,7 +836,18 @@ const SecondaryPosInput = ({ value, onUpdate }) => {
     );
 };
 
-const PhotoUploadCard = ({ player, onUpdate }) => {
+const PhotoUploadCard = ({ player, onUpdate, settings }) => {
+    const getPlayerImage = (player) => {
+        if (settings?.preferredImageSource === 3) {
+            const pid = player.playerId || player.pesdb_id || player.id || player.ID;
+            return pid ? `https://efimg.com/efootballhub22/images/player_cards/${pid}_l.png` : (player.image || player.image2);
+        }
+        if (settings?.preferredImageSource === 2) {
+            return player.image2 || player.image;
+        }
+        return player.image || player.image2;
+    };
+
     const [isDragging, setIsDragging] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
 
@@ -813,7 +937,7 @@ const PhotoUploadCard = ({ player, onUpdate }) => {
         >
             <div className="flex items-center gap-2">
                 <div className="w-12 h-12 rounded-lg overflow-hidden border border-white/10 bg-black/40 shrink-0">
-                    <img src={player.image} alt="" className="w-full h-full object-cover object-top" />
+                    <img src={getPlayerImage(player)} alt="" className="w-full h-full object-cover object-top" />
                 </div>
                 <div className="truncate flex-1 min-w-0">
                     <div className="flex items-center gap-1">
@@ -852,6 +976,32 @@ const PhotoUploadCard = ({ player, onUpdate }) => {
                 <span>📋</span> Paste
             </button>
         </div>
+    );
+};
+
+const AgeInput = ({ value, onUpdate }) => {
+    const [localValue, setLocalValue] = useState(value || '');
+
+    useEffect(() => {
+        setLocalValue(value || '');
+    }, [value]);
+
+    const handleCommit = () => {
+        const val = parseInt(localValue);
+        if (!isNaN(val) && val !== value) {
+            onUpdate(val);
+        }
+    };
+
+    return (
+        <input
+            type="number"
+            value={localValue}
+            onChange={(e) => setLocalValue(e.target.value)}
+            onBlur={handleCommit}
+            onKeyDown={(e) => e.key === 'Enter' && e.target.blur()}
+            className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2 text-xs font-black text-white focus:border-ef-accent/40 transition-all text-center"
+        />
     );
 };
 
@@ -914,6 +1064,33 @@ const DateInput = ({ value, onUpdate }) => {
                 handleCommit(e.target.value);
             }}
             className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2 text-xs font-bold text-cyan-400 outline-none focus:border-cyan-400/40 transition-all [color-scheme:dark]"
+        />
+    );
+};
+
+const Image2Input = ({ value, onUpdate }) => {
+    const [localValue, setLocalValue] = useState(value || '');
+
+    useEffect(() => {
+        setLocalValue(value || '');
+    }, [value]);
+
+    const handleCommit = () => {
+        const normalized = localValue.trim();
+        if (normalized !== (value || '')) {
+            onUpdate(normalized);
+        }
+    };
+
+    return (
+        <input
+            type="text"
+            placeholder="Image Source 2 URL..."
+            value={localValue}
+            onChange={(e) => setLocalValue(e.target.value)}
+            onBlur={handleCommit}
+            onKeyDown={(e) => e.key === 'Enter' && e.target.blur()}
+            className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2 text-xs font-bold text-ef-accent outline-none focus:border-ef-accent/40 transition-all placeholder:text-white/5"
         />
     );
 };

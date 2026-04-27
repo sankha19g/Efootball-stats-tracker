@@ -61,6 +61,13 @@ const parseEfDate = (dateStr) => {
   return null;
 };
 
+const generateSource2Url = (nationality, playerId) => {
+  if (!nationality || !playerId) return '';
+  // Use normalizeString to remove diacritics (e.g. España -> espana)
+  const cleanNation = normalizeString(String(nationality)).toLowerCase().trim().replace(/\s+/g, '_');
+  return `https://storage.googleapis.com/efootball-playerbuilder.firebasestorage.app/player-images/${cleanNation}_${playerId}.webp`;
+};
+
 function App() {
   const [players, setPlayers] = useState([]);
   const [squads, setSquads] = useState([]);
@@ -102,8 +109,9 @@ function App() {
       cardSize: 'sm',
       showLabels: true,
       showRatings: true,
-      showStats: true,
+      showPosition: true,
       showClub: true,
+      showStats: true,
       showPlaystyle: true,
       showClubBadge: true,
       showNationBadge: true,
@@ -112,7 +120,12 @@ function App() {
       enablePagination: false,
       itemsPerPage: 40,
       activeSquadId: null,
-      appLogo: ''
+      appLogo: '',
+      preferredImageSource: 1,
+      showDetailsPosition: true,
+      showDetailsRatings: true,
+      showDetailsClubBadge: true,
+      showDetailsNationBadge: true
     };
   });
 
@@ -337,6 +350,15 @@ function App() {
 
   // Selection Mode State
   const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+
+  useEffect(() => {
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [showBulkEdit, setShowBulkEdit] = useState(false);
   const [bulkEditData, setBulkEditData] = useState({
@@ -623,10 +645,27 @@ function App() {
           playerToAdd.image = imageUrl;
         } catch (imgErr) {
           console.error("Image upload failed:", imgErr);
-          // If upload fails/times out, we still save the player but without the image
           imageUploadFailed = true;
           playerToAdd.image = '';
         }
+      }
+
+      // Handle Image 2 Upload if Base64
+      if (playerToAdd.image2 && playerToAdd.image2.startsWith('data:image')) {
+        try {
+          const imageUrl = await uploadWithTimeout(uploadBase64Image(user.uid, playerToAdd.image2));
+          playerToAdd.image2 = imageUrl;
+        } catch (imgErr) {
+          console.error("Image 2 upload failed:", imgErr);
+          playerToAdd.image2 = '';
+        }
+      }
+
+      // Auto-generate Source 2 if missing
+      if (!playerToAdd.image2 || playerToAdd.image2 === '') {
+        const pid = playerToAdd.playerId || playerToAdd.pesdb_id;
+        const url = generateSource2Url(playerToAdd.nationality, pid);
+        if (url) playerToAdd.image2 = url;
       }
 
       // Handle Progressions Images if Base64
@@ -828,6 +867,52 @@ function App() {
       console.error('Error bulk updating:', err);
       showAlert('Error', 'Failed to update players.', 'danger');
     }
+  };
+
+  const handleBulkConvertToPng = async () => {
+    if (selectedIds.size === 0 || !user) return;
+
+    showConfirm('Convert to PNG', `Change Source 2 extension to .png for ${selectedIds.size} selected players?`, async () => {
+      try {
+        const idArray = Array.from(selectedIds);
+        const updatesList = [];
+        const updatedPlayers = [...players];
+
+        for (const id of idArray) {
+          const player = players.find(p => p._id === id);
+          if (player && player.image2 && player.image2.endsWith('.webp')) {
+            const newUrl = player.image2.replace('.webp', '.png');
+            updatesList.push({ id, updates: { image2: newUrl } });
+            
+            const idx = updatedPlayers.findIndex(p => p._id === id);
+            if (idx !== -1) updatedPlayers[idx] = { ...updatedPlayers[idx], image2: newUrl };
+          }
+        }
+
+        if (updatesList.length === 0) {
+          showAlert('No Changes', 'None of the selected players have a .webp Source 2 image.', 'info');
+          return;
+        }
+
+        await updatePlayersBulk(user.uid, idArray.filter(id => updatesList.some(u => u.id === id)), { 
+          // This is a bit tricky since each update is different. 
+          // We'll use batchUpdatePlayers from playerService instead.
+        });
+        
+        // Re-import service for batch update
+        const { batchUpdatePlayers } = await import('./services/playerService');
+        await batchUpdatePlayers(user.uid, updatesList);
+
+        setPlayers(updatedPlayers);
+        setSelectedIds(new Set());
+        setIsSelectionMode(false);
+        setShowBulkEdit(false);
+        showAlert('Success', `Converted ${updatesList.length} players to PNG format!`, 'success');
+      } catch (err) {
+        console.error('Error converting to PNG:', err);
+        showAlert('Error', 'Failed to convert images.', 'danger');
+      }
+    });
   };
 
   const handleImportSquadJSON = async (importedPlayers) => {
@@ -1325,6 +1410,26 @@ function App() {
         }
       }
 
+      // Handle Image 2 Upload if Base64
+      if (updatesToSave.image2 && updatesToSave.image2.startsWith('data:image')) {
+        try {
+          const imageUrl = await uploadBase64Image(user.uid, updatesToSave.image2);
+          updatesToSave.image2 = imageUrl;
+        } catch (err) {
+          console.error("Image 2 upload failed:", err);
+          updatesToSave.image2 = '';
+        }
+      }
+
+      // Auto-generate Source 2 if missing
+      if (!updatesToSave.image2 || updatesToSave.image2 === '') {
+        const originalPlayer = players.find(p => p._id === id);
+        const pid = updatesToSave.playerId || updatesToSave.pesdb_id || originalPlayer?.playerId || originalPlayer?.pesdb_id;
+        const nationality = updatesToSave.nationality || originalPlayer?.nationality;
+        const url = generateSource2Url(nationality, pid);
+        if (url) updatesToSave.image2 = url;
+      }
+
       // Handle Progressions Images if Base64
       if (updatesToSave.progressions && Array.isArray(updatesToSave.progressions)) {
         updatesToSave.progressions = await Promise.all(updatesToSave.progressions.map(async (p) => {
@@ -1619,6 +1724,7 @@ function App() {
             players={players}
             setPlayers={setPlayers}
             onClose={() => setView('list')}
+            generateSource2Url={generateSource2Url}
           />
         )}
 
@@ -1640,6 +1746,7 @@ function App() {
             onUpdate={(id, updates) => handleUpdatePlayer(id, updates, false)}
             onClose={() => setView('list')}
             isSidebarOpen={isSidebarOpen}
+            settings={settings}
           />
         )}
 
@@ -1647,6 +1754,7 @@ function App() {
           <ActivityLog 
             activities={activityLogs} 
             isSidebarOpen={isSidebarOpen}
+            settings={settings}
           />
         )}
 
@@ -2032,19 +2140,27 @@ function App() {
               </div>
             </div>
 
-            <div className="p-6 pt-0 flex gap-3">
+            <div className="p-6 pt-0 flex flex-col gap-3">
               <button
-                onClick={() => setShowBulkEdit(false)}
-                className="flex-1 py-4 px-6 rounded-xl bg-white/5 border border-white/10 text-white/40 font-black uppercase tracking-widest text-[10px] transition-all hover:bg-white/10"
+                onClick={handleBulkConvertToPng}
+                className="w-full py-4 rounded-xl bg-white/5 border border-white/10 text-white font-black uppercase tracking-widest text-[10px] transition-all hover:bg-white/10 flex items-center justify-center gap-2"
               >
-                Cancel
+                🖼️ Force PNG Extension (Source 2)
               </button>
-              <button
-                onClick={handleBulkUpdate}
-                className="flex-1 py-4 px-6 rounded-xl bg-ef-blue text-white font-black uppercase tracking-widest text-[10px] transition-all shadow-lg shadow-ef-blue/20 hover:scale-[1.02] active:scale-95"
-              >
-                Apply Changes
-              </button>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowBulkEdit(false)}
+                  className="flex-1 py-4 px-6 rounded-xl bg-white/5 border border-white/10 text-white/40 font-black uppercase tracking-widest text-[10px] transition-all hover:bg-white/10"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleBulkUpdate}
+                  className="flex-1 py-4 px-6 rounded-xl bg-ef-blue text-white font-black uppercase tracking-widest text-[10px] transition-all shadow-lg shadow-ef-blue/20 hover:scale-[1.02] active:scale-95"
+                >
+                  Apply Changes
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -2422,39 +2538,44 @@ function App() {
               <>
                 {view === 'list' && (
                   <>
-                    <div className={`flex flex-wrap justify-center gap-3 md:gap-4 ${settings.highPerf ? '![animation:none]' : ''}`}>
-                      {(settings.enablePagination
+                    {(() => {
+                      const visiblePlayers = settings.enablePagination
                         ? processedPlayers.slice((currentPage - 1) * settings.itemsPerPage, currentPage * settings.itemsPerPage)
-                        : processedPlayers
-                      ).map(player => (
-                        <div 
-                          key={player._id}
-                          className={`${
-                            settings.cardSize === 'mini' ? 'w-[85px] sm:w-[100px]' :
-                            settings.cardSize === 'xs' ? 'w-[105px] sm:w-[125px]' :
-                            settings.cardSize === 'sm' ? 'w-[145px] sm:w-[165px]' :
-                            settings.cardSize === 'md' ? 'w-[185px] sm:w-[210px]' :
-                            'w-[230px] sm:w-[260px]'
-                          } transition-all duration-300`}
-                          onClick={() => !isSelectionMode && setSelectedPlayer(player)}
-                        >
-                          <PlayerCard
-                            player={player}
-                            players={players}
-                            isSelectionMode={isSelectionMode}
-                            isSelected={selectedIds.has(player._id)}
-                            onToggleSelect={handleToggleSelect}
-                            settings={settings}
-                            secondaryMatch={includeSecondary && filterPos !== 'All' && player.secondaryPosition?.toUpperCase().includes(filterPos.toUpperCase()) && player.position !== filterPos ? filterPos : null}
-                          />
+                        : processedPlayers;
+
+                      return (
+                        <div className={`flex flex-wrap justify-center gap-3 md:gap-4 ${settings.highPerf ? '![animation:none]' : ''}`}>
+                          {visiblePlayers.map(player => (
+                            <div 
+                              key={player._id}
+                              className={`${
+                                settings.cardSize === 'mini' ? 'w-[85px] sm:w-[100px]' :
+                                settings.cardSize === 'xs' ? 'w-[105px] sm:w-[125px]' :
+                                settings.cardSize === 'sm' ? 'w-[145px] sm:w-[165px]' :
+                                settings.cardSize === 'md' ? 'w-[185px] sm:w-[210px]' :
+                                'w-[230px] sm:w-[260px]'
+                              } transition-all duration-300 cursor-pointer`}
+                              onClick={() => !isSelectionMode && setSelectedPlayer(player)}
+                            >
+                              <PlayerCard
+                                player={player}
+                                players={players}
+                                isSelectionMode={isSelectionMode}
+                                isSelected={selectedIds.has(player._id)}
+                                onToggleSelect={handleToggleSelect}
+                                settings={settings}
+                                secondaryMatch={includeSecondary && filterPos !== 'All' && player.secondaryPosition?.toUpperCase().includes(filterPos.toUpperCase()) && player.position !== filterPos ? filterPos : null}
+                              />
+                            </div>
+                          ))}
+                          {visiblePlayers.length === 0 && (
+                            <div className="col-span-full text-center py-20 opacity-30 border-2 border-dashed border-white/10 rounded-xl w-full">
+                              {user ? 'No players found. Add your first card!' : 'Please login to view your squad.'}
+                            </div>
+                          )}
                         </div>
-                      ))}
-                      {processedPlayers.length === 0 && (
-                        <div className="col-span-full text-center py-20 opacity-30 border-2 border-dashed border-white/10 rounded-xl">
-                          {user ? 'No players found. Add your first card!' : 'Please login to view your squad.'}
-                        </div>
-                      )}
-                    </div>
+                      );
+                    })()}
 
                     {/* Pagination Controls */}
                     {settings.enablePagination && processedPlayers.length > settings.itemsPerPage && (
@@ -2771,6 +2892,7 @@ function App() {
                       onPlayerClick={setSelectedPlayer}
                       activePositions={lbFilters.positions}
                       includeSecondary={lbFilters.includeSecondary}
+                      settings={settings}
                     />
                   </div>
                 )}
@@ -2789,6 +2911,7 @@ function App() {
                     onAddPlayers={handleBulkAddPlayers}
                     user={user}
                     isSidebarOpen={isSidebarOpen}
+                    settings={settings}
                   />
                 )}
 

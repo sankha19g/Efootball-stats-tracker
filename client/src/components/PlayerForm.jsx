@@ -18,6 +18,7 @@ const PlayerForm = ({ onAdd, onClose, hideExternalClose = false }) => {
         assists: 0,
         playstyle: 'None',
         image: '',
+        image2: '',
         age: '',
         strongFoot: 'Right',
         pesdb_id: '',
@@ -389,6 +390,17 @@ const PlayerForm = ({ onAdd, onClose, hideExternalClose = false }) => {
         }
     };
 
+    const handleImage2Change = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setFormData(prev => ({ ...prev, image2: reader.result }));
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
     const handlePaste = (e) => {
         const items = e.clipboardData?.items;
         if (items) {
@@ -425,6 +437,7 @@ const PlayerForm = ({ onAdd, onClose, hideExternalClose = false }) => {
             assists: 0,
             playstyle: 'None',
             image: '',
+            image2: '',
             age: '',
             strongFoot: 'Right',
             pesdb_id: '',
@@ -569,26 +582,56 @@ const PlayerForm = ({ onAdd, onClose, hideExternalClose = false }) => {
                         />
                     </div>
 
+                    </div>
+
                     <div className="flex flex-col gap-4 w-40 shrink-0">
-                        <div>
-                            <label className="block text-[8px] font-black uppercase tracking-widest opacity-30 mb-1.5">Image Link</label>
-                            <input
+                        {/* Source 1 UI */}
+                        <div className="p-3 bg-white/5 border border-white/10 rounded-2xl space-y-3">
+                            <label className="block text-[8px] font-black uppercase tracking-[0.2em] text-ef-accent/60">Image Source 1</label>
+                            <div>
+                                <label className="block text-[7px] font-black uppercase tracking-widest opacity-30 mb-1">Direct Link</label>
+                                <input
+                                    type="text"
+                                    placeholder="https://..."
+                                    value={formData.image && !formData.image.startsWith('data:') ? formData.image : ''}
+                                    onChange={(e) => setFormData(prev => ({ ...prev, image: e.target.value }))}
+                                    className="w-full bg-black/40 border border-white/10 rounded-lg px-2 py-1.5 text-[9px] text-white focus:outline-none focus:border-ef-accent/40 transition-all font-medium"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Source 2 UI */}
+                        <div className="p-3 bg-white/5 border border-white/10 rounded-2xl space-y-3 relative group/s2">
+                             <label className="block text-[8px] font-black uppercase tracking-[0.2em] text-ef-blue/60">Image Source 2</label>
+                             <div 
+                                onClick={() => document.getElementById('player-image2-upload').click()}
+                                className="w-full h-12 bg-black/40 border border-dashed border-white/10 rounded-xl flex items-center justify-center cursor-pointer hover:border-ef-blue/40 transition-all overflow-hidden relative"
+                             >
+                                {formData.image2 ? (
+                                    <img src={formData.image2} className="w-full h-full object-cover" alt="" />
+                                ) : (
+                                    <span className="text-lg opacity-20">📸</span>
+                                )}
+                             </div>
+                             <input id="player-image2-upload" type="file" accept="image/*" onChange={handleImage2Change} className="hidden" />
+                             <input
                                 type="text"
-                                placeholder="https://..."
-                                value={formData.image && !formData.image.startsWith('data:') ? formData.image : ''}
-                                onChange={(e) => setFormData(prev => ({ ...prev, image: e.target.value }))}
-                                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[10px] text-white focus:outline-none focus:border-ef-accent/40 transition-all font-medium"
+                                placeholder="Source 2 Link..."
+                                value={formData.image2 && !formData.image2.startsWith('data:') ? formData.image2 : ''}
+                                onChange={(e) => setFormData(prev => ({ ...prev, image2: e.target.value }))}
+                                className="w-full bg-black/40 border border-white/10 rounded-lg px-2 py-1.5 text-[9px] text-white focus:outline-none focus:border-ef-blue/40 transition-all font-medium"
                             />
                         </div>
+
                         <div>
-                            <label className="block text-[8px] font-black uppercase tracking-widest opacity-30 mb-1.5">Direct Paste</label>
+                            <label className="block text-[8px] font-black uppercase tracking-widest opacity-30 mb-1.5">Direct Paste (S1)</label>
                             <div
                                 onPaste={handlePaste}
                                 tabIndex="0"
-                                className="w-full h-16 bg-white/5 border border-white/10 border-dashed rounded-xl flex flex-col items-center justify-center text-center cursor-pointer hover:bg-white/10 hover:border-ef-accent/30 transition-all outline-none focus:border-ef-accent/50 focus:bg-ef-accent/5 focus:ring-1 focus:ring-ef-accent/20 group animate-pulse hover:animate-none"
+                                className="w-full h-12 bg-white/5 border border-white/10 border-dashed rounded-xl flex flex-col items-center justify-center text-center cursor-pointer hover:bg-white/10 hover:border-ef-accent/30 transition-all outline-none focus:border-ef-accent/50 focus:bg-ef-accent/5 focus:ring-1 focus:ring-ef-accent/20 group"
                             >
                                 <span className="text-[14px] mb-0.5 group-focus:scale-110 transition-transform">📋</span>
-                                <span className="text-[7px] font-black uppercase tracking-tighter text-white/20 group-focus:text-ef-accent leading-none">
+                                <span className="text-[6px] font-black uppercase tracking-tighter text-white/20 group-focus:text-ef-accent leading-none">
                                     Click then<br />Paste Card
                                 </span>
                             </div>

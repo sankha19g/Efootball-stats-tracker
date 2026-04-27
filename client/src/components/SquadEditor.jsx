@@ -27,7 +27,7 @@ const FORMATIONS = {
     ]
 };
 
-const PlayerCard = ({ player, onClick, isActive, isSelected, role, size = "small", draggable, onDragStart, onDragEnd, showPlaystyles }) => {
+const PlayerCard = ({ player, onClick, isActive, isSelected, role, size = "small", draggable, onDragStart, onDragEnd, showPlaystyles, settings }) => {
     const isSmall = size === "small";
 
     return (
@@ -36,7 +36,7 @@ const PlayerCard = ({ player, onClick, isActive, isSelected, role, size = "small
             {!isSmall && player && (
                 <div className="absolute inset-0 pointer-events-none flex items-center justify-center z-0 scale-125">
                     <div className="absolute w-[120%] h-[120%] bg-cover bg-center blur-[25px] opacity-20 overflow-hidden rounded-full"
-                        style={{ backgroundImage: `url(${player.image})` }}></div>
+                        style={{ backgroundImage: `url(${settings?.preferredImageSource === 2 ? (player.image2 || player.image) : (player.image || player.image2)})` }}></div>
                 </div>
             )}
 
@@ -56,21 +56,36 @@ const PlayerCard = ({ player, onClick, isActive, isSelected, role, size = "small
             >
                 {player ? (
                     <>
-                        <img src={player.image} alt="" className="w-full h-full object-cover object-top relative z-0" />
+                        {(() => {
+                            const img = settings?.preferredImageSource === 2 ? (player.image2 || player.image) : (player.image || player.image2);
+                            return img ? (
+                                <img 
+                                    src={img} 
+                                    alt="" 
+                                    className="w-full h-full object-cover object-top relative z-0" 
+                                />
+                            ) : (
+                                <div className="w-full h-full flex items-center justify-center opacity-20 text-[10px]">👤</div>
+                            );
+                        })()}
 
                         {/* Rating HUD */}
-                        <div className="absolute bottom-0 right-0 z-20 bg-black/95 px-1 py-0 rounded-tl-sm border-l border-t border-white/5">
-                            <span className={`${isSmall ? 'text-[7px]' : 'text-[12px]'} font-black text-[#00FF88] italic leading-none`}>
-                                {player.rating}
-                            </span>
-                        </div>
+                        {settings?.showRatings !== false && (
+                            <div className="absolute bottom-0 right-0 z-20 bg-black/95 px-1 py-0 rounded-tl-sm border-l border-t border-white/5">
+                                <span className={`${isSmall ? 'text-[7px]' : 'text-[12px]'} font-black text-[#00FF88] italic leading-none`}>
+                                    {player.rating}
+                                </span>
+                            </div>
+                        )}
 
                         {/* Position HUD */}
-                        <div className="absolute top-0 left-0 z-20 bg-black/95 px-1 py-0 rounded-br-sm border-r border-b border-white/5">
-                            <span className={`${isSmall ? 'text-[6px]' : 'text-[10px]'} font-black text-ef-accent italic uppercase tracking-tighter`}>
-                                {role || player.position}
-                            </span>
-                        </div>
+                        {settings?.showPosition !== false && (
+                            <div className="absolute top-0 left-0 z-20 bg-black/95 px-1 py-0 rounded-br-sm border-r border-b border-white/5">
+                                <span className={`${isSmall ? 'text-[6px]' : 'text-[10px]'} font-black text-ef-accent italic uppercase tracking-tighter`}>
+                                    {role || player.position}
+                                </span>
+                            </div>
+                        )}
                     </>
                 ) : (
                     <div className="w-full h-full flex flex-col items-center justify-center bg-black/40 border border-dashed border-white/5 opacity-40">
@@ -101,7 +116,7 @@ const PlayerCard = ({ player, onClick, isActive, isSelected, role, size = "small
 
 
 
-const SquadEditor = ({ squad, players, onSave, onUpdatePlayer, onAddPlayers, onClose }) => {
+const SquadEditor = ({ squad, players, onSave, onUpdatePlayer, onAddPlayers, onClose, settings }) => {
     const [name, setName] = useState(squad?.name || 'New Squad');
     const [formation, setFormation] = useState(squad?.formation || '4-3-3');
     const [startingXI, setStartingXI] = useState(squad?.startingXI || Array(11).fill({ playerId: null }));
@@ -704,6 +719,7 @@ const SquadEditor = ({ squad, players, onSave, onUpdatePlayer, onAddPlayers, onC
                                                 draggable={isEditMode && !!player}
                                                 onDragStart={(e) => onDragStart(e, 'bench', idx)}
                                                 showPlaystyles={showPlaystyles}
+                                                settings={settings}
                                             />
                                         </div>
                                     );
@@ -817,6 +833,7 @@ const SquadEditor = ({ squad, players, onSave, onUpdatePlayer, onAddPlayers, onC
                                             onDragStart={(e) => onDragStart(e, 'pitch', idx)}
                                             onDragEnd={(e) => handlePitchDragEnd(e, idx)}
                                             showPlaystyles={showPlaystyles}
+                                            settings={settings}
                                         />
 
 
@@ -1101,6 +1118,7 @@ const SquadEditor = ({ squad, players, onSave, onUpdatePlayer, onAddPlayers, onC
                                                 draggable={isEditMode && !isAdded}
                                                 onDragStart={(e) => onDragStart(e, 'library', player._id)}
                                                 showPlaystyles={showPlaystyles}
+                                                settings={settings}
                                             />
                                         );
                                     })}

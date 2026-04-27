@@ -2,12 +2,14 @@ import { useState } from 'react';
 import { lookupPlaystyles, updatePlayerPlaystyle } from '../services/playerService';
 import { STAT_OPTIONS } from '../constants';
 
-const SettingsModal = ({ onClose, settings, setSettings, user, players, setPlayers }) => {
+const SettingsModal = ({ onClose, settings, setSettings, user, players, setPlayers, generateSource2Url }) => {
     const sizeMap = ['mini', 'xs', 'sm', 'md', 'lg'];
     const [activeTab, setActiveTab] = useState('card'); // 'general', 'card', 'branding', 'maintenance'
     const [isDragging, setIsDragging] = useState(false);
     const [isFixing, setIsFixing] = useState(false);
     const [fixProgress, setFixProgress] = useState(0);
+    const [isGenerating, setIsGenerating] = useState(false);
+    const [genProgress, setGenProgress] = useState(0);
 
     const handleDragOver = (e) => {
         e.preventDefault();
@@ -101,6 +103,73 @@ const SettingsModal = ({ onClose, settings, setSettings, user, players, setPlaye
         }
     };
 
+    const handleGenerateSource2 = async () => {
+        if (!user || isGenerating) return;
+
+        // Find players missing Source 2
+        const missingPlayers = players.filter(p => !p.image2 || p.image2 === '');
+        
+        // Ask if they want to update ONLY missing or ALL players
+        let playersToProcess = [];
+        let isForce = false;
+
+        if (missingPlayers.length === 0) {
+            if (confirm('All players already have Source 2 images. Do you want to FORCE RE-GENERATE all links for all players?')) {
+                playersToProcess = players;
+                isForce = true;
+            } else {
+                return;
+            }
+        } else {
+            const mode = confirm(`Found ${missingPlayers.length} players missing Source 2. Click OK to update missing only, or CANCEL to update ALL players (Force Re-gen).`);
+            playersToProcess = mode ? missingPlayers : players;
+            isForce = !mode;
+        }
+
+        if (!confirm(`This will generate Source 2 URLs for ${playersToProcess.length} players. Continue?`)) return;
+
+        setIsGenerating(true);
+        setGenProgress(0);
+
+        try {
+            const updatedPlayers = [...players];
+            const updatesList = [];
+
+            for (const p of playersToProcess) {
+                // Check all possible ID fields
+                const pid = p.playerId || p.pesdb_id || p.id || p.ID;
+                const url = generateSource2Url(p.nationality, pid);
+                
+                if (url) {
+                    updatesList.push({ id: p._id, updates: { image2: url } });
+                    const idx = updatedPlayers.findIndex(up => up._id === p._id);
+                    if (idx !== -1) {
+                        updatedPlayers[idx] = { ...updatedPlayers[idx], image2: url };
+                    }
+                }
+            }
+
+            // Perform batch updates in chunks of 500 (Firestore limit is 500)
+            const CHUNK_SIZE = 400;
+            const { batchUpdatePlayers } = await import('../services/playerService');
+            
+            for (let i = 0; i < updatesList.length; i += CHUNK_SIZE) {
+                const chunk = updatesList.slice(i, i + CHUNK_SIZE);
+                await batchUpdatePlayers(user.uid, chunk);
+                setGenProgress(Math.round(((i + chunk.length) / updatesList.length) * 100));
+            }
+
+            setPlayers(updatedPlayers);
+            alert(`Successfully ${isForce ? 're-generated' : 'added'} Source 2 for ${updatesList.length} players!`);
+        } catch (err) {
+            console.error('Generation error:', err);
+            alert('An error occurred during generation.');
+        } finally {
+            setIsGenerating(false);
+            setGenProgress(0);
+        }
+    };
+
     const tabs = [
         { id: 'card', label: 'Front Card Aesthetics', icon: '🖼️' },
         { id: 'general', label: 'General / Perf', icon: '⚙️' },
@@ -162,7 +231,8 @@ const SettingsModal = ({ onClose, settings, setSettings, user, players, setPlaye
                                         { id: 'showClubBadge', label: 'Club Badge' },
                                         { id: 'showNationBadge', label: 'Country Badge' },
                                         { id: 'showPlaystyle', label: 'Player Playstyle' },
-                                        { id: 'showRatings', label: 'Player Rating' }
+                                        { id: 'showRatings', label: 'Player Rating' },
+                                        { id: 'showPosition', label: 'Player Position' }
                                     ].map(item => (
                                         <button
                                             key={item.id}
@@ -176,6 +246,56 @@ const SettingsModal = ({ onClose, settings, setSettings, user, players, setPlaye
                                         </button>
                                     ))}
                                 </div>
+                            </section>
+
+                            <section className="space-y-4 pt-6 border-t border-white/5">
+                                <p className="text-[8px] font-bold text-ef-blue uppercase tracking-[0.3em] mb-4">Player Details Card Aesthetics</p>
+                                <div className="space-y-2">
+                                    {[
+                                        { id: 'showDetailsPosition', label: 'Show Position' },
+                                        { id: 'showDetailsRatings', label: 'Show Ratings' },
+                                        { id: 'showDetailsClubBadge', label: 'Show Club Badge' },
+                                        { id: 'showDetailsNationBadge', label: 'Show Country Badge' }
+                                    ].map(item => (
+                                        <button
+                                            key={item.id}
+                                            onClick={() => toggleSetting(item.id)}
+                                            className="w-full flex items-center justify-between p-4 bg-white/[0.03] border border-white/5 rounded-2xl hover:bg-white/[0.05] transition-all group"
+                                        >
+                                            <span className="text-[10px] font-black text-white/80 uppercase tracking-widest">{item.label}</span>
+                                            <div className={`w-9 h-5 rounded-full relative transition-all duration-300 ${settings[item.id] !== false ? 'bg-ef-blue/40' : 'bg-white/10'}`}>
+                                                <div className={`absolute top-1 w-3 h-3 rounded-full bg-white transition-all duration-300 shadow-sm ${settings[item.id] !== false ? 'translate-x-5' : 'translate-x-1'}`}></div>
+                                            </div>
+                                        </button>
+                                    ))}
+                                </div>
+                            </section>
+
+                            <section className="space-y-4 pt-6 border-t border-white/5">
+                                <h4 className="text-[9px] font-black text-ef-accent uppercase tracking-widest pl-1">Image Source Preference</h4>
+                                <div className="bg-[#111111] p-4 rounded-2xl border border-white/10 flex items-center gap-2">
+                                    <button
+                                        onClick={() => setSettings(prev => ({ ...prev, preferredImageSource: 1 }))}
+                                        className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${settings.preferredImageSource === 1 ? 'bg-ef-accent text-ef-dark' : 'bg-white/5 text-white/40 hover:bg-white/10'}`}
+                                    >
+                                        Source 1
+                                    </button>
+                                    <button
+                                        onClick={() => setSettings(prev => ({ ...prev, preferredImageSource: 2 }))}
+                                        className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${settings.preferredImageSource === 2 ? 'bg-ef-blue text-white' : 'bg-white/5 text-white/40 hover:bg-white/10'}`}
+                                    >
+                                        Source 2
+                                    </button>
+                                    <button
+                                        onClick={() => setSettings(prev => ({ ...prev, preferredImageSource: 3 }))}
+                                        className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${settings.preferredImageSource === 3 ? 'bg-orange-500 text-white' : 'bg-white/5 text-white/40 hover:bg-white/10'}`}
+                                    >
+                                        Source 3 (Master)
+                                    </button>
+                                </div>
+                                <p className="text-[8px] font-bold text-white/20 uppercase tracking-widest leading-relaxed px-2">
+                                    * Switches between primary (PESDB), secondary, and master eFHUB image urls globally.
+                                </p>
                             </section>
 
                             <section className="space-y-4 pt-6 border-t border-white/5">
@@ -351,6 +471,36 @@ const SettingsModal = ({ onClose, settings, setSettings, user, players, setPlaye
                                             <span className="text-[8px] font-black text-white/20 uppercase tracking-widest">Pending:</span>
                                             <span className="text-[8px] font-black text-white uppercase tracking-widest">
                                                 {players.filter(p => !p.playstyle || p.playstyle === 'None').length} PLAYERS
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </section>
+
+                            <section className="space-y-4">
+                                <h4 className="text-[9px] font-black text-white/40 uppercase tracking-widest pl-1">Media Generation</h4>
+                                <div className="bg-[#111111] p-8 rounded-[2rem] border border-white/10 space-y-8 flex flex-col items-center text-center">
+                                    <div className="space-y-2">
+                                        <h5 className="text-[11px] font-black text-white uppercase tracking-widest">Source 2 Auto-Generator</h5>
+                                        <p className="text-[8px] font-bold text-white/30 uppercase leading-relaxed max-w-[280px]">
+                                            Automatically adds Source 2 images for players using the master pattern. 
+                                            <span className="text-ef-accent block mt-1">Handles .webp and .png fallbacks automatically.</span>
+                                        </p>
+                                    </div>
+
+                                    <div className="w-full max-w-[200px] flex flex-col gap-4">
+                                        <button
+                                            onClick={handleGenerateSource2}
+                                            disabled={isGenerating}
+                                            className={`w-full py-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] transition-all shadow-xl ${isGenerating ? 'bg-white/10 text-white/20' : 'bg-ef-accent/20 text-ef-accent border border-ef-accent/20 hover:bg-ef-accent/30'}`}
+                                        >
+                                            {isGenerating ? `GENERATING... ${genProgress}%` : 'GENERATE SOURCE 2'}
+                                        </button>
+
+                                        <div className="flex items-center justify-between px-2">
+                                            <span className="text-[8px] font-black text-white/20 uppercase tracking-widest">Missing:</span>
+                                            <span className="text-[8px] font-black text-white uppercase tracking-widest">
+                                                {players.filter(p => !p.image2 || p.image2 === '').length} PLAYERS
                                             </span>
                                         </div>
                                     </div>

@@ -22,7 +22,7 @@ const getDisplayPosition = (player, activePositions = [], includeSecondary = fal
     return player.position;
 };
 
-const LeaderboardCard = ({ title, players, valueKey, colorClass, suffix = '', isRatio = false, onExpand, onPlayerClick, activePositions, includeSecondary }) => (
+const LeaderboardCard = ({ title, players, valueKey, colorClass, suffix = '', isRatio = false, onExpand, onPlayerClick, activePositions, includeSecondary, settings }) => (
     <div className="bg-ef-card p-6 rounded-2xl border border-white/10 shadow-xl flex flex-col h-full animate-slide-up relative group hover:border-white/20 transition-colors">
         <div className="flex justify-between items-start mb-6">
             <h3 className={`text-lg font-black uppercase tracking-widest ${colorClass}`}>{title}</h3>
@@ -51,11 +51,18 @@ const LeaderboardCard = ({ title, players, valueKey, colorClass, suffix = '', is
                         {/* Hover Image Popup */}
                         <div className="absolute left-8 bottom-full mb-1 opacity-0 group-hover/item:opacity-100 transition-all duration-300 pointer-events-none z-50 translate-y-2 group-hover/item:translate-y-0">
                             <div className="w-12 h-16 rounded-lg bg-black/90 border-2 border-ef-accent shadow-[0_0_15px_rgba(0,0,0,0.5)] overflow-hidden">
-                                {player.image ? (
-                                    <img src={player.image} alt="" className="w-full h-full object-cover" />
-                                ) : (
-                                    <div className="w-full h-full flex items-center justify-center text-[10px] opacity-50">👤</div>
-                                )}
+                                {(() => {
+                                    const img = settings?.preferredImageSource === 2 ? (player.image2 || player.image) : (player.image || player.image2);
+                                    return img ? (
+                                        <img 
+                                            src={img} 
+                                            alt="" 
+                                            className="w-full h-full object-cover" 
+                                        />
+                                    ) : (
+                                        <div className="w-full h-full flex items-center justify-center text-[10px] opacity-50">👤</div>
+                                    );
+                                })()}
                             </div>
                             <div className="w-2 h-2 bg-ef-accent rotate-45 mx-auto -mt-1 shadow-sm"></div>
                         </div>
@@ -130,18 +137,25 @@ const getCardStyles = (type) => {
     }
 };
 
-const MiniPlayerCard = ({ player, activePositions, includeSecondary }) => {
+const MiniPlayerCard = ({ player, activePositions, includeSecondary, settings }) => {
     const styles = getCardStyles(player.cardType);
     const displayPos = getDisplayPosition(player, activePositions, includeSecondary);
     return (
         <div className={`relative w-12 h-16 rounded-lg overflow-hidden border-2 border-white/10 ${styles.bg} ${styles.glow} shrink-0`}>
-            {player.image ? (
-                <img src={player.image} alt="" className="w-full h-full object-cover relative z-0" />
-            ) : (
-                <div className="w-full h-full flex items-center justify-center bg-white/5 opacity-20">
-                    <span className="text-[10px]">👤</span>
-                </div>
-            )}
+            {(() => {
+                const img = settings?.preferredImageSource === 2 ? (player.image2 || player.image) : (player.image || player.image2);
+                return img ? (
+                    <img 
+                        src={img} 
+                        alt="" 
+                        className="w-full h-full object-cover relative z-0" 
+                    />
+                ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-white/5 opacity-20">
+                        <span className="text-[10px]">👤</span>
+                    </div>
+                );
+            })()}
             {/* Smooth Fading Blur & Info */}
             <div className="absolute inset-x-0 bottom-0 py-1 px-1 bg-gradient-to-t from-black/90 to-transparent pt-0 sm:pt-4 flex flex-col items-center">
                 <span className="text-[8px] font-black text-ef-accent leading-none">{player.rating}</span>
@@ -156,7 +170,7 @@ const MiniPlayerCard = ({ player, activePositions, includeSecondary }) => {
     );
 };
 
-const FullListModal = ({ title, players, valueKey, colorClass, suffix, isRatio, onClose, onPlayerClick, activePositions, includeSecondary }) => {
+const FullListModal = ({ title, players, valueKey, colorClass, suffix, isRatio, onClose, onPlayerClick, activePositions, includeSecondary, settings }) => {
     const [search, setSearch] = useState('');
 
     const filteredPlayers = players
@@ -213,7 +227,7 @@ const FullListModal = ({ title, players, valueKey, colorClass, suffix, isRatio, 
                                     <span className="font-mono text-base opacity-20 w-8 shrink-0">{player.rank}</span>
 
                                     {/* Mini Card Visual */}
-                                    <MiniPlayerCard player={player} activePositions={activePositions} includeSecondary={includeSecondary} />
+                                    <MiniPlayerCard player={player} activePositions={activePositions} includeSecondary={includeSecondary} settings={settings} />
 
                                     <div className="flex flex-col flex-1 min-w-0 ml-1">
                                         <span className="font-black text-white truncate text-sm sm:text-base leading-tight group-hover/item:text-ef-accent transition-colors">{player.name}</span>
@@ -250,7 +264,7 @@ const FullListModal = ({ title, players, valueKey, colorClass, suffix, isRatio, 
     );
 };
 
-const Leaderboard = ({ players, onPlayerClick, activePositions, includeSecondary }) => {
+const Leaderboard = ({ players, onPlayerClick, activePositions, includeSecondary, settings }) => {
     const [expandedCategory, setExpandedCategory] = useState(null);
 
     // Sorting Utilities
@@ -281,6 +295,7 @@ const Leaderboard = ({ players, onPlayerClick, activePositions, includeSecondary
                             onPlayerClick={onPlayerClick}
                             activePositions={activePositions}
                             includeSecondary={includeSecondary}
+                            settings={settings}
                         />
                     ))}
                 </div>
@@ -296,6 +311,7 @@ const Leaderboard = ({ players, onPlayerClick, activePositions, includeSecondary
                             onPlayerClick={onPlayerClick}
                             activePositions={activePositions}
                             includeSecondary={includeSecondary}
+                            settings={settings}
                         />
                     ))}
                 </div>
@@ -308,6 +324,7 @@ const Leaderboard = ({ players, onPlayerClick, activePositions, includeSecondary
                     onPlayerClick={onPlayerClick}
                     activePositions={activePositions}
                     includeSecondary={includeSecondary}
+                    settings={settings}
                 />
             )}
         </div>

@@ -41,7 +41,8 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
         'Form': player['Form'] ?? player.conditioning ?? player['Player Form'] ?? player.Condition ?? '',
         'Injury Resistance': player['Injury Resistance'] ?? player.injuryResistance ?? player.InjuryRes ?? '',
         'Featured Players': player['Featured Players'] ?? player.featured ?? player.Featured ?? '',
-        'Date Added': player['Date Added'] ?? player.DateAdded ?? null
+        'Date Added': player['Date Added'] ?? player.DateAdded ?? null,
+        image2: player.image2 || ''
     });
     const [tagInput, setTagInput] = useState('');
     const [isLeaguePopupOpen, setIsLeaguePopupOpen] = useState(false);
@@ -171,6 +172,17 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
         const paddedAddSkills = (player.additionalSkills || player.AdditionalSkills || []).filter(Boolean);
         setAdditionalSkills([...paddedAddSkills, ...Array(5 - paddedAddSkills.length).fill('')]);
     }, [player]);
+
+    const getPlayerImage = (p) => {
+        if (settings?.preferredImageSource === 3) {
+            const pid = p.playerId || p.pesdb_id || p.id || p.ID;
+            return pid ? `https://efimg.com/efootballhub22/images/player_cards/${pid}_l.png` : (p.image || p.image2);
+        }
+        if (settings?.preferredImageSource === 2) {
+            return p.image2 || p.image;
+        }
+        return p.image || p.image2;
+    };
 
     const handleAddTag = (e) => {
         if (e.key === 'Enter' || e.type === 'click') {
@@ -352,6 +364,31 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
         }
     };
 
+    const handleImage2Change = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const img = new Image();
+            img.src = URL.createObjectURL(file);
+            img.onload = () => {
+                const MAX_WIDTH = 400;
+                let width = img.width;
+                let height = img.height;
+                if (width > MAX_WIDTH) {
+                    height *= MAX_WIDTH / width;
+                    width = MAX_WIDTH;
+                }
+                const canvas = document.createElement('canvas');
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                const optimizedImage = canvas.toDataURL('image/jpeg', 0.7);
+                setFormData(prev => ({ ...prev, image2: optimizedImage }));
+                URL.revokeObjectURL(img.src);
+            };
+        }
+    };
+
     const handlePaste = (e) => {
         const items = e.clipboardData?.items;
         if (items) {
@@ -511,12 +548,12 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
                 id: p._id || p.id || p.name,
                 name: p.name,
                 value: getValue(p),
-                image: p.image,
+                image: getPlayerImage(p),
                 rank: sorted.findIndex(s => (s._id && s._id === p._id) || (s.id && s.id === p.id) || s.name === p.name) + 1,
                 isCurrent: (p._id && p._id === player._id) || (p.id && p.id === player.id) || p.name === player.name
             }))
         };
-    }, [players, player, comparisonStat, comparisonContext]);
+    }, [players, player, comparisonStat, comparisonContext, settings?.preferredImageSource]);
 
     const compOptions = [
         { id: 'goals', label: 'Goals', icon: '⚽' },
@@ -607,9 +644,9 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
 
                     {/* Dynamic Background Glow & Decorative Elements */}
                     <div className="absolute inset-0 pointer-events-none">
-                        {formData.image && (
+                        {getPlayerImage(formData) && (
                             <div className="absolute inset-0 opacity-20 transition-opacity duration-1000">
-                                <img src={formData.image} alt="" className="w-full h-full object-cover object-top blur-[40px] scale-150" />
+                                <img src={getPlayerImage(formData)} alt="" className="w-full h-full object-cover object-top blur-[40px] scale-150" />
                                 <div className={`absolute inset-0 ${getCardStyles(formData.cardType).glow}`}></div>
                             </div>
                         )}
@@ -625,8 +662,8 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
                                 {/* Card Shine Effect */}
                                 <div className="absolute inset-0 z-10 pointer-events-none bg-gradient-to-tr from-transparent via-white/[0.05] to-transparent -translate-x-full animate-shine"></div>
 
-                                {formData.image ? (
-                                    <img src={formData.image} alt={formData.name} className="w-full h-full object-cover object-top" />
+                                {getPlayerImage(formData) ? (
+                                    <img src={getPlayerImage(formData)} alt={formData.name} className="w-full h-full object-cover object-top" />
                                 ) : (
                                     <div className="w-full h-full flex flex-col items-center justify-center bg-white/5 border-2 border-dashed border-white/10">
                                         <span className="text-4xl mb-4">📸</span>
@@ -635,21 +672,31 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
                                 )}
 
                                 {/* Card HUD: Rating & Position & Badges */}
-                                <div className="absolute top-0 left-0 z-20 flex flex-col items-center bg-black/80 backdrop-blur-xl w-[44px] pt-3 pb-2 rounded-br-2xl border-r border-b border-white/10 shadow-xl gap-2">
-                                    <div className="flex flex-col items-center justify-center">
-                                        <span className="text-xl md:text-2xl font-black text-ef-accent leading-none tracking-tighter mb-0.5">{formData.rating}</span>
-                                        <span className="text-[8px] md:text-[10px] font-black text-ef-accent/80 italic uppercase leading-none">{formData.position}</span>
-                                    </div>
+                                {(settings?.showDetailsRatings !== false || settings?.showDetailsPosition !== false || settings?.showDetailsClubBadge !== false || settings?.showDetailsNationBadge !== false) && (
+                                    <div className="absolute top-0 left-0 z-20 flex flex-col items-center bg-black/80 backdrop-blur-xl w-[44px] pt-3 pb-2 rounded-br-2xl border-r border-b border-white/10 shadow-xl gap-2 transition-all duration-500">
+                                        {(settings?.showDetailsRatings !== false || settings?.showDetailsPosition !== false) && (
+                                            <div className="flex flex-col items-center justify-center">
+                                                {settings?.showDetailsRatings !== false && (
+                                                    <span className="text-xl md:text-2xl font-black text-ef-accent leading-none tracking-tighter mb-0.5">{formData.rating}</span>
+                                                )}
+                                                {settings?.showDetailsPosition !== false && (
+                                                    <span className="text-[8px] md:text-[10px] font-black text-ef-accent/80 italic uppercase leading-none">{formData.position}</span>
+                                                )}
+                                            </div>
+                                        )}
 
-                                    <div className="flex flex-col items-center gap-2 border-t border-white/10 pt-2 w-full px-2">
-                                        {(formData.logos?.club || player.club_badge_url) && (
-                                            <img src={formData.logos?.club || player.club_badge_url} alt="" className="w-7 h-7 object-contain drop-shadow-lg" />
-                                        )}
-                                        {(player.logos?.country || player.nationality_flag_url) && (
-                                            <img src={player.logos?.country || player.nationality_flag_url} alt="" className="w-7 h-5 object-cover rounded shadow-lg" />
+                                        {(settings?.showDetailsClubBadge !== false || settings?.showDetailsNationBadge !== false) && (
+                                            <div className="flex flex-col items-center gap-2 border-t border-white/10 pt-2 w-full px-2">
+                                                {settings?.showDetailsClubBadge !== false && (formData.logos?.club || player.club_badge_url) && (
+                                                    <img src={formData.logos?.club || player.club_badge_url} alt="" className="w-7 h-7 object-contain drop-shadow-lg" />
+                                                )}
+                                                {settings?.showDetailsNationBadge !== false && (player.logos?.country || player.nationality_flag_url) && (
+                                                    <img src={player.logos?.country || player.nationality_flag_url} alt="" className="w-7 h-5 object-cover rounded shadow-lg" />
+                                                )}
+                                            </div>
                                         )}
                                     </div>
-                                </div>
+                                )}
 
                                 {/* Edit Overlay */}
                                 {isEditing && (
@@ -665,24 +712,51 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
 
                             {/* Quick Action Overlay for URL/Paste (Edit Mode) */}
                             {isEditing && (
-                                <div className="w-full flex flex-col gap-2 mt-2">
-                                    <div className="relative">
-                                        <input
-                                            type="text"
-                                            placeholder="Paste image URL here..."
-                                            value={formData.image && !formData.image.startsWith('data:') ? formData.image : ''}
-                                            onChange={(e) => setFormData(prev => ({ ...prev, image: e.target.value }))}
-                                            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-[10px] text-white focus:border-ef-accent/40 focus:bg-white/10 transition-all font-bold placeholder:opacity-20"
-                                        />
-                                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] opacity-20">🔗</span>
+                                <div className="w-full flex flex-col gap-4 mt-2">
+                                    <div className="flex flex-col gap-2">
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-ef-accent/60 ml-1">Source 1 (Current)</label>
+                                        <div className="relative">
+                                            <input
+                                                type="text"
+                                                placeholder="Paste source 1 URL..."
+                                                value={formData.image && !formData.image.startsWith('data:') ? formData.image : ''}
+                                                onChange={(e) => setFormData(prev => ({ ...prev, image: e.target.value }))}
+                                                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-[10px] text-white focus:border-ef-accent/40 transition-all font-bold"
+                                            />
+                                        </div>
                                     </div>
+
+                                    <div className="flex flex-col gap-2 p-3 bg-ef-blue/5 border border-ef-blue/20 rounded-2xl">
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-ef-blue ml-1">Source 2 (New)</label>
+                                        <div className="flex gap-2">
+                                            <div 
+                                                onClick={() => document.getElementById('details-image2-upload').click()}
+                                                className="w-12 h-12 bg-black/40 border border-dashed border-white/10 rounded-xl flex items-center justify-center cursor-pointer hover:border-ef-blue/40 transition-all shrink-0 overflow-hidden"
+                                            >
+                                                {formData.image2 ? (
+                                                    <img src={formData.image2} className="w-full h-full object-cover" alt="" />
+                                                ) : (
+                                                    <span className="text-xl opacity-20">📸</span>
+                                                )}
+                                            </div>
+                                            <input id="details-image2-upload" type="file" accept="image/*" onChange={handleImage2Change} className="hidden" />
+                                            <input
+                                                type="text"
+                                                placeholder="Paste source 2 URL..."
+                                                value={formData.image2 && !formData.image2.startsWith('data:') ? formData.image2 : ''}
+                                                onChange={(e) => setFormData(prev => ({ ...prev, image2: e.target.value }))}
+                                                className="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-[10px] text-white focus:border-ef-blue/40 transition-all font-bold"
+                                            />
+                                        </div>
+                                    </div>
+
                                     <div
                                         onPaste={handlePaste}
                                         className="w-full py-3 bg-white/5 border border-white/10 border-dashed rounded-xl flex items-center justify-center gap-2 hover:bg-white/10 transition-all cursor-pointer"
                                         tabIndex="0"
                                     >
                                         <span className="text-sm">📋</span>
-                                        <span className="text-[9px] font-black uppercase tracking-widest opacity-40">Paste Image Directly</span>
+                                        <span className="text-[9px] font-black uppercase tracking-widest opacity-40">Paste to Source 1</span>
                                     </div>
                                 </div>
                             )}

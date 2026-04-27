@@ -27,7 +27,7 @@ const FORMATIONS = {
     ]
 };
 
-const SquadBuilder = ({ players, squads, activeSquadId, onSetActive, onDuplicate, onSave, onDelete, onDeleteBulk, onUpdatePlayer, onAddPlayers, user, isSidebarOpen }) => {
+const SquadBuilder = ({ players, squads, activeSquadId, onSetActive, onDuplicate, onSave, onDelete, onDeleteBulk, onUpdatePlayer, onAddPlayers, user, isSidebarOpen, settings }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const [sortBy, setSortBy] = useState('updatedAt');
     const [isArchiveExpanded, setIsArchiveExpanded] = useState(false);
@@ -78,6 +78,7 @@ const SquadBuilder = ({ players, squads, activeSquadId, onSetActive, onDuplicate
                     onUpdatePlayer={onUpdatePlayer}
                     onAddPlayers={onAddPlayers}
                     onClose={() => setSelectedSquad(null)}
+                    settings={settings}
                 />
             </div>
         );
@@ -205,7 +206,18 @@ const SquadBuilder = ({ players, squads, activeSquadId, onSetActive, onDuplicate
                                         return (
                                             <div key={idx} className="absolute -translate-x-1/2 -translate-y-1/2" style={{ left: `${pos.x}%`, top: `${pos.y}%` }}>
                                                 <div className={`w-9 h-9 sm:w-6 sm:h-6 rounded-md border overflow-hidden shadow-sm bg-[#0a0a0c] transition-all relative group/mini ${isActive ? 'border-ef-accent/30' : 'border-white/10'}`}>
-                                                    {player?.image ? <img src={player.image} alt="" className="w-full h-full object-cover object-top" /> : <div className="w-full h-full flex items-center justify-center opacity-10 text-[6px]">👤</div>}
+                                                    {(() => {
+                                                        const img = settings?.preferredImageSource === 2 ? (player?.image2 || player?.image) : (player?.image || player?.image2);
+                                                        return img ? (
+                                                            <img 
+                                                                src={img} 
+                                                                alt="" 
+                                                                className="w-full h-full object-cover object-top" 
+                                                            />
+                                                        ) : (
+                                                            <div className="w-full h-full flex items-center justify-center opacity-10 text-[6px]">👤</div>
+                                                        );
+                                                    })()}
                                                     {/* Mini Role Tag */}
                                                     <div className="absolute bottom-0 inset-x-0 bg-black/80 flex items-center justify-center py-0.5">
                                                         <span className="text-[5px] font-black text-ef-accent leading-none scale-[0.8] tracking-tighter uppercase italic">{pos.role || pos.pos}</span>

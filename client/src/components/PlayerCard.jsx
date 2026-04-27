@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { memo, useMemo } from 'react';
 import { STAT_OPTIONS } from '../constants';
 
 const PlayerCard = memo(({ player, players = [], isSelectionMode, isSelected, onToggleSelect, settings, role, secondaryMatch }) => {
@@ -13,6 +13,17 @@ const PlayerCard = memo(({ player, players = [], isSelectionMode, isSelected, on
     };
 
     const isEco = settings?.highPerf;
+    
+    const playerImage = useMemo(() => {
+        if (settings?.preferredImageSource === 3) {
+            const pid = player.playerId || player.pesdb_id || player.id || player.ID;
+            return pid ? `https://efimg.com/efootballhub22/images/player_cards/${pid}_l.png` : (player.image || player.image2);
+        }
+        if (settings?.preferredImageSource === 2) {
+            return player.image2 || player.image;
+        }
+        return player.image || player.image2;
+    }, [player.image, player.image2, player.playerId, player.pesdb_id, player.id, player.ID, settings?.preferredImageSource]);
 
     if (settings?.cardSize === 'mini') {
         return (
@@ -23,8 +34,8 @@ const PlayerCard = memo(({ player, players = [], isSelectionMode, isSelected, on
                     bg-black/80 cursor-pointer
                 `}
             >
-                {player.image ? (
-                    <img src={player.image} alt={player.name} className="w-full h-full object-cover object-top relative z-0" loading="lazy" />
+                {playerImage ? (
+                    <img src={playerImage} alt={player.name} className="w-full h-full object-cover object-top relative z-0" loading="lazy" />
                 ) : (
                     <div className="w-full h-full flex items-center justify-center opacity-10 text-2xl">👤</div>
                 )}
@@ -39,11 +50,13 @@ const PlayerCard = memo(({ player, players = [], isSelectionMode, isSelected, on
                 )}
 
                 {/* Position HUD */}
-                <div className="absolute top-0 left-0 z-20 bg-black/95 px-1.5 py-0.5 rounded-br-[10px] border-r border-b border-white/10">
-                    <span className={`text-[10px] font-black text-ef-accent italic uppercase tracking-tighter`}>
-                        {role || player.position}
-                    </span>
-                </div>
+                {settings?.showPosition !== false && (
+                    <div className="absolute top-0 left-0 z-20 bg-black/95 px-1.5 py-0.5 rounded-br-[10px] border-r border-b border-white/10">
+                        <span className={`text-[10px] font-black text-ef-accent italic uppercase tracking-tighter`}>
+                            {role || player.position}
+                        </span>
+                    </div>
+                )}
 
                 {/* Selection Overlay */}
                 {isSelectionMode && (
@@ -106,9 +119,9 @@ const PlayerCard = memo(({ player, players = [], isSelectionMode, isSelected, on
 
             {/* Main Image Container */}
             <div className={`absolute inset-0 transition-all duration-300`}>
-                {player.image ? (
+                {playerImage ? (
                     <img
-                        src={player.image}
+                        src={playerImage}
                         alt={player.name}
                         loading="lazy"
                         className={`w-full h-full ${settings.cardSize === 'xs' ? 'object-top sm:object-cover' : 'object-cover'} transition-transform duration-700 group-hover:scale-110`}
@@ -125,16 +138,21 @@ const PlayerCard = memo(({ player, players = [], isSelectionMode, isSelected, on
             </div>
 
             {/* Top Left: HUD Column (Rating, Position & Badges) */}
-            <div className="absolute top-0 left-0 z-20 flex flex-col items-start bg-black rounded-br-[13px] border-r border-b border-white/10 backdrop-blur-md shadow-lg w-[44px] overflow-hidden">
-                {/* Console Box for Rating/Position */}
-                {settings?.showRatings && (
+            {(settings?.showRatings !== false || settings?.showPosition !== false || settings?.showClubBadge !== false || settings?.showNationBadge !== false) && (
+                <div className="absolute top-0 left-0 z-20 flex flex-col items-start bg-black rounded-br-[13px] border-r border-b border-white/10 backdrop-blur-md shadow-lg w-[44px] overflow-hidden">
+                    {/* Console Box for Rating/Position */}
+                    {(settings?.showRatings !== false || settings?.showPosition !== false) && (
                     <div className="w-full py-1 flex flex-col items-center justify-center border-b border-white/5">
-                        <span className="text-sm sm:text-lg font-black text-ef-accent leading-none tracking-tighter mb-0.5">
-                            {player.rating || 0}
-                        </span>
-                        <span className="text-[10px] sm:text-[12px] font-black text-ef-accent italic uppercase tracking-tighter leading-none">
-                            {role || player.position}
-                        </span>
+                        {settings?.showRatings !== false && (
+                            <span className="text-sm sm:text-lg font-black text-ef-accent leading-none tracking-tighter mb-0.5">
+                                {player.rating || 0}
+                            </span>
+                        )}
+                        {settings?.showPosition !== false && (
+                            <span className="text-[10px] sm:text-[12px] font-black text-ef-accent italic uppercase tracking-tighter leading-none">
+                                {role || player.position}
+                            </span>
+                        )}
                     </div>
                 )}
 
@@ -152,6 +170,7 @@ const PlayerCard = memo(({ player, players = [], isSelectionMode, isSelected, on
                     )}
                 </div>
             </div>
+        )}
 
             {/* Bottom Content Area */}
             <div className={`absolute inset-x-0 bottom-0 p-3 sm:p-3 ${settings.cardSize === 'xs' ? 'pt-1' : 'pt-6 sm:pt-8'}`}>
