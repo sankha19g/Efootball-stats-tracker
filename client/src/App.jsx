@@ -125,7 +125,9 @@ function App() {
       showDetailsPosition: true,
       showDetailsRatings: true,
       showDetailsClubBadge: true,
-      showDetailsNationBadge: true
+      showDetailsNationBadge: true,
+      cardCornerStyle: 'rounded',
+      cardHudStyle: 'default'
     };
   });
 

@@ -658,7 +658,7 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
                         <div className="flex flex-col items-center gap-4 w-full">
 
                             {/* Player Card Container */}
-                            <div className={`relative w-28 h-40 sm:w-32 sm:h-48 md:w-36 md:h-52 rounded-2xl overflow-hidden border-[3px] md:border-[4px] border-white/20 bg-black/40 shadow-2xl transition-all duration-700 ${getCardStyles(formData.cardType).glow} group-hover/left:scale-[1.02] shrink-0`}>
+                            <div className={`relative w-28 sm:w-32 md:w-40 aspect-[0.72] ${settings?.cardCornerStyle === 'sharp' ? 'rounded-none' : 'rounded-2xl'} overflow-hidden border-[3px] md:border-[4px] border-white/20 shadow-2xl transition-all duration-700 ${getCardStyles(formData.cardType).glow} group-hover/left:scale-[1.02] shrink-0`}>
                                 {/* Card Shine Effect */}
                                 <div className="absolute inset-0 z-10 pointer-events-none bg-gradient-to-tr from-transparent via-white/[0.05] to-transparent -translate-x-full animate-shine"></div>
 
@@ -673,29 +673,79 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
 
                                 {/* Card HUD: Rating & Position & Badges */}
                                 {(settings?.showDetailsRatings !== false || settings?.showDetailsPosition !== false || settings?.showDetailsClubBadge !== false || settings?.showDetailsNationBadge !== false) && (
-                                    <div className="absolute top-0 left-0 z-20 flex flex-col items-center bg-black/80 backdrop-blur-xl w-[44px] pt-3 pb-2 rounded-br-2xl border-r border-b border-white/10 shadow-xl gap-2 transition-all duration-500">
-                                        {(settings?.showDetailsRatings !== false || settings?.showDetailsPosition !== false) && (
-                                            <div className="flex flex-col items-center justify-center">
-                                                {settings?.showDetailsRatings !== false && (
-                                                    <span className="text-xl md:text-2xl font-black text-ef-accent leading-none tracking-tighter mb-0.5">{formData.rating}</span>
-                                                )}
-                                                {settings?.showDetailsPosition !== false && (
-                                                    <span className="text-[8px] md:text-[10px] font-black text-ef-accent/80 italic uppercase leading-none">{formData.position}</span>
-                                                )}
-                                            </div>
-                                        )}
-
-                                        {(settings?.showDetailsClubBadge !== false || settings?.showDetailsNationBadge !== false) && (
-                                            <div className="flex flex-col items-center gap-2 border-t border-white/10 pt-2 w-full px-2">
-                                                {settings?.showDetailsClubBadge !== false && (formData.logos?.club || player.club_badge_url) && (
-                                                    <img src={formData.logos?.club || player.club_badge_url} alt="" className="w-7 h-7 object-contain drop-shadow-lg" />
-                                                )}
+                                    settings?.cardHudStyle === 'efootball' ? (
+                                        /* eFootball Style HUD - Scaled Exact Specs */
+                                        <div 
+                                            className="pointer-events-none absolute flex flex-col items-center text-center leading-none z-20"
+                                            style={{ left: '6%', top: '2%', width: '25%' }}
+                                        >
+                                            {settings?.showDetailsRatings !== false && (
+                                                <span 
+                                                    className="text-white font-['Big_Shoulders_Stencil_Text'] font-black" 
+                                                    style={{ 
+                                                        fontSize: '64px', 
+                                                        lineHeight: '1', 
+                                                        textShadow: 'rgba(0, 0, 0, 0.7) 0px 4px 12px' 
+                                                    }}
+                                                >
+                                                    {formData.rating}
+                                                </span>
+                                            )}
+                                            {settings?.showDetailsPosition !== false && (
+                                                <span 
+                                                    className="text-white font-['Archivo_Black']" 
+                                                    style={{ 
+                                                        fontSize: '26px', 
+                                                        lineHeight: '1', 
+                                                        letterSpacing: '0.05em', 
+                                                        textShadow: 'rgba(0, 0, 0, 0.7) 0px 2px 6px',
+                                                        marginTop: '-2px'
+                                                    }}
+                                                >
+                                                    {formData.position}
+                                                </span>
+                                            )}
+                                            
+                                            {/* Badges for eFootball style */}
+                                            <div className="flex flex-col items-center gap-2.5 mt-4">
                                                 {settings?.showDetailsNationBadge !== false && (player.logos?.country || player.nationality_flag_url) && (
-                                                    <img src={player.logos?.country || player.nationality_flag_url} alt="" className="w-7 h-5 object-cover rounded shadow-lg" />
+                                                    <div className="w-10 h-6 md:w-16 md:h-10 overflow-hidden border-2 border-white/20 shadow-2xl">
+                                                        <img src={player.logos?.country || player.nationality_flag_url} alt="" className="w-full h-full object-cover" />
+                                                    </div>
+                                                )}
+                                                {settings?.showDetailsClubBadge !== false && (formData.logos?.club || player.club_badge_url) && (
+                                                    <div className="w-8 h-8 md:w-12 md:h-12">
+                                                        <img src={formData.logos?.club || player.club_badge_url} alt="" className="w-full h-full object-contain filter drop-shadow-2xl" />
+                                                    </div>
                                                 )}
                                             </div>
-                                        )}
-                                    </div>
+                                        </div>
+                                    ) : (
+                                        /* Default Style HUD */
+                                        <div className={`absolute top-0 left-0 z-20 flex flex-col items-center bg-black/80 backdrop-blur-xl w-[44px] pt-3 pb-2 ${settings?.cardCornerStyle === 'sharp' ? 'rounded-none' : 'rounded-br-2xl'} border-r border-b border-white/10 shadow-xl gap-2 transition-all duration-500`}>
+                                            {(settings?.showDetailsRatings !== false || settings?.showDetailsPosition !== false) && (
+                                                <div className="flex flex-col items-center justify-center">
+                                                    {settings?.showDetailsRatings !== false && (
+                                                        <span className="text-xl md:text-2xl font-black text-ef-accent leading-none tracking-tighter mb-0.5">{formData.rating}</span>
+                                                    )}
+                                                    {settings?.showDetailsPosition !== false && (
+                                                        <span className="text-[8px] md:text-[10px] font-black text-ef-accent/80 italic uppercase leading-none">{formData.position}</span>
+                                                    )}
+                                                </div>
+                                            )}
+
+                                            {(settings?.showDetailsClubBadge !== false || settings?.showDetailsNationBadge !== false) && (
+                                                <div className="flex flex-col items-center gap-2 border-t border-white/10 pt-2 w-full px-2">
+                                                    {settings?.showDetailsClubBadge !== false && (formData.logos?.club || player.club_badge_url) && (
+                                                        <img src={formData.logos?.club || player.club_badge_url} alt="" className="w-7 h-7 object-contain drop-shadow-lg" />
+                                                    )}
+                                                    {settings?.showDetailsNationBadge !== false && (player.logos?.country || player.nationality_flag_url) && (
+                                                        <img src={player.logos?.country || player.nationality_flag_url} alt="" className="w-7 h-5 object-cover rounded shadow-lg" />
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    )
                                 )}
 
                                 {/* Edit Overlay */}

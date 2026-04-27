@@ -249,6 +249,42 @@ const SettingsModal = ({ onClose, settings, setSettings, user, players, setPlaye
                             </section>
 
                             <section className="space-y-4 pt-6 border-t border-white/5">
+                                <h4 className="text-[9px] font-black text-ef-blue uppercase tracking-widest pl-1">Card Corner Style</h4>
+                                <div className="bg-[#111111] p-4 rounded-2xl border border-white/10 flex items-center gap-2">
+                                    <button
+                                        onClick={() => setSettings(prev => ({ ...prev, cardCornerStyle: 'rounded' }))}
+                                        className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${settings.cardCornerStyle === 'rounded' ? 'bg-ef-blue text-white' : 'bg-white/5 text-white/40 hover:bg-white/10'}`}
+                                    >
+                                        Rounded
+                                    </button>
+                                    <button
+                                        onClick={() => setSettings(prev => ({ ...prev, cardCornerStyle: 'sharp' }))}
+                                        className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${settings.cardCornerStyle === 'sharp' ? 'bg-white text-black' : 'bg-white/5 text-white/40 hover:bg-white/10'}`}
+                                    >
+                                        Sharp
+                                    </button>
+                                </div>
+                            </section>
+
+                            <section className="space-y-4 pt-6 border-t border-white/5">
+                                <h4 className="text-[9px] font-black text-ef-accent uppercase tracking-widest pl-1">HUD Design Style</h4>
+                                <div className="bg-[#111111] p-4 rounded-2xl border border-white/10 flex items-center gap-2">
+                                    <button
+                                        onClick={() => setSettings(prev => ({ ...prev, cardHudStyle: 'default' }))}
+                                        className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${settings.cardHudStyle === 'default' ? 'bg-ef-accent text-ef-dark' : 'bg-white/5 text-white/40 hover:bg-white/10'}`}
+                                    >
+                                        Default
+                                    </button>
+                                    <button
+                                        onClick={() => setSettings(prev => ({ ...prev, cardHudStyle: 'efootball' }))}
+                                        className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${settings.cardHudStyle === 'efootball' ? 'bg-blue-600 text-white' : 'bg-white/5 text-white/40 hover:bg-white/10'}`}
+                                    >
+                                        eFootball
+                                    </button>
+                                </div>
+                            </section>
+
+                            <section className="space-y-4 pt-6 border-t border-white/5">
                                 <p className="text-[8px] font-bold text-ef-blue uppercase tracking-[0.3em] mb-4">Player Details Card Aesthetics</p>
                                 <div className="space-y-2">
                                     {[
