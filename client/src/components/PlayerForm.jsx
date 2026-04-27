@@ -834,7 +834,6 @@ const PlayerForm = ({ onAdd, onClose, hideExternalClose = false }) => {
                         </div>
                     </div>
                 </div>
-            </div>
 
             {/* Row 2: Clubs, League, Nat, Age */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
