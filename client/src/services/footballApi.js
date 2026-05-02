@@ -27,8 +27,14 @@ const loadPlayers = async (searchQuery = '') => {
         if (!cachedPlayers) {
             const response = await fetch(`/data/pesdb_players.json?t=${new Date().getTime()}`);
             if (response.ok) {
-                cachedPlayers = await response.json();
-                console.log(`✅ Loaded ${cachedPlayers.length} players locally`);
+                const contentType = response.headers.get("content-type");
+                if (contentType && contentType.includes("application/json")) {
+                    cachedPlayers = await response.json();
+                    console.log(`✅ Loaded ${cachedPlayers.length} players locally`);
+                } else {
+                    console.warn('Players data is not JSON. Using empty array.');
+                    cachedPlayers = [];
+                }
             } else {
                 cachedPlayers = [];
             }
@@ -77,8 +83,15 @@ const loadPlayers = async (searchQuery = '') => {
 const loadLeagues = async () => {
     if (cachedLeagues) return cachedLeagues;
     try {
-        const response = await fetch('/data/leagues.json');
+        const response = await fetch(`/data/leagues.json?t=${new Date().getTime()}`);
         if (!response.ok) throw new Error('Failed to load leagues database');
+        
+        const contentType = response.headers.get("content-type");
+        if (!contentType || !contentType.includes("application/json")) {
+            console.warn('Leagues data is not JSON. Returning empty array.');
+            return [];
+        }
+
         const data = await response.json();
         cachedLeagues = data.countries || data; // Handle both formats
         return cachedLeagues;

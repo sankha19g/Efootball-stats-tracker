@@ -13,7 +13,8 @@ import {
     Shield, 
     Settings,
     History,
-    LogOut
+    LogOut,
+    X
 } from 'lucide-react';
 
 const SidebarNav = ({ 
@@ -120,14 +121,24 @@ const SidebarNav = ({
     return (
         <>
             {/* Side Drawer Wrapper (Push Layout) */}
-            <div className={`fixed inset-y-0 left-0 z-[90] pointer-events-none transition-all duration-300 ${isOpen ? 'pointer-events-auto' : ''}`}>
+            <div className={`fixed inset-y-0 left-0 z-[200] pointer-events-none transition-all duration-300 ${isOpen ? 'pointer-events-auto' : ''}`}>
                 {/* Drawer Content */}
                 <div className={`
-                    absolute inset-y-0 left-0 w-[200px] bg-[#0a0a0c] border-r border-white/5 pt-16
+                    absolute inset-y-0 left-0 w-[200px] bg-[#0a0a0c] border-r border-white/5 pt-0 md:pt-16
                     transform transition-transform duration-300 cubic-bezier(0.16, 1, 0.3, 1)
                     ${isOpen ? 'translate-x-0' : '-translate-x-full'}
                     flex flex-col shadow-2xl
                 `}>
+                    {/* Header with Close Button (Mobile Only) */}
+                    <div className="md:hidden flex items-center justify-between p-4 border-b border-white/5">
+                        <span className="text-xs font-black text-ef-accent uppercase italic">Menu</span>
+                        <button 
+                            onClick={() => setIsOpen(false)}
+                            className="w-8 h-8 flex items-center justify-center rounded-lg bg-white/5 border border-white/10 text-white"
+                        >
+                            <X className="w-4 h-4" />
+                        </button>
+                    </div>
 
                     {/* Navigation Items */}
                     <div className="flex-1 overflow-y-auto px-0 py-0 space-y-0 custom-scrollbar">

@@ -20,9 +20,12 @@ const parseEfDate = (dateStr) => {
     return null;
 };
 
-const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEditMode = false, settings, showAlert, showConfirm }) => {
+const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectPlayer, initialEditMode = false, settings, showAlert, showConfirm }) => {
     const [isEditing, setIsEditing] = useState(initialEditMode);
     const [showProgressions, setShowProgressions] = useState(false);
+    const [progressionOpenCreate, setProgressionOpenCreate] = useState(false);
+    const [isEditingBuildInline, setIsEditingBuildInline] = useState(false);
+    const [selectedProgressionId, setSelectedProgressionId] = useState(null);
     const [rankingContext, setRankingContext] = useState('all'); // 'all', 'position', 'league', 'club', 'country'
     const [isCustomLeague, setIsCustomLeague] = useState(false);
     const [formData, setFormData] = useState({
@@ -45,9 +48,12 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
         image2: player.image2 || ''
     });
     const [tagInput, setTagInput] = useState('');
-    const [isLeaguePopupOpen, setIsLeaguePopupOpen] = useState(false);
-    const [isRankingDropdownOpen, setIsRankingDropdownOpen] = useState(false);
-    const [modalPage, setModalPage] = useState(0); // 0: Overview, 1: Comparison, 2: Skills
+    const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
+    const filterDropdownRef = useRef(null);
+
+    const [modalPage, setModalPage] = useState(0); // 0: Overview, 1: Comparison, 2: Skills, 3: Builds, 4: Versions
+    const [versions, setVersions] = useState([]);
+    const [loadingVersions, setLoadingVersions] = useState(false);
     const [skills, setSkills] = useState(player.skills || player.Skills || []);
     const [additionalSkills, setAdditionalSkills] = useState(() => {
         const arr = (player.additionalSkills || player.AdditionalSkills || []).filter(Boolean);
@@ -62,7 +68,6 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
     const [leagueLogos, setLeagueLogos] = useState({});
     const [_isLoadingLogos, setIsLoadingLogos] = useState(false);
     const leaguePopupRef = useRef(null);
-    const rankingDropdownRef = useRef(null);
     const comparisonDropdownRef = useRef(null);
     const [comparisonStat, setComparisonStat] = useState('goals');
     const [isComparisonDropdownOpen, setIsComparisonDropdownOpen] = useState(false);
@@ -70,8 +75,10 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
     const [bulkSkillsInput, setBulkSkillsInput] = useState('');
 
     const [comparisonContext, setComparisonContext] = useState('all');
-    const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
-    const filterDropdownRef = useRef(null);
+    const [isLeaguePopupOpen, setIsLeaguePopupOpen] = useState(false);
+    const [isRankingDropdownOpen, setIsRankingDropdownOpen] = useState(false);
+    const rankingDropdownRef = useRef(null);
+    const [awardFilter, setAwardFilter] = useState('All');
 
     // Autocomplete State
     const [clubResults, setClubResults] = useState([]);
@@ -102,49 +109,56 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
         fetchLogos();
     }, []);
 
-    // Close popup on click outside
+    // Consolidate click outside listeners
     useEffect(() => {
         const handleClickOutside = (event) => {
+            // League Popup
             if (leaguePopupRef.current && !leaguePopupRef.current.contains(event.target)) {
                 setIsLeaguePopupOpen(false);
             }
-        };
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
-
-    // Click outside ranking dropdown
-    useEffect(() => {
-        const handleClickOutside = (event) => {
+            // Comparison Dropdown
+            if (comparisonDropdownRef.current && !comparisonDropdownRef.current.contains(event.target)) {
+                setIsComparisonDropdownOpen(false);
+            }
+            // Filter Dropdown
+            if (filterDropdownRef.current && !filterDropdownRef.current.contains(event.target)) {
+                setIsFilterDropdownOpen(false);
+            }
+            // Ranking Dropdown
             if (rankingDropdownRef.current && !rankingDropdownRef.current.contains(event.target)) {
                 setIsRankingDropdownOpen(false);
             }
         };
+
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    // Click outside comparison dropdown
     useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (comparisonDropdownRef.current && !comparisonDropdownRef.current.contains(event.target)) {
-                setIsComparisonDropdownOpen(false);
+        if (modalPage === 4 && (formData.name || player.name || player.Name)) {
+            setLoadingVersions(true);
+            try {
+                const playerName = (formData.name || player.name || player.Name || '').toLowerCase().trim();
+                const currentPlayerId = String(player.id || player.pesdb_id || player._id);
+                
+                // Search in local squad (players prop)
+                const filtered = players.filter(p => {
+                    const pName = (p.name || p.Name || '').toLowerCase().trim();
+                    const pid = String(p.id || p.pesdb_id || p.ID || p.pes_id || p._id);
+                    
+                    // Match name
+                    return pName === playerName;
+                });
+                
+                setVersions(filtered);
+            } catch (err) {
+                console.error("Error finding versions in squad:", err);
+            } finally {
+                setLoadingVersions(false);
             }
-        };
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
+        }
+    }, [modalPage, formData.name, player.name, player.Name, player.id, player.pesdb_id, player._id, players]);
 
-    // Click outside filter dropdown
-    useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (filterDropdownRef.current && !filterDropdownRef.current.contains(event.target)) {
-                setIsFilterDropdownOpen(false);
-            }
-        };
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
 
 
 
@@ -575,6 +589,226 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
         { id: 'card_type', label: 'Same Card Type', icon: '🃏' }
     ];
 
+    // ─── Smart Awards Computation ─────────────────────────────────────────────
+    const playerAwards = useMemo(() => {
+        if (!players || players.length < 2) return [];
+
+        const pid = player._id || player.id || player.name;
+        const awards = [];
+
+        const statDefs = [
+            { key: 'goals',   label: 'Goals',         type: 'raw',   getValue: p => p.goals || 0 },
+            { key: 'assists', label: 'Assists',        type: 'raw',   getValue: p => p.assists || 0 },
+            { key: 'ga',      label: 'G+A',            type: 'raw',   getValue: p => (p.goals || 0) + (p.assists || 0) },
+            { key: 'gpg',     label: 'Goals / Game',   type: 'ratio', getValue: p => p.matches ? (p.goals || 0) / p.matches : 0 },
+            { key: 'apg',     label: 'Assists / Game', type: 'ratio', getValue: p => p.matches ? (p.assists || 0) / p.matches : 0 },
+            { key: 'gapg',    label: 'G+A / Game',     type: 'ratio', getValue: p => p.matches ? ((p.goals || 0) + (p.assists || 0)) / p.matches : 0 },
+        ];
+
+        // Helper: does player p play a given position (primary, secondary, or trained)?
+        const playsPosition = (p, pos) => {
+            if (!pos) return false;
+            if (p.position === pos) return true;
+            const sec = Array.isArray(p.secondaryPosition)
+                ? p.secondaryPosition
+                : (p.secondaryPosition || '').split(',').map(s => s.trim()).filter(Boolean);
+            const trained = Array.isArray(p.additionalPositions)
+                ? p.additionalPositions
+                : (p.additionalPositions || '').split(',').map(s => s.trim()).filter(Boolean);
+            return sec.includes(pos) || trained.includes(pos);
+        };
+
+        // ── Primary group definitions ─────────────────────────────────────────
+        const groupDefs = [
+            {
+                key: 'position',
+                label: player.position,
+                groupLabel: 'Position',
+                emoji: '🎯',
+                filter: p => p.position && player.position && p.position === player.position
+            },
+            {
+                key: 'playstyle',
+                label: player.playstyle,
+                groupLabel: 'Playstyle',
+                emoji: '⚡',
+                filter: p => p.playstyle && player.playstyle &&
+                             p.playstyle !== 'None' && player.playstyle !== 'None' &&
+                             p.playstyle === player.playstyle
+            },
+            {
+                key: 'nationality',
+                label: player.nationality,
+                groupLabel: 'Nationality',
+                emoji: '🌍',
+                filter: p => p.nationality && player.nationality && p.nationality === player.nationality
+            },
+            {
+                key: 'league',
+                label: player.league,
+                groupLabel: 'League',
+                emoji: '🏆',
+                filter: p => p.league && player.league && p.league === player.league
+            },
+            {
+                key: 'club',
+                label: player.club,
+                groupLabel: 'Club',
+                emoji: '🛡️',
+                filter: p => p.club && player.club && p.club === player.club
+            },
+            {
+                key: 'cardType',
+                label: player.cardType,
+                groupLabel: 'Card Type',
+                emoji: '🃏',
+                filter: p => (p.cardType || p.card_type) && (player.cardType || player.card_type) &&
+                             (p.cardType || p.card_type) === (player.cardType || player.card_type)
+            },
+            // ── Compound groups (top-1 only) ──────────────────────────────────
+            {
+                key: 'nationality_position',
+                label: player.nationality && player.position ? `${player.position} · ${player.nationality}` : null,
+                groupLabel: 'Nationality + Position',
+                emoji: '🌍🎯',
+                maxRank: 1,
+                filter: p => p.nationality && player.nationality && p.nationality === player.nationality &&
+                             p.position && player.position && p.position === player.position
+            },
+            {
+                key: 'league_position',
+                label: player.league && player.position ? `${player.position} · ${player.league}` : null,
+                groupLabel: 'League + Position',
+                emoji: '🏆🎯',
+                maxRank: 1,
+                filter: p => p.league && player.league && p.league === player.league &&
+                             p.position && player.position && p.position === player.position
+            },
+        ];
+
+        const rankBadge = r => r === 1 ? '🥇' : r === 2 ? '🥈' : '🥉';
+        const ordinal   = r => r === 1 ? '1st' : r === 2 ? '2nd' : '3rd';
+
+        const MIN_POOL = 4; // anti-padding: need more than 3 players in a group
+
+        // ── Helper: run all stats for a given pool and push awards ────────────
+        const evaluateGroup = (group, pool, overrideLabel, posTag) => {
+            if (pool.length < MIN_POOL) return;
+            for (const stat of statDefs) {
+                const eligible = stat.type === 'ratio'
+                    ? pool.filter(p => (p.matches || 0) > 0)
+                    : pool;
+                if (eligible.length < MIN_POOL) continue;
+
+                const sorted = [...eligible].sort((a, b) => stat.getValue(b) - stat.getValue(a));
+                const rank = sorted.findIndex(p => (p._id || p.id || p.name) === pid) + 1;
+
+                if (rank >= 1 && rank <= (group.maxRank ?? 3)) {
+                    const value = stat.getValue(player);
+                    const displayVal = stat.type === 'ratio' ? value.toFixed(2) : value;
+                    awards.push({
+                        rank,
+                        badge: rankBadge(rank),
+                        ordinal: ordinal(rank),
+                        statLabel: stat.label,
+                        groupLabel: group.groupLabel,
+                        groupKey: group.key,
+                        groupValue: overrideLabel ?? group.label,
+                        emoji: group.emoji,
+                        value: displayVal,
+                        poolSize: eligible.length,
+                        pos: posTag || 'General'
+                    });
+                }
+            }
+        };
+
+        // ── Run primary groups ────────────────────────────────────────────────
+        for (const group of groupDefs) {
+            if (!group.label) continue;
+            const pool = players.filter(group.filter);
+            // Primary groups are associated with the player's main position or 'General'
+            // We'll tag them with the main position so they show up when filtered by main pos
+            evaluateGroup(group, pool, null, player.position);
+        }
+
+        // ── Secondary / trained position rankings ─────────────────────────────
+        // Collect all alt positions for this player
+        const secPositions = Array.isArray(player.secondaryPosition)
+            ? player.secondaryPosition
+            : (player.secondaryPosition || '').split(',').map(s => s.trim()).filter(Boolean);
+        const trainedPositions = Array.isArray(player.additionalPositions)
+            ? player.additionalPositions
+            : (player.additionalPositions || '').split(',').map(s => s.trim()).filter(Boolean);
+
+        const altPositions = [...new Set([...secPositions, ...trainedPositions])].filter(Boolean);
+
+        for (const altPos of altPositions) {
+            // Global: all players who can play this position
+            evaluateGroup(
+                { key: `alt_pos_global_${altPos}`, groupLabel: `as ${altPos} (Global)`, emoji: '🎯', maxRank: 3 },
+                players.filter(p => playsPosition(p, altPos)),
+                `${altPos} · All`,
+                altPos
+            );
+            // Nationality
+            if (player.nationality) {
+                evaluateGroup(
+                    { key: `alt_pos_nat_${altPos}`, groupLabel: `as ${altPos} · ${player.nationality}`, emoji: '🌍🎯', maxRank: 1 },
+                    players.filter(p => playsPosition(p, altPos) && p.nationality === player.nationality),
+                    `${altPos} · ${player.nationality}`,
+                    altPos
+                );
+            }
+            // League
+            if (player.league) {
+                evaluateGroup(
+                    { key: `alt_pos_league_${altPos}`, groupLabel: `as ${altPos} · ${player.league}`, emoji: '🏆🎯', maxRank: 1 },
+                    players.filter(p => playsPosition(p, altPos) && p.league === player.league),
+                    `${altPos} · ${player.league}`,
+                    altPos
+                );
+            }
+        }
+
+        // ── Sort: group priority → rank ───────────────────────────────────────
+        const groupPriority = {
+            position:             0,
+            playstyle:            1,
+            nationality:          2,
+            nationality_position: 3,
+            league:               4,
+            league_position:      5,
+            club:                 6,
+            cardType:             7,
+        };
+        awards.sort((a, b) => {
+            const pa = groupPriority[a.groupKey] ?? 10;
+            const pb = groupPriority[b.groupKey] ?? 10;
+            if (pa !== pb) return pa - pb;
+            return a.rank - b.rank;
+        });
+        return awards;
+    }, [players, player]);
+
+    const availableAwardPositions = useMemo(() => {
+        if (!playerAwards.length) return ['All'];
+        const positions = ['All', ...new Set(playerAwards.map(a => a.pos))];
+        // Sort: 'All' first, then player's primary position, then others
+        return positions.sort((a, b) => {
+            if (a === 'All') return -1;
+            if (b === 'All') return 1;
+            if (a === player.position) return -1;
+            if (b === player.position) return 1;
+            return a.localeCompare(b);
+        });
+    }, [playerAwards, player.position]);
+
+    const filteredAwards = useMemo(() => {
+        if (awardFilter === 'All') return playerAwards;
+        return playerAwards.filter(a => a.pos === awardFilter);
+    }, [playerAwards, awardFilter]);
+
     const getCardStyles = (type) => {
         switch (type?.toLowerCase()) {
             case 'legendary': return {
@@ -616,19 +850,10 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
     };
 
     return (
-        <div className={`fixed inset-0 bg-[#0a0a0c] z-[150] overflow-hidden flex flex-col ${settings?.highPerf ? '' : 'animate-fade-in'}`}>
-            {showProgressions && (
-                <SavedProgressionsModal
-                    player={player}
-                    onClose={() => setShowProgressions(false)}
-                    onUpdatePlayer={onUpdate}
-                    settings={settings}
-                    showConfirm={showConfirm}
-                    showAlert={showAlert}
-                />
-            )}
+        <div className={`fixed inset-0 bg-[#0a0a0c] z-[300] overflow-y-auto md:overflow-hidden flex flex-col ${settings?.highPerf ? '' : 'animate-fade-in'}`}>
+            {/* Removed SavedProgressionsModal from top level to show it inline instead */}
 
-            <div className={`relative w-full h-full bg-[#0a0a0c] flex flex-col md:flex-row ${settings?.highPerf ? '' : 'animate-slide-up'} ${isEditing ? 'h-auto overflow-y-auto' : ''}`}>
+            <div className={`relative w-full min-h-full md:h-full bg-[#0a0a0c] flex flex-col md:flex-row ${settings?.highPerf ? '' : 'animate-slide-up'} overflow-visible md:overflow-hidden`}>
 
                 {/* Close/Back Button */}
                 <button
@@ -653,7 +878,7 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
                         <div className={`absolute -top-24 -left-24 w-64 h-64 bg-gradient-to-br ${getCardStyles(formData.cardType).leak} blur-3xl opacity-30`}></div>
                     </div>
 
-                    <div className="flex-1 flex flex-col gap-6 relative z-10 overflow-y-auto custom-scrollbar pr-1 md:pr-2">
+                    <div className="flex-1 flex flex-col gap-6 relative z-10 md:overflow-y-auto md:custom-scrollbar pr-1 md:pr-2">
 
                         <div className="flex flex-col items-center gap-4 w-full">
 
@@ -850,8 +1075,9 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
 
 
                 {/* Right Side: Details / Edit Form */}
-                <div className="w-full md:w-2/3 p-4 md:p-6 pt-4 bg-black flex flex-col justify-start relative overflow-hidden group/modal overflow-y-auto custom-scrollbar">
+                <div className="w-full md:w-2/3 p-4 md:p-6 pt-4 bg-black flex flex-col justify-start relative overflow-visible md:overflow-y-auto md:custom-scrollbar group/modal">
                     {/* Identity Section */}
+                    <>
                     {!isEditing && (
                         <div className="flex flex-col items-start text-left gap-2 w-full px-4 md:px-6 mb-2">
                             <div className="flex flex-wrap items-baseline gap-x-4 gap-y-2">
@@ -942,9 +1168,21 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
                                         </div>
 
                                         <div className="space-y-3">
-                                            <div className="flex flex-col gap-1.5">
-                                                <label className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-1">Player Name</label>
-                                                <input type="text" name="name" value={formData.name} onChange={handleChange} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white font-black focus:border-ef-accent focus:bg-white/10 focus:outline-none transition-all" />
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                <div className="flex flex-col gap-1.5">
+                                                    <label className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-1">Player Name</label>
+                                                    <input type="text" name="name" value={formData.name} onChange={handleChange} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white font-black focus:border-ef-accent focus:bg-white/10 focus:outline-none transition-all" />
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    <div className="flex flex-col gap-1.5">
+                                                        <label className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-1">Position</label>
+                                                        <input type="text" name="position" value={formData.position} onChange={handleChange} placeholder="CF" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white font-black focus:border-ef-accent focus:bg-white/10 focus:outline-none transition-all placeholder:text-white/20" />
+                                                    </div>
+                                                    <div className="flex flex-col gap-1.5">
+                                                        <label className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-1">Rating</label>
+                                                        <input type="number" name="rating" value={formData.rating} onChange={handleChange} placeholder="99" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white font-black focus:border-ef-accent focus:bg-white/10 focus:outline-none transition-all placeholder:text-white/20" />
+                                                    </div>
+                                                </div>
                                             </div>
 
                                             <div className="grid grid-cols-2 gap-3">
@@ -1223,7 +1461,8 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
                                     { id: 0, label: 'Identity' },
                                     { id: 1, label: 'Analytics' },
                                     { id: 2, label: 'Skills' },
-                                    { id: 3, label: 'Builds' }
+                                    { id: 3, label: 'Builds' },
+                                    { id: 4, label: 'Versions' }
                                 ].map((tab) => (
                                     <button
                                         key={tab.id}
@@ -1239,10 +1478,10 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
                             </div>
 
                             <div className="flex-1 relative overflow-hidden">
-                                <div className="absolute inset-0 p-4 md:p-4 overflow-y-auto no-scrollbar">
+                                <div className="relative md:absolute md:inset-0 p-4 md:p-4 md:overflow-y-auto no-scrollbar">
 
                                     {/* Page 0: Full Player Details */}
-                                    <div className={`flex-1 flex flex-col transition-opacity duration-150 overflow-y-auto no-scrollbar ${modalPage === 0 ? 'opacity-100 relative' : 'opacity-0 pointer-events-none absolute inset-0'} `}>
+                                    <div className={`flex-1 flex flex-col transition-opacity duration-150 md:overflow-y-auto no-scrollbar ${modalPage === 0 ? 'opacity-100 relative' : 'opacity-0 pointer-events-none absolute inset-0'} `}>
 
                                         {/* Main Stats Grid */}
                                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
@@ -1348,6 +1587,56 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
                                             </div>
                                         </div>
 
+                                        {/* ── Awards Section ── */}
+                                        {playerAwards.length > 0 && (
+                                            <div className="mt-4 bg-[#0e0e10] border border-white/5 rounded-[1.5rem] p-5 shadow-xl">
+                                                <div className="flex items-center gap-3 mb-6 flex-wrap">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-lg">🏆</span>
+                                                        <h4 className="text-[13px] font-black uppercase tracking-widest text-white">Awards</h4>
+                                                    </div>
+
+                                                    <div className="flex items-center gap-1 bg-white/5 p-1 rounded-xl border border-white/5">
+                                                        {availableAwardPositions.map(pos => (
+                                                            <button
+                                                                key={pos}
+                                                                onClick={() => setAwardFilter(pos)}
+                                                                className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
+                                                                    awardFilter === pos
+                                                                        ? 'bg-ef-accent text-[#0a0a0c] font-black'
+                                                                        : 'text-white/30 hover:text-white hover:bg-white/5'
+                                                                }`}
+                                                            >
+                                                                {pos}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+
+                                                    <span className="ml-auto px-2 py-0.5 rounded bg-ef-accent/15 text-ef-accent text-[9px] font-black tracking-widest">{filteredAwards.length} ACHIEVEMENTS</span>
+                                                </div>
+                                                <ul className="space-y-2">
+                                                    {filteredAwards.map((aw, i) => (
+                                                        <li key={i} className="flex items-start gap-3 group">
+                                                            <span className="text-base leading-none mt-0.5 shrink-0">{aw.badge}</span>
+                                                            <div className="flex flex-1 items-start justify-between gap-2 min-w-0">
+                                                                <span className="text-[12px] font-medium text-white/70 leading-snug font-inter">
+                                                                    <span className={`font-black ${
+                                                                        aw.rank === 1 ? 'text-yellow-400' :
+                                                                        aw.rank === 2 ? 'text-slate-300' : 'text-amber-600'
+                                                                    }`}>{aw.ordinal}</span>
+                                                                    {' '}in <span className="text-white/90 font-semibold">{aw.statLabel}</span>
+                                                                    {' '}among{' '}
+                                                                    <span className="text-ef-accent font-semibold">{aw.emoji} {aw.groupValue}</span>
+                                                                    {' '}{aw.groupLabel.toLowerCase()} ({aw.poolSize} players)
+                                                                </span>
+                                                                <span className="text-[11px] font-mono font-black text-white/40 shrink-0">{aw.value}</span>
+                                                            </div>
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        )}
+
                                         {/* Action Buttons */}
                                         <div className="mt-auto flex flex-row justify-center gap-1.5 pt-4">
                                             <button onClick={() => setIsEditing(true)} className="w-[100px] h-[32px] rounded-lg bg-white/5 border border-white/10 hover:border-ef-accent/50 hover:bg-white/10 hover:text-ef-accent transition-all font-medium text-[13px] tracking-tight flex items-center justify-center gap-2 font-inter">
@@ -1373,7 +1662,7 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
                                     </div>
 
                                     {/* Page 1: Analytics / Comparison Graph */}
-                                    <div className={`flex-1 flex flex-col transition-opacity duration-150 overflow-y-auto no-scrollbar ${modalPage === 1 ? 'opacity-100 relative' : 'opacity-0 pointer-events-none absolute inset-0'} `}>
+                                    <div className={`flex-1 flex flex-col transition-opacity duration-150 md:overflow-y-auto no-scrollbar ${modalPage === 1 ? 'opacity-100 relative' : 'opacity-0 pointer-events-none absolute inset-0'} `}>
                                         <div className="flex items-center justify-between mb-4">
                                             <h3 className="text-sm font-black text-white uppercase tracking-widest flex items-center gap-2">
                                                 <span className="text-ef-accent">📊</span> Stat Ranking
@@ -1801,41 +2090,247 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, initialEd
 
                                     {/* Page 3: Builds / Progressions */}
                                     <div className={`flex-1 flex flex-col transition-opacity duration-150 overflow-y-auto no-scrollbar ${modalPage === 3 ? 'opacity-100 relative' : 'opacity-0 pointer-events-none absolute inset-0'} `}>
-                                        <div className="flex-1 flex flex-col items-center justify-center text-center p-6 bg-white/5 rounded-3xl border border-white/10 backdrop-blur-md">
-                                            <div className="w-20 h-20 bg-ef-accent/10 rounded-full flex items-center justify-center mb-6 border border-ef-accent/20">
-                                                <span className="text-4xl text-ef-accent">📊</span>
+                                        {isEditingBuildInline ? (
+                                            <div className="flex-1 flex flex-col">
+                                                <SavedProgressionsModal
+                                                    isInline={true}
+                                                    player={player}
+                                                    onClose={() => {
+                                                        setIsEditingBuildInline(false);
+                                                        setSelectedProgressionId(null);
+                                                    }}
+                                                    onUpdatePlayer={onUpdate}
+                                                    settings={settings}
+                                                    showConfirm={showConfirm}
+                                                    showAlert={showAlert}
+                                                    openOnCreate={progressionOpenCreate}
+                                                    initialBuildId={selectedProgressionId}
+                                                />
                                             </div>
-                                            <h3 className="text-xl font-black text-white uppercase tracking-widest mb-2">Saved Builds</h3>
-                                            <p className="text-[13px] font-medium tracking-tight text-white/40 font-inter leading-relaxed max-w-[200px] mb-8">
-                                                View and manage your optimized progression paths for {formData.name}
-                                            </p>
-
-                                            <button
-                                                onClick={() => setShowProgressions(true)}
-                                                className="w-full py-4 bg-ef-accent text-ef-dark rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-[0_0_30px_rgba(0,255,136,0.2)] hover:scale-[1.02] active:scale-95 transition-all"
-                                            >
-                                                Open Progressions Manager
-                                            </button>
-
-                                            {player.progressions?.length > 0 ? (
-                                                <div className="mt-8 pt-8 border-t border-white/5 w-full">
-                                                    <div className="flex justify-between items-center mb-4 px-2">
-                                                        <span className="text-[13px] font-medium tracking-tight text-white/40 font-inter">Active Build Status</span>
-                                                        <span className="px-2 py-0.5 bg-ef-accent/20 text-ef-accent rounded text-[8px] font-black">{player.progressions.length} Builds Saved</span>
-                                                    </div>
-                                                    <div className="text-[9px] text-white/30 font-bold italic">
-                                                        Tap the button above to view all saved progression sets.
-                                                    </div>
+                                        ) : (
+                                            <>
+                                                {/* Header */}
+                                                <div className="flex items-center justify-between mb-3">
+                                                    <h3 className="text-sm font-black text-white uppercase tracking-widest flex items-center gap-2">
+                                                        <span className="text-ef-accent">📊</span> Saved Builds
+                                                    </h3>
+                                                    {player.progressions?.length > 0 && (
+                                                        <span className="px-2 py-0.5 bg-ef-accent/20 text-ef-accent rounded text-[8px] font-black">{player.progressions.length} Saved</span>
+                                                    )}
                                                 </div>
-                                            ) : (
-                                                <div className="mt-8 opacity-20 text-[8px] font-black uppercase tracking-widest">No builds saved yet</div>
+
+                                                {/* Add New Progression Box */}
+                                                <button
+                                                    onClick={() => {
+                                                        setProgressionOpenCreate(true);
+                                                        setSelectedProgressionId(null);
+                                                        setIsEditingBuildInline(true);
+                                                    }}
+                                                    className="w-full flex items-center gap-3 px-4 py-3 mb-3 bg-ef-accent/5 border border-dashed border-ef-accent/30 rounded-2xl hover:bg-ef-accent/10 hover:border-ef-accent/60 active:scale-95 transition-all group"
+                                                >
+                                                    <div className="w-8 h-8 rounded-xl bg-ef-accent/10 border border-ef-accent/20 flex items-center justify-center flex-shrink-0 group-hover:bg-ef-accent/20 transition-all">
+                                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-ef-accent">
+                                                            <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+                                                        </svg>
+                                                    </div>
+                                                    <div className="flex flex-col items-start">
+                                                        <span className="text-[13px] font-black text-ef-accent tracking-tight">Add New Progression</span>
+                                                        <span className="text-[10px] text-white/30 font-medium">Save a skill build for {formData.name}</span>
+                                                    </div>
+                                                </button>
+
+                                                {/* Saved progressions list */}
+                                                {player.progressions?.length > 0 ? (
+                                                    <div className="space-y-2">
+                                                        {player.progressions.map((build, idx) => (
+                                                            <div key={build.id || idx} className="relative group">
+                                                                <button
+                                                                    onClick={() => {
+                                                                        setProgressionOpenCreate(false);
+                                                                        setSelectedProgressionId(build.id);
+                                                                        setIsEditingBuildInline(true);
+                                                                    }}
+                                                                    className="w-full flex flex-col gap-2 px-4 py-3 bg-white/5 border border-white/10 rounded-2xl hover:bg-white/8 hover:border-white/20 active:scale-[0.98] transition-all text-left"
+                                                                >
+                                                                    <div className="flex items-center gap-3 pr-8">
+                                                                        <div className="w-8 h-8 rounded-xl bg-ef-accent/10 flex items-center justify-center flex-shrink-0">
+                                                                            <span className="text-sm">🏗️</span>
+                                                                        </div>
+                                                                        <div className="flex flex-col flex-1 min-w-0">
+                                                                            <div className="flex items-center gap-2">
+                                                                                <span className="text-[13px] font-black text-white truncate">{build.name || `Build ${idx + 1}`}</span>
+                                                                                <span className="px-1.5 py-0.5 bg-ef-accent/20 text-ef-accent rounded text-[8px] font-mono font-bold">{build.rating || player.rating}</span>
+                                                                            </div>
+                                                                            {build.description && (
+                                                                                <span className="text-[10px] text-white/30 font-medium truncate">{build.description}</span>
+                                                                            )}
+                                                                        </div>
+                                                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-white/20 group-hover:text-white/50 transition-colors flex-shrink-0">
+                                                                            <polyline points="9 18 15 12 9 6" />
+                                                                        </svg>
+                                                                    </div>
+
+                                                                    <button
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            showConfirm('Delete Progression', 'Delete this build?', () => {
+                                                                                const updated = player.progressions.filter(p => p.id !== (build.id || idx));
+                                                                                onUpdate(player._id, { ...player, progressions: updated }, false);
+                                                                            }, 'danger', 'Delete');
+                                                                        }}
+                                                                        className="absolute top-3 right-3 p-1.5 text-white/10 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all opacity-0 group-hover:opacity-100 z-10"
+                                                                        title="Delete Build"
+                                                                    >
+                                                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                                                            <path d="M3 6h18m-2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                                                        </svg>
+                                                                    </button>
+
+                                                                    {/* Stats Progression Display */}
+                                                                    <div className="flex flex-wrap gap-1.5 mt-1">
+                                                                        {[
+                                                                            { key: 'shooting', label: 'Sho' },
+                                                                            { key: 'passing', label: 'Pas' },
+                                                                            { key: 'dribbling', label: 'Dri' },
+                                                                            { key: 'dexterity', label: 'Dex' },
+                                                                            { key: 'lowerBody', label: 'LBS' },
+                                                                            { key: 'aerial', label: 'Aer' },
+                                                                            { key: 'defending', label: 'Def' },
+                                                                            { key: 'gk1', label: 'G1' },
+                                                                            { key: 'gk2', label: 'G2' },
+                                                                            { key: 'gk3', label: 'G3' }
+                                                                        ].map(stat => {
+                                                                            const val = build[stat.key];
+                                                                            if (!val || val === 0) return null;
+                                                                            return (
+                                                                                <div key={stat.key} className="flex items-center gap-1 bg-black/40 px-2 py-0.5 rounded-md border border-white/5">
+                                                                                    <span className="text-[9px] font-bold text-white/40 uppercase">{stat.label}</span>
+                                                                                    <span className="text-[11px] font-mono font-black text-ef-accent">{val}</span>
+                                                                                </div>
+                                                                            );
+                                                                        })}
+                                                                    </div>
+
+                                                                    {/* Added Skills Display */}
+                                                                    {(build.skill1 || build.skill2 || build.skill3 || build.skill4 || build.skill5) && (
+                                                                        <div className="flex flex-wrap gap-1 pt-1 border-t border-white/5">
+                                                                            {[1, 2, 3, 4, 5].map(i => {
+                                                                                const skill = build[`skill${i}`];
+                                                                                if (!skill) return null;
+                                                                                return (
+                                                                                    <span key={i} className="text-[9px] font-bold px-1.5 py-0.5 bg-white/5 text-white/60 rounded border border-white/5">
+                                                                                        {skill}
+                                                                                    </span>
+                                                                                );
+                                                                            })}
+                                                                        </div>
+                                                                    )}
+                                                                </button>
+
+                                                                {/* Optional: Delete button overlay or inside button */}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                ) : (
+                                                    <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-white/[0.02] border border-white/5 rounded-3xl">
+                                                        <div className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center mb-3">
+                                                            <span className="text-2xl opacity-20">📊</span>
+                                                        </div>
+                                                        <h4 className="text-[13px] font-black text-white/40 tracking-tight">No Saved Progressions</h4>
+                                                        <p className="text-[10px] text-white/20 font-medium mt-1">Create your first custom build above</p>
+                                                    </div>
+                                                )}
+                                            </>
+                                        )}
+                                    </div>
+
+                                    {/* Page 4: Versions */}
+                                    <div className={`flex-1 flex flex-col transition-opacity duration-150 md:overflow-y-auto no-scrollbar ${modalPage === 4 ? 'opacity-100 relative' : 'opacity-0 pointer-events-none absolute inset-0'} `}>
+                                        <div className="flex items-center justify-between mb-4">
+                                            <h3 className="text-sm font-black text-white uppercase tracking-widest flex items-center gap-2">
+                                                <span className="text-ef-accent">🃏</span> Other Versions
+                                            </h3>
+                                            {versions.length > 0 && (
+                                                <span className="px-2 py-0.5 bg-ef-accent/20 text-ef-accent rounded text-[8px] font-black">{versions.length} Found</span>
                                             )}
+                                        </div>
+
+                                        {loadingVersions ? (
+                                            <div className="flex-1 flex flex-col items-center justify-center py-20 gap-3">
+                                                <div className="w-8 h-8 border-2 border-ef-accent border-t-transparent rounded-full animate-spin"></div>
+                                                <span className="text-[10px] font-black uppercase tracking-widest text-white/20">Searching squad...</span>
+                                            </div>
+                                        ) : versions.length > 0 ? (
+                                            <div className="grid grid-cols-4 sm:grid-cols-5 gap-2 pb-6">
+                                                {versions.map((v) => {
+                                                    const isCurrent = String(v.id || v.pesdb_id || v.ID || v.pes_id || v._id) === String(player.id || player.pesdb_id || player._id);
+                                                    return (
+                                                        <div 
+                                                            key={v.id || v.pesdb_id || v.ID || v._id} 
+                                                            className={`group flex flex-col items-center gap-1 cursor-pointer transition-all active:scale-95`}
+                                                            onClick={() => {
+                                                                if (!isCurrent && onSelectPlayer) {
+                                                                    onSelectPlayer(v);
+                                                                    setModalPage(0);
+                                                                    if (isEditing) setIsEditing(false);
+                                                                }
+                                                            }}
+                                                        >
+                                                            <div className={`relative w-full aspect-[7/10] bg-[#1a1a1c] border ${isCurrent ? 'border-ef-accent shadow-[0_0_15px_rgba(0,255,136,0.2)]' : 'border-white/10'} rounded-none overflow-hidden hover:border-ef-accent/50 transition-colors shadow-lg`}>
+                                                                <img 
+                                                                    src={getPlayerImage(v) || 'https://pesdb.net/efootball/images/players/0.png'} 
+                                                                    className="w-full h-full object-cover object-center"
+                                                                    alt={v.name}
+                                                                />
+                                                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
+                                                                
+                                                                {/* Current Indicator */}
+                                                                {isCurrent && (
+                                                                    <div className="absolute top-0 left-0 right-0 py-0.5 bg-ef-accent text-ef-dark text-[6px] font-black uppercase text-center tracking-tighter">
+                                                                        Current Card
+                                                                    </div>
+                                                                )}
+
+                                                                {/* Rating Badge */}
+                                                                <div className="absolute top-1 right-1 px-1 bg-black/80 rounded-none border border-white/5">
+                                                                    <span className="text-[8px] font-black text-ef-accent italic">{v.rating || v.Rating || '??'}</span>
+                                                                </div>
+
+                                                                {/* Position Badge */}
+                                                                <div className="absolute bottom-1 left-1 px-1 bg-ef-accent rounded-none">
+                                                                    <span className="text-[6px] font-black text-ef-dark uppercase">
+                                                                        {v.position || v.Position || '??'}
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                            <h4 className={`text-[8px] font-bold truncate w-full text-center leading-tight ${isCurrent ? 'text-ef-accent' : 'text-white/80'}`}>{v.name || v.Name}</h4>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        ) : (
+                                            <div className="flex-1 flex flex-col items-center justify-center py-20 opacity-20 text-center">
+                                                <span className="text-4xl mb-2">🔎</span>
+                                                <p className="text-[10px] font-black uppercase tracking-[0.2em]">No other versions in squad</p>
+                                                <p className="text-[8px] font-medium mt-1">Only players already in your team are shown here</p>
+                                            </div>
+                                        ) }
+                                        
+                                        <div className="mt-auto pt-4 border-t border-white/5">
+                                            <button
+                                                onClick={() => setModalPage(0)}
+                                                className="w-full h-[36px] bg-white/5 border border-white/10 rounded-xl text-[13px] font-medium tracking-tight text-white hover:bg-white/10 transition-all active:scale-95 font-inter"
+                                            >
+                                                Back to Overview
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
+
                             </div>
                         </div>
                     )}
+                    </>
                 </div>
             </div>
         </div>

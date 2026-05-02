@@ -1714,8 +1714,8 @@ function App() {
       <main 
         className={`
           transition-all duration-500 ease-in-out
-          ${isSidebarOpen ? 'ml-[200px] w-[calc(100%-200px)]' : 'ml-0 w-full'}
-          min-h-screen ${view === 'settings' ? 'pt-12 p-0' : 'pt-24 md:pt-28 p-3 md:p-8'}
+          ${isSidebarOpen ? 'md:ml-[200px] md:w-[calc(100%-200px)] ml-0 w-full' : 'ml-0 w-full'}
+          min-h-screen ${view === 'settings' ? 'pt-44 md:pt-24 p-0' : 'pt-48 md:pt-28 p-3 md:p-8'}
         `}
       >
         {view === 'settings' && (
@@ -2470,6 +2470,7 @@ function App() {
                 setStartInEditMode(false);
               }}
               onUpdate={handleUpdatePlayer}
+              onSelectPlayer={setSelectedPlayer}
               initialEditMode={startInEditMode}
               settings={settings}
               showAlert={showAlert}

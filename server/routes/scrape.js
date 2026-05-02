@@ -5,6 +5,8 @@ const cheerio = require('cheerio');
 const fs = require('fs');
 const path = require('path');
 
+const stripBOM = (content) => content.startsWith('\uFEFF') ? content.slice(1) : content;
+
 const dataPathServer = path.join(__dirname, '..', 'data', 'pesdb_players.json');
 const dataPathClient = path.join(__dirname, '..', '..', 'client', 'public', 'data', 'pesdb_players.json');
 
@@ -349,6 +351,10 @@ async function scrapePesdb(url) {
  
      const BATCH_SIZE = 5;
      for (let i = 0; i < scrapedPlayers.length; i += BATCH_SIZE) {
+         if (i > 0) {
+             console.log(`[Scraper] Waiting 1.5s before next batch to avoid 429...`);
+             await new Promise(r => setTimeout(r, 1500));
+         }
          const batch = scrapedPlayers.slice(i, i + BATCH_SIZE);
          await Promise.all(batch.map(async (player) => {
              try {
@@ -518,7 +524,13 @@ router.post('/', async (req, res) => {
             // Update server DB
             let currentPlayers = [];
             if (fs.existsSync(dataPathServer)) {
-                currentPlayers = JSON.parse(fs.readFileSync(dataPathServer, 'utf-8'));
+                try {
+                    const content = fs.readFileSync(dataPathServer, 'utf-8');
+                    currentPlayers = JSON.parse(stripBOM(content));
+                } catch (parseErr) {
+                    console.error('[Scraper] Error parsing local DB, starting fresh:', parseErr.message);
+                    currentPlayers = [];
+                }
             }
 
             scrapedPlayers.forEach(p => {
