@@ -14,7 +14,8 @@ import {
     Settings,
     History,
     LogOut,
-    X
+    X,
+    GitCompare
 } from 'lucide-react';
 
 const SidebarNav = ({ 
@@ -109,6 +110,12 @@ const SidebarNav = ({
             icon: Shield,
             onClick: () => { setView('badges'); },
             view: 'badges'
+        },
+        {
+            label: 'Compare',
+            icon: GitCompare,
+            onClick: () => { setView('compare'); },
+            view: 'compare'
         },
         {
             label: 'Settings',

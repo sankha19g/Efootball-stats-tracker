@@ -36,7 +36,6 @@ The project is split into a **Vite + React** frontend and an **Express.js** back
 
 - **`server.js`**: The main Express entry point.
 - **`routes/`**: Defines API endpoints for player data, scraping, and user-specific stats.
-- **`db.js`**: Handles the connection and interaction with Firebase Firestore.
 
 ---
 

@@ -43,6 +43,7 @@ const SocialDrawer = lazy(() => import('./components/SocialDrawer'));
 const BrochureModal = lazy(() => import('./components/BrochureModal'));
 const MySquadDB = lazy(() => import('./components/MySquadDB'));
 const ActivityLog = lazy(() => import('./components/ActivityLog'));
+const ComparePlayers = lazy(() => import('./components/ComparePlayers'));
 
 const parseEfDate = (dateStr) => {
   if (!dateStr) return null;
@@ -101,6 +102,7 @@ function App() {
   const [showSocial, setShowSocial] = useState(false);
   const [showBrochure, setShowBrochure] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [compareIds, setCompareIds] = useState([null, null]);
 
   // App Preferences
   const [settings, setSettings] = useState(() => {
@@ -245,10 +247,36 @@ function App() {
     }
   };
 
-  const handleReorderApps = (newApps) => {
-    setApps(newApps);
-    localStorage.setItem('ef-apps-order', JSON.stringify(newApps.map(a => a.id)));
+  const handleReorderApps = (newOrder) => {
+    setApps(newOrder);
+    localStorage.setItem('ef-apps-order', JSON.stringify(newOrder.map(a => a.id)));
   };
+
+  const handleAddToCompare = useCallback((playerIds) => {
+    const idsToAdd = Array.isArray(playerIds) ? playerIds : [playerIds];
+    
+    setCompareIds(prev => {
+      let next = [...prev];
+      
+      idsToAdd.forEach(id => {
+        if (!id || next.includes(id)) return;
+        
+        // Find first empty slot
+        const emptyIndex = next.indexOf(null);
+        if (emptyIndex !== -1) {
+          next[emptyIndex] = id;
+        } else if (next.length < 4) {
+          next.push(id);
+        }
+      });
+      
+      return next;
+    });
+    
+    setView('compare');
+    setSelectedPlayer(null); // Close modal
+  }, []);
+
 
   const handleLogout = async () => {
     showConfirm('Logout', 'Are you sure you want to log out?', async () => {
@@ -2471,6 +2499,7 @@ function App() {
               }}
               onUpdate={handleUpdatePlayer}
               onSelectPlayer={setSelectedPlayer}
+              onAddToCompare={handleAddToCompare}
               initialEditMode={startInEditMode}
               settings={settings}
               showAlert={showAlert}
@@ -2924,6 +2953,16 @@ function App() {
                     onUpdateBadge={handleUpdateBadge}
                     onAddBadge={handleAddPlayer}
                     onMergeBadge={handleMergeBadges}
+                  />
+                )}
+
+                {view === 'compare' && (
+                  <ComparePlayers
+                    players={players}
+                    onPlayerClick={setSelectedPlayer}
+                    settings={settings}
+                    initialSelectedIds={compareIds}
+                    onIdsChange={setCompareIds}
                   />
                 )}
               </>

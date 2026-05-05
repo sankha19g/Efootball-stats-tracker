@@ -20,7 +20,7 @@ const parseEfDate = (dateStr) => {
     return null;
 };
 
-const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectPlayer, initialEditMode = false, settings, showAlert, showConfirm }) => {
+const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectPlayer, onAddToCompare, initialEditMode = false, settings, showAlert, showConfirm }) => {
     const [isEditing, setIsEditing] = useState(initialEditMode);
     const [showProgressions, setShowProgressions] = useState(false);
     const [progressionOpenCreate, setProgressionOpenCreate] = useState(false);
@@ -2251,7 +2251,25 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
                                                 <span className="text-ef-accent">🃏</span> Other Versions
                                             </h3>
                                             {versions.length > 0 && (
-                                                <span className="px-2 py-0.5 bg-ef-accent/20 text-ef-accent rounded text-[8px] font-black">{versions.length} Found</span>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="px-2 py-0.5 bg-ef-accent/20 text-ef-accent rounded text-[8px] font-black">{versions.length} Found</span>
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            if (onAddToCompare) {
+                                                                const currentId = player._id || player.id || player.pesdb_id || player.ID;
+                                                                const versionIds = versions.map(v => v._id || v.id || v.ID || v.pesdb_id);
+                                                                onAddToCompare([currentId, ...versionIds]);
+                                                            }
+                                                        }}
+                                                        className="px-3 py-1 bg-ef-accent text-ef-dark rounded-lg text-[9px] font-black uppercase hover:scale-105 active:scale-95 transition-transform flex items-center gap-1 shadow-lg shadow-ef-accent/20"
+                                                    >
+                                                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                                            <path d="M16 3h5v5" /><path d="M8 21H3v-5" /><path d="M21 3l-7 7" /><path d="M3 21l7-7" />
+                                                        </svg>
+                                                        Compare All
+                                                    </button>
+                                                </div>
                                             )}
                                         </div>
 
@@ -2267,7 +2285,7 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
                                                     return (
                                                         <div 
                                                             key={v.id || v.pesdb_id || v.ID || v._id} 
-                                                            className={`group flex flex-col items-center gap-1 cursor-pointer transition-all active:scale-95`}
+                                                            className={`group relative flex flex-col items-center gap-1 cursor-pointer transition-all active:scale-95`}
                                                             onClick={() => {
                                                                 if (!isCurrent && onSelectPlayer) {
                                                                     onSelectPlayer(v);
@@ -2276,6 +2294,29 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
                                                                 }
                                                             }}
                                                         >
+                                                            {/* Compare Button Overlay */}
+                                                            {!isCurrent && (
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        if (onAddToCompare) {
+                                                                            const currentId = player._id || player.id || player.pesdb_id || player.ID;
+                                                                            const versionId = v._id || v.id || v.ID || v.pesdb_id;
+                                                                            onAddToCompare([currentId, versionId]);
+                                                                        }
+                                                                    }}
+                                                                    className="absolute top-1 left-1 z-20 w-8 h-8 bg-ef-accent text-ef-dark rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 hover:scale-110 active:scale-90 transition-all shadow-xl border border-white/20"
+                                                                    title="Compare with Current"
+                                                                >
+                                                                    <div className="flex flex-col items-center leading-none">
+                                                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                                                            <path d="M16 3h5v5" /><path d="M8 21H3v-5" /><path d="M21 3l-7 7" /><path d="M3 21l7-7" />
+                                                                        </svg>
+                                                                        <span className="text-[6px] font-black uppercase mt-0.5">VS</span>
+                                                                    </div>
+                                                                </button>
+                                                            )}
+
                                                             <div className={`relative w-full aspect-[7/10] bg-[#1a1a1c] border ${isCurrent ? 'border-ef-accent shadow-[0_0_15px_rgba(0,255,136,0.2)]' : 'border-white/10'} rounded-none overflow-hidden hover:border-ef-accent/50 transition-colors shadow-lg`}>
                                                                 <img 
                                                                     src={getPlayerImage(v) || 'https://pesdb.net/efootball/images/players/0.png'} 

@@ -13,7 +13,6 @@ This is the Express.js backend for the eFootball Stats Tracker, deployed on **Ve
 
 ## 📁 Key Files
 - `server.js`: Main entry point and middleware configuration.
-- `db.js`: Firestore database connection logic.
 - `routes/`: API endpoint definitions.
 - `vercel.json`: Deployment configuration for Vercel.
 
