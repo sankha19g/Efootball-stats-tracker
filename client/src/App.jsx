@@ -1743,7 +1743,7 @@ function App() {
         className={`
           transition-all duration-500 ease-in-out
           ${isSidebarOpen ? 'md:ml-[200px] md:w-[calc(100%-200px)] ml-0 w-full' : 'ml-0 w-full'}
-          min-h-screen ${view === 'settings' ? 'pt-44 md:pt-24 p-0' : 'pt-48 md:pt-28 p-3 md:p-8'}
+          min-h-screen ${view === 'settings' ? 'pt-44 md:pt-24 p-0' : view === 'compare' ? 'pt-32 md:pt-20 p-3 md:p-8' : 'pt-48 md:pt-28 p-3 md:p-8'}
         `}
       >
         {view === 'settings' && (

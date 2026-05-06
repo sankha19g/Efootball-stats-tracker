@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import PlayerCard from './PlayerCard';
-import { Search, X, TrendingUp, TrendingDown, Minus, GitCompare, Shield, Activity, Zap, Star, Plus } from 'lucide-react';
+import { Search, X, GitCompare, Shield, Activity, Zap, Star, Plus, User, Info } from 'lucide-react';
 
 const ComparePlayers = ({ players, onPlayerClick, settings, initialSelectedIds, onIdsChange }) => {
     const [selectedIds, setSelectedIds] = useState(initialSelectedIds || [null, null]);
@@ -74,8 +74,8 @@ const ComparePlayers = ({ players, onPlayerClick, settings, initialSelectedIds, 
             if (!term) return [];
             const searchLower = term.toLowerCase();
             return players.filter(p => 
-                p.name.toLowerCase().includes(searchLower) || 
-                p.position.toLowerCase().includes(searchLower) ||
+                (p.name || '').toLowerCase().includes(searchLower) || 
+                (p.position || '').toLowerCase().includes(searchLower) ||
                 (p.playstyle || '').toLowerCase().includes(searchLower) ||
                 (p.club || '').toLowerCase().includes(searchLower)
             );
@@ -136,12 +136,10 @@ const ComparePlayers = ({ players, onPlayerClick, settings, initialSelectedIds, 
         if (activeNPlayers.length < 2) return null;
         const skillSets = activeNPlayers.map(p => new Set([...(p.skills || []), ...(p.additionalSkills || [])]));
         
-        // Common to ALL active players
         const common = [...skillSets[0]].filter(skill => 
             skillSets.every(set => set.has(skill))
         );
 
-        // Unique to each active player
         const unique = activeNPlayers.map((p, i) => {
             const othersSkills = new Set();
             skillSets.forEach((set, j) => {
@@ -171,7 +169,6 @@ const ComparePlayers = ({ players, onPlayerClick, settings, initialSelectedIds, 
             return ranks[v] || (isNaN(parseFloat(v)) ? (v === 'None' ? -1 : 0) : parseFloat(v));
         });
 
-        // Calculate max/min only among valid values
         const validNumericValues = numericValues.filter(v => v !== -Infinity);
         let maxVal = validNumericValues.length > 0 ? Math.max(...validNumericValues) : -Infinity;
         let minVal = validNumericValues.length > 0 ? Math.min(...validNumericValues) : -Infinity;
@@ -184,32 +181,29 @@ const ComparePlayers = ({ players, onPlayerClick, settings, initialSelectedIds, 
             if (val === null || val === undefined || val === '-' || !showWinner) return false;
             if (validNumericValues.length < 2) return false;
             const num = numericValues[idx];
-            // Winner if it's the max (or min if reversed) and there's a difference
-            if (reverse) {
-                return num === minVal && validNumericValues.some(v => v !== minVal);
-            }
-            return num === maxVal && validNumericValues.some(v => v !== maxVal);
+            return reverse ? (num === minVal && validNumericValues.some(v => v !== minVal)) : (num === maxVal && validNumericValues.some(v => v !== maxVal));
         };
 
         return (
-            <div className="py-2.5 border-b border-white/5 group hover:bg-white/[0.02] transition-all px-6">
+            <div className="py-2 border-b border-[var(--border-subtle)] group hover:bg-[var(--bg-hover)] transition-all px-4">
                 <div className="flex flex-col gap-1.5">
-                    <div className="flex items-center gap-2">
-                        <div className="w-1 h-2.5 bg-ef-accent/30 rounded-full"></div>
-                        <span className="text-[9px] font-black uppercase tracking-[0.2em] text-white/20 group-hover:text-white/60 transition-colors">{label}</span>
-                    </div>
-                    <div className={`grid gap-2 items-end ${
+                    <span className="atlas-stat-label !text-[9px] !text-[var(--text-tertiary)] group-hover:!text-[var(--text-secondary)] transition-colors tracking-[0.15em] uppercase font-black">{label}</span>
+                    <div className={`grid gap-4 items-center ${
                         selectedIds.length === 2 ? 'grid-cols-2' : 
                         selectedIds.length === 3 ? 'grid-cols-3' : 
                         'grid-cols-2 lg:grid-cols-4'
                     }`}>
                         {values.map((v, i) => (
-                            <div key={i} className="flex flex-col gap-0.5">
+                            <div key={i} className="flex flex-col min-w-0">
                                 {selectedIds.length > 2 && nPlayers[i] && (
-                                    <span className="text-[7px] font-bold uppercase tracking-widest text-white/10 truncate leading-none">{nPlayers[i].name}</span>
+                                    <span className="text-[8px] font-black uppercase tracking-[0.1em] text-[var(--text-ghost)] truncate mb-0.5">{nPlayers[i].name}</span>
                                 )}
-                                <div className={`font-black italic transition-all duration-500 leading-tight ${isWinner(v, i) ? 'text-ef-accent text-lg scale-105 drop-shadow-[0_0_12px_rgba(0,255,136,0.3)]' : 'text-white/40 text-[13px]'}`}>
-                                    {v || '-'}{v && suffix && v !== '-' ? suffix : ''}
+                                <div className="flex items-center gap-1.5">
+                                    <div className={`font-mono transition-all duration-120 flex items-baseline gap-0.5 ${isWinner(v, i) ? 'text-[var(--accent-highlight)] font-bold' : 'text-[var(--text-primary)]'}`}>
+                                        <span className="text-[12px] tabular-nums">{v || '-'}</span>
+                                        {v && suffix && v !== '-' && <span className="text-[8px] opacity-40 font-ui font-black uppercase tracking-tighter ml-0.5">{suffix}</span>}
+                                    </div>
+                                    {isWinner(v, i) && <div className="w-1 h-1 rounded-full bg-[var(--accent-highlight)] animate-pulse" />}
                                 </div>
                             </div>
                         ))}
@@ -220,233 +214,230 @@ const ComparePlayers = ({ players, onPlayerClick, settings, initialSelectedIds, 
     };
 
     return (
-        <div className="max-w-7xl mx-auto p-4 md:p-6 animate-slide-up pb-32">
-            {/* Header Section */}
-            <div className="flex flex-col md:flex-row items-center justify-between mb-8 gap-6 bg-white/[0.02] border border-white/5 p-5 rounded-[2rem]">
-                <div className="flex items-center gap-5">
-                    <div className="w-14 h-14 rounded-2xl bg-ef-accent/10 border border-ef-accent/20 flex items-center justify-center shadow-lg shadow-ef-accent/5 shrink-0">
-                        <GitCompare className="w-7 h-7 text-ef-accent" />
+        <div className="max-w-7xl mx-auto px-4 md:px-8 pt-0 pb-32 atlas-reveal">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-12">
+                <div className="space-y-1">
+                    <div className="flex items-center gap-2 opacity-80">
+                        <GitCompare size={12} className="text-[var(--accent-highlight)]" />
+                        <p className="atlas-eyebrow !text-[9px]">ANALYTICS ENGINE V2.4</p>
                     </div>
-                    <div className="text-left text-center md:text-left">
-                        <h1 className="text-xl font-black uppercase tracking-[0.2em] italic text-white mb-1.5">Multi-Player Comparison</h1>
-                        <p className="text-[9px] font-bold uppercase tracking-widest text-white/30">Compare up to 4 squad members side-by-side</p>
-                    </div>
+                    <h1 className="atlas-display !text-5xl !tracking-tighter">Compare <span className="text-[var(--text-tertiary)]">Players</span></h1>
                 </div>
-
-                <div className="flex items-center gap-4">
+                
+                <div className="flex items-center gap-2 bg-[var(--bg-raised)] p-1.5 rounded-[var(--radius-lg)] border border-[var(--border-subtle)]">
                     <button 
                         onClick={resetComparison}
-                        className="flex items-center gap-2 px-5 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white transition-all shadow-lg hover:shadow-red-500/20"
-                        title="Remove all players from comparison"
+                        className="atlas-btn atlas-btn-ghost !h-9 !px-4 hover:!text-[var(--status-error)]"
                     >
-                        <X className="w-4 h-4" />
-                        <span className="text-[10px] font-black uppercase tracking-widest">Reset All</span>
+                        <X size={14} strokeWidth={1.5} />
+                        <span className="text-[10px] font-black tracking-widest">PURGE</span>
                     </button>
-
-                    {selectedIds.length < 4 && (
-                        <button 
-                            onClick={addSlot}
-                            className="flex items-center gap-2 px-5 py-3 rounded-xl bg-ef-accent/10 border border-ef-accent/20 text-ef-accent hover:bg-ef-accent hover:text-[#0a0a0c] transition-all shadow-lg hover:shadow-ef-accent/20"
-                            title="Add an empty slot to compare another player"
-                        >
-                            <Plus className="w-4 h-4" />
-                            <span className="text-[10px] font-black uppercase tracking-widest">Add Slot</span>
-                        </button>
-                    )}
+                    <div className="w-px h-4 bg-[var(--border-subtle)] mx-1"></div>
+                    <button 
+                        onClick={addSlot}
+                        disabled={selectedIds.length >= 4}
+                        className="atlas-btn atlas-btn-primary !h-9 !px-6 disabled:opacity-20 shadow-lg shadow-white/5"
+                    >
+                        <Plus size={14} strokeWidth={1.5} />
+                        <span className="text-[10px] font-black tracking-widest">ADD NODE</span>
+                    </button>
                 </div>
             </div>
 
-            <div className={`grid gap-6 mb-10 ${
+            {/* Selection Slots */}
+            <div className={`grid gap-4 mb-12 ${
                 selectedIds.length === 2 ? 'grid-cols-1 md:grid-cols-2' :
                 selectedIds.length === 3 ? 'grid-cols-1 md:grid-cols-3' :
                 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4'
             }`}>
-                {selectedIds.map((id, index) => (
-                    <div key={index} className="space-y-6 relative">
-                        <div className="relative group">
-                            <div className="flex items-center gap-3 bg-white/5 border border-white/10 rounded-2xl px-5 py-4 focus-within:border-ef-accent/50 focus-within:bg-white/[0.08] transition-all shadow-xl">
-                                <Search className="w-4 h-4 text-ef-accent opacity-50 group-focus-within:opacity-100 transition-opacity" />
-                                <input 
-                                    type="text"
-                                    placeholder={`Search Player ${index + 1}...`}
-                                    value={searchTerms[index]}
-                                    onChange={(e) => setSearchTerm(index, e.target.value)}
-                                    className="bg-transparent border-none outline-none text-white font-bold w-full placeholder:text-white/20 text-sm"
-                                />
-                                {searchTerms[index] && <X className="w-4 h-4 cursor-pointer opacity-40 hover:opacity-100" onClick={() => setSearchTerm(index, '')} />}
+                {selectedIds.map((id, idx) => (
+                    <div key={idx} className={`atlas-card !overflow-visible relative group transition-all duration-200 ${!id ? 'border-dashed border-[var(--border-strong)]' : ''} ${searchTerms[idx] ? 'z-[100]' : 'z-10'}`}>
+                        <div className="atlas-card-header justify-between bg-[var(--bg-raised)]">
+                            <div className="flex items-center gap-2">
+                                <span className={`atlas-dot ${id ? 'atlas-dot-info' : 'atlas-dot-warning'}`}></span>
+                                <span className="atlas-panel-title">Node {idx + 1}</span>
                             </div>
-                            
-                            {searchTerms[index] && filteredPlayers[index] && filteredPlayers[index].length > 0 && (
-                                <div className="absolute top-full left-0 right-0 mt-3 bg-[#0a0a0c]/95 border border-white/10 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] z-[100] overflow-y-auto max-h-[400px] backdrop-blur-2xl animate-dropdown custom-scrollbar">
-                                    {filteredPlayers[index].map(p => (
-                                        <button 
-                                            key={p._id}
-                                            onClick={() => setPlayerId(index, p._id)}
-                                            className="w-full flex items-center gap-4 p-4 hover:bg-ef-accent/10 border-b border-white/5 last:border-none transition-all text-left group/item"
-                                        >
-                                            <div className="w-10 h-10 rounded-xl overflow-hidden bg-white/5 border border-white/10 group-hover/item:border-ef-accent/30 transition-colors">
-                                                {p.image ? <img src={p.image} alt="" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center opacity-20">👤</div>}
+                            {selectedIds.length > 2 && (
+                                <button 
+                                    onClick={() => removeSlot(idx)}
+                                    className="atlas-btn atlas-btn-icon atlas-btn-sm atlas-btn-ghost opacity-0 group-hover:opacity-100"
+                                >
+                                    <X size={12} strokeWidth={1.5} />
+                                </button>
+                            )}
+                        </div>
+                        
+                        <div className="p-4 bg-[var(--bg-surface)]">
+                            {id ? (
+                                <div className="space-y-4">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-14 h-14 rounded-[var(--radius-md)] bg-[var(--bg-input)] flex items-center justify-center border border-[var(--border-subtle)] group-hover:border-[var(--border-strong)] transition-colors overflow-hidden">
+                                            {selectedPlayers[idx]?.image ? (
+                                                <img src={selectedPlayers[idx].image} alt="" className="w-full h-full object-cover" />
+                                            ) : (
+                                                <User size={24} strokeWidth={1.5} className="text-[var(--text-ghost)]" />
+                                            )}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <h3 className="text-[13px] font-bold text-[var(--text-primary)] truncate">{selectedPlayers[idx]?.name}</h3>
+                                            <div className="flex flex-col gap-0.5 mt-1">
+                                                <span className="text-[10px] text-[var(--accent-highlight)] font-black uppercase tracking-wider">{selectedPlayers[idx]?.position}</span>
+                                                <span className="text-[9px] text-[var(--text-tertiary)] uppercase tracking-widest font-bold truncate">{selectedPlayers[idx]?.club || 'Free Agent'}</span>
                                             </div>
-                                            <div className="flex flex-col">
-                                                <span className="text-sm font-black text-white group-hover/item:text-ef-accent transition-colors">{p.name}</span>
-                                                <span className="text-[10px] opacity-40 uppercase font-bold tracking-wider">{p.position} • {p.playstyle} • Rating {p.rating}</span>
-                                            </div>
-                                        </button>
-                                    ))}
+                                        </div>
+                                    </div>
+                                    <button 
+                                        onClick={() => setPlayerId(idx, null)}
+                                        className="atlas-btn atlas-btn-secondary w-full atlas-btn-sm"
+                                    >
+                                        REPLACE PLAYER
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className="relative py-2">
+                                    <div className="relative">
+                                        <Search size={14} strokeWidth={1.5} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-ghost)]" />
+                                        <input 
+                                            type="text"
+                                            placeholder="SEARCH DATABASE..."
+                                            className="atlas-input w-full pl-10 !h-10 uppercase text-[10px] font-bold tracking-widest"
+                                            value={searchTerms[idx]}
+                                            onChange={(e) => setSearchTerm(idx, e.target.value)}
+                                        />
+                                    </div>
+                                    
+                                    {searchTerms[idx] && (
+                                        <div className="absolute left-0 right-0 top-full mt-3 z-[100] max-h-[250px] overflow-y-auto overscroll-contain custom-scrollbar bg-zinc-950 shadow-[0_20px_50px_rgba(0,0,0,0.8)] border border-[var(--border-strong)] rounded-[var(--radius-lg)] pointer-events-auto">
+                                            {filteredPlayers[idx].length > 0 ? (
+                                                filteredPlayers[idx].map(p => (
+                                                    <div 
+                                                        key={p._id}
+                                                        onClick={() => setPlayerId(idx, p._id)}
+                                                        className="px-4 py-3 hover:bg-[var(--bg-selected)] cursor-pointer flex items-center justify-between border-b border-[var(--border-subtle)] last:border-0 transition-colors group/item"
+                                                    >
+                                                        <div className="min-w-0 flex items-center gap-3">
+                                                            <div className="w-10 h-10 rounded-[var(--radius-sm)] bg-[var(--bg-base)] flex items-center justify-center border border-[var(--border-subtle)] overflow-hidden">
+                                                                {p.image ? <img src={p.image} className="w-full h-full object-cover" /> : <User size={14} strokeWidth={1.5} />}
+                                                            </div>
+                                                            <div>
+                                                                <p className="text-[12px] font-bold text-[var(--text-primary)] truncate">{p.name}</p>
+                                                                <p className="text-[9px] text-[var(--text-tertiary)] uppercase font-bold tracking-widest">{p.position} · {p.rating} RATING</p>
+                                                            </div>
+                                                        </div>
+                                                        <Plus size={14} strokeWidth={1.5} className="text-[var(--text-ghost)] group-hover/item:text-[var(--accent-highlight)] transition-colors" />
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <div className="p-8 text-center">
+                                                    <Info size={20} strokeWidth={1} className="mx-auto mb-3 text-[var(--text-ghost)] opacity-50" />
+                                                    <span className="text-[10px] text-[var(--text-ghost)] uppercase tracking-widest font-black block">No Data Points Found</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </div>
-
-                        {selectedPlayers[index] ? (
-                            <div className="flex flex-col items-center animate-scale-in">
-                                <div 
-                                    onClick={() => onPlayerClick(selectedPlayers[index])}
-                                    className="w-full transform hover:scale-[1.02] transition-all duration-500 shadow-[0_30px_60px_-15px_rgba(0,255,136,0.5)] cursor-pointer max-w-[240px]"
-                                >
-                                    <PlayerCard player={selectedPlayers[index]} players={players} settings={{ ...settings, cardSize: 'md' }} />
-                                </div>
-                                <div className="flex gap-2 mt-6">
-                                    <button 
-                                        onClick={() => setPlayerId(index, null)} 
-                                        className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest text-white/40 hover:bg-white/10 hover:text-white transition-all"
-                                    >
-                                        Change
-                                    </button>
-                                    {selectedIds.length > 2 && (
-                                        <button 
-                                            onClick={() => removeSlot(index)} 
-                                            className="px-4 py-2 rounded-xl bg-red-500/10 border border-red-500/20 text-[10px] font-black uppercase tracking-widest text-red-500 hover:bg-red-500 hover:text-white transition-all"
-                                        >
-                                            Remove
-                                        </button>
-                                    )}
-                                </div>
-                            </div>
-                        ) : (
-                            <div className="aspect-[7/10] w-full max-w-[240px] mx-auto rounded-[2.5rem] border-2 border-dashed border-white/5 flex flex-col items-center justify-center gap-6 opacity-30 group hover:opacity-50 transition-opacity">
-                                <div className="w-16 h-16 rounded-full border-2 border-dashed border-current flex items-center justify-center group-hover:scale-110 transition-transform">
-                                    <span className="text-2xl font-black italic">{index + 1}</span>
-                                </div>
-                                <div className="text-center">
-                                    <span className="block text-[11px] font-black uppercase tracking-[0.2em] mb-1 text-ef-accent">Select Player</span>
-                                    <div className="flex flex-col gap-1">
-                                        <span className="block text-[9px] font-bold uppercase tracking-widest opacity-40">Candidate for analysis</span>
-                                        {selectedIds.length > 2 && (
-                                            <button 
-                                                onClick={() => removeSlot(index)}
-                                                className="text-[8px] text-red-500/60 hover:text-red-500 uppercase mt-2 font-black tracking-widest"
-                                            >
-                                                [ Remove Slot ]
-                                            </button>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                        )}
                     </div>
                 ))}
-
-
             </div>
 
             {/* Comparison Stats */}
             {activeNPlayers.length >= 2 ? (
-                <div className="bg-[#0a0a0c] border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl backdrop-blur-3xl animate-slide-up relative">
-                    <div className="absolute inset-0 bg-gradient-to-b from-ef-accent/[0.02] to-transparent pointer-events-none"></div>
-                    
-                    <div className="p-5 border-b border-white/5 flex items-center justify-between bg-white/[0.02]">
+                <div className="atlas-card !border-white/5 shadow-2xl">
+                    <div className="atlas-card-header justify-between px-6 bg-zinc-950/80 backdrop-blur-md border-b border-white/5">
                         <div className="flex items-center gap-3">
-                            <div className="w-0.5 h-6 bg-ef-accent rounded-full shadow-[0_0_10px_rgba(0,255,136,0.4)]"></div>
-                            <h2 className="text-base font-black uppercase tracking-[0.2em] text-white italic">Multi-Player Analysis</h2>
+                            <div className="w-2 h-2 rounded-full bg-[var(--accent-highlight)] animate-pulse shadow-[0_0_10px_var(--accent-highlight)]"></div>
+                            <h2 className="atlas-panel-title !text-[10px] !tracking-[0.2em] font-black text-white">Comparative Diagnostics <span className="mx-2 opacity-20">|</span> {activeNPlayers.length} Nodes Active</h2>
                         </div>
-                        <div className="px-3 py-1 rounded-full bg-ef-accent/10 border border-ef-accent/20">
-                            <span className="text-[9px] font-black uppercase tracking-widest text-ef-accent">{activeNPlayers.length} Players</span>
+                        <div className="hidden md:flex items-center gap-6">
+                            <div className="flex items-center gap-2 px-3 py-1 bg-zinc-900 rounded-full border border-white/5">
+                                <Zap size={10} strokeWidth={2} className="text-[var(--accent-highlight)]" />
+                                <span className="text-[8px] font-black text-zinc-400 uppercase tracking-widest">Efficiency Lead Highlighted</span>
+                            </div>
                         </div>
                     </div>
                     
-                    <div className="py-1">
-                        {/* Performance Section */}
-                        <div className="px-6 pt-5 pb-2 flex items-center gap-2">
-                            <Star className="w-3.5 h-3.5 text-ef-accent" />
-                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white">Performance Metrics</span>
-                        </div>
-                        <ComparisonRow label="Overall Rating" values={nPlayers.map(p => p?.rating)} />
-                        <ComparisonRow label="Matches Played" values={nPlayers.map(p => p?.matches)} />
-                        <ComparisonRow label="Goals Scored" values={nPlayers.map(p => p?.goals)} />
-                        <ComparisonRow label="Assists" values={nPlayers.map(p => p?.assists)} />
-                        <ComparisonRow label="Goals / Game" values={nPlayers.map(p => p?.goalsPerGame)} />
-                        <ComparisonRow label="Assists / Game" values={nPlayers.map(p => p?.assistsPerGame)} />
-                        <ComparisonRow label="G+A / Game" values={nPlayers.map(p => p?.gaPerGame)} />
-                        
-                        <div className="h-4 bg-white/[0.01]"></div>
-                        
-                        {/* Physical/Bio Section */}
-                        <div className="px-6 pt-5 pb-2 flex items-center gap-2">
-                            <Shield className="w-3.5 h-3.5 text-ef-accent" />
-                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white">Physical & Biographical</span>
-                        </div>
-                        <ComparisonRow label="Height" values={nPlayers.map(p => p?.height)} suffix=" cm" />
-                        <ComparisonRow label="Weight" values={nPlayers.map(p => p?.weight)} suffix=" kg" showWinner={false} />
-                        <ComparisonRow label="Age" values={nPlayers.map(p => p?.age)} reverse={true} />
-                        <ComparisonRow label="Preferred Foot" values={nPlayers.map(p => p?.strongFoot)} isNumeric={false} showWinner={false} />
-                        
-                        <div className="h-4 bg-white/[0.01]"></div>
-                        
-                        {/* Technical Section */}
-                        <div className="px-6 pt-5 pb-2 flex items-center gap-2">
-                            <Zap className="w-3.5 h-3.5 text-ef-accent" />
-                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white">Technical & Conditioning</span>
-                        </div>
-                        <ComparisonRow label="Form / Conditioning" values={nPlayers.map(p => p?.form)} isNumeric={false} />
-                        <ComparisonRow label="Injury Resistance" values={nPlayers.map(p => p?.injuryResistance)} isNumeric={false} />
-                        <ComparisonRow label="Weak Foot Usage" values={nPlayers.map(p => p?.weakFootUsage)} isNumeric={false} />
-                        <ComparisonRow label="Weak Foot Accuracy" values={nPlayers.map(p => p?.weakFootAccuracy)} isNumeric={false} />
-                        
-                        <div className="h-4 bg-white/[0.01]"></div>
-
-                        {/* Tactical Section */}
-                        <div className="px-6 pt-5 pb-2 flex items-center gap-2">
-                            <Activity className="w-3.5 h-3.5 text-ef-accent" />
-                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white">Tactical Profiling</span>
-                        </div>
-                        <ComparisonRow label="Main Playstyle" values={nPlayers.map(p => p?.playstyle)} isNumeric={false} showWinner={false} />
+                    <div className="divide-y divide-white/5 bg-black">
+                        {/* Section Generator */}
+                        {[
+                            { title: 'Performance Metrics', icon: <Star size={10} />, rows: [
+                                { label: 'Overall Rating', key: 'rating' },
+                                { label: 'Matches Played', key: 'matches' },
+                                { label: 'Goals Scored', key: 'goals' },
+                                { label: 'Assists Recorded', key: 'assists' },
+                                { label: 'Goals Per Game', key: 'goalsPerGame', suffix: 'AVG' },
+                                { label: 'Assists Per Game', key: 'assistsPerGame', suffix: 'AVG' },
+                                { label: 'G+A Contribution', key: 'gaPerGame', suffix: 'AVG' }
+                            ]},
+                            { title: 'Physical & Biographical', icon: <Shield size={10} />, rows: [
+                                { label: 'Height', key: 'height', suffix: 'CM' },
+                                { label: 'Weight', key: 'weight', suffix: 'KG', showWinner: false },
+                                { label: 'Biological Age', key: 'age', reverse: true },
+                                { label: 'Preferred Foot', key: 'strongFoot', isNumeric: false, showWinner: false }
+                            ]},
+                            { title: 'Technical & Conditioning', icon: <Zap size={10} />, rows: [
+                                { label: 'Form / Conditioning', key: 'form', isNumeric: false },
+                                { label: 'Injury Resistance', key: 'injuryResistance', isNumeric: false },
+                                { label: 'Weak Foot Usage', key: 'weakFootUsage', isNumeric: false },
+                                { label: 'Weak Foot Accuracy', key: 'weakFootAccuracy', isNumeric: false }
+                            ]},
+                            { title: 'Tactical Profiling', icon: <Activity size={10} />, rows: [
+                                { label: 'Main Playstyle', key: 'playstyle', isNumeric: false, showWinner: false }
+                            ]}
+                        ].map((section, sIdx) => (
+                            <div key={sIdx}>
+                                <div className="bg-zinc-950 px-6 py-2.5 flex items-center gap-3 border-b border-white/5">
+                                    <div className="text-zinc-500">{section.icon}</div>
+                                    <span className="text-[9px] font-black text-zinc-500 uppercase tracking-[0.2em]">{section.title}</span>
+                                </div>
+                                {section.rows.map((row, rIdx) => (
+                                    <ComparisonRow 
+                                        key={rIdx} 
+                                        label={row.label} 
+                                        values={nPlayers.map(p => p?.[row.key])}
+                                        suffix={row.suffix}
+                                        isNumeric={row.isNumeric !== false}
+                                        reverse={row.reverse}
+                                        showWinner={row.showWinner !== false}
+                                    />
+                                ))}
+                            </div>
+                        ))}
                         
                         {/* Positions Display */}
-                        <div className={`grid border-t border-white/5 bg-white/[0.01] ${
+                        <div className={`grid divide-x divide-white/5 border-t border-white/5 ${
                             selectedIds.length === 2 ? 'grid-cols-2' :
                             selectedIds.length === 3 ? 'grid-cols-3' :
                             'grid-cols-2 lg:grid-cols-4'
                         }`}>
                              {nPlayers.map((p, idx) => (
-                                 <div key={idx} className={`p-6 border-white/5 ${idx !== nPlayers.length - 1 ? 'border-r' : ''}`}>
+                                 <div key={idx} className="p-8 space-y-8 bg-zinc-950/20">
                                     {p ? (
                                         <>
-                                            <span className="block text-[9px] font-black uppercase tracking-[0.2em] text-white/20 mb-3 truncate">{p.name}</span>
-                                            <div className="space-y-3">
-                                                <div className="flex flex-col gap-2">
-                                                    <div>
-                                                        <span className="block text-[7px] uppercase tracking-widest text-white/40 mb-1.5">Main Position</span>
-                                                        <span className="px-2 py-0.5 bg-ef-accent text-[#0a0a0c] text-[9px] font-black rounded-md uppercase italic shadow-lg shadow-ef-accent/10">{p.position}</span>
-                                                    </div>
-                                                    {(p.secondaryPosition?.length > 0 || p.additionalPositions?.length > 0) && (
-                                                        <div>
-                                                            <span className="block text-[7px] uppercase tracking-widest text-white/40 mb-1.5">Other Positions</span>
-                                                            <div className="flex flex-wrap gap-1.5">
-                                                                {p.secondaryPosition?.map(pos => (
-                                                                    <span key={pos} className="px-2 py-0.5 bg-white/10 text-white text-[9px] font-black rounded-md uppercase italic">{pos}</span>
-                                                                ))}
-                                                                {p.additionalPositions?.map(pos => (
-                                                                    <span key={pos} className="px-2 py-0.5 border border-ef-accent/30 text-ef-accent/70 text-[9px] font-black rounded-md uppercase italic">{pos}</span>
-                                                                ))}
-                                                            </div>
+                                            <div className="flex items-center justify-between border-b border-white/5 pb-4">
+                                                <span className="text-[12px] font-black text-white truncate tracking-tight">{p.name}</span>
+                                                <span className="atlas-badge !bg-[var(--accent-highlight)]/10 !text-[var(--accent-highlight)] !border-[var(--accent-highlight)]/20 !text-[9px]">{p.position}</span>
+                                            </div>
+                                            <div className="space-y-6">
+                                                {(p.secondaryPosition?.length > 0 || p.additionalPositions?.length > 0) && (
+                                                    <div className="space-y-4">
+                                                        <span className="text-[8px] font-black text-zinc-600 uppercase tracking-[0.2em] block">Position Matrix</span>
+                                                        <div className="flex flex-wrap gap-2">
+                                                            {p.secondaryPosition?.map(pos => (
+                                                                <span key={pos} className="px-2 py-0.5 rounded-sm bg-zinc-900 border border-white/5 text-[9px] font-bold text-zinc-300">{pos}</span>
+                                                            ))}
+                                                            {p.additionalPositions?.map(pos => (
+                                                                <span key={pos} className="px-2 py-0.5 rounded-sm bg-black border border-zinc-800 text-[9px] font-bold text-zinc-500 opacity-60">{pos}</span>
+                                                            ))}
                                                         </div>
-                                                    )}
-                                                </div>
+                                                    </div>
+                                                )}
                                             </div>
                                         </>
                                     ) : (
-                                        <div className="flex flex-col items-center justify-center h-full opacity-10 py-6">
-                                            <span className="text-[9px] font-black uppercase tracking-widest">No Player</span>
+                                        <div className="flex flex-col items-center justify-center h-full opacity-5 py-12">
+                                            <span className="text-[10px] font-black tracking-[0.3em]">OFFLINE</span>
                                         </div>
                                     )}
                                  </div>
@@ -455,45 +446,55 @@ const ComparePlayers = ({ players, onPlayerClick, settings, initialSelectedIds, 
 
                         {/* Skills Analysis Section */}
                         {getSkillAnalysis && (
-                            <div className="border-t border-white/5">
-                                <div className="p-6 bg-white/[0.02]">
-                                    <div className="flex items-center justify-between mb-6">
-                                        <span className="text-[9px] font-black uppercase tracking-[0.2em] text-white/20 flex items-center gap-2">
-                                            <Zap className="w-3 h-3 text-ef-accent" />
-                                            Advanced Skill Comparison
-                                        </span>
-                                        <span className="text-[8px] font-bold text-white/20 uppercase tracking-[0.3em]">Intersection Matrix</span>
+                            <div className="p-10 bg-black border-t border-white/5">
+                                <div className="flex items-center gap-4 mb-10">
+                                    <div className="w-10 h-10 bg-[var(--accent-highlight)]/10 rounded-[var(--radius-md)] border border-[var(--accent-highlight)]/20 flex items-center justify-center">
+                                        <Zap size={18} strokeWidth={2} className="text-[var(--accent-highlight)]" />
                                     </div>
-                                    
-                                    <div className="space-y-8">
-                                        {/* Common Skills */}
-                                        <div className="space-y-3 bg-ef-accent/[0.03] p-5 rounded-2xl border border-ef-accent/10">
-                                            <div className="flex items-center justify-between border-b border-ef-accent/10 pb-3">
-                                                <span className="block text-[8px] font-black uppercase tracking-widest text-ef-accent">Shared by All</span>
-                                                <span className="text-[9px] font-bold text-ef-accent/60">{getSkillAnalysis.common.length} Shared</span>
+                                    <div>
+                                        <span className="text-[11px] font-black text-white uppercase tracking-[0.2em] block">Tactical Correlation Engine</span>
+                                        <p className="text-[9px] uppercase tracking-widest text-zinc-500 font-bold mt-1">Synergy and specialization diagnostics report</p>
+                                    </div>
+                                </div>
+                                
+                                <div className="space-y-12">
+                                    {/* Common Skills */}
+                                    <div className="space-y-5 bg-zinc-950 p-8 rounded-[var(--radius-lg)] border border-white/5 shadow-2xl relative overflow-hidden group">
+                                        <div className="absolute top-0 left-0 w-1 h-full bg-[var(--accent-highlight)] opacity-50"></div>
+                                        <div className="flex items-center justify-between border-b border-white/5 pb-5">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-1.5 h-1.5 rounded-full bg-[var(--accent-highlight)] shadow-[0_0_8px_var(--accent-highlight)]"></div>
+                                                <span className="text-[10px] font-black text-white uppercase tracking-[0.2em]">Core Synergy Matrix</span>
                                             </div>
-                                            <div className="flex flex-wrap gap-1.5">
-                                                {getSkillAnalysis.common.map(s => (
-                                                    <span key={s} className="text-[9px] font-bold text-ef-accent bg-ef-accent/10 px-2.5 py-0.5 rounded-md border border-ef-accent/20">{s}</span>
-                                                ))}
-                                                {getSkillAnalysis.common.length === 0 && <span className="text-[9px] text-white/10 italic">No shared skills</span>}
-                                            </div>
+                                            <span className="text-[10px] font-black text-[var(--accent-highlight)] uppercase tracking-widest bg-[var(--accent-highlight)]/10 px-3 py-1 rounded-full">{getSkillAnalysis.common.length} Overlapping Skills</span>
                                         </div>
+                                        <div className="flex flex-wrap gap-2.5 pt-2">
+                                            {getSkillAnalysis.common.map(s => (
+                                                <span key={s} className="px-3 py-1 rounded-sm bg-zinc-900 border border-white/10 text-[10px] font-bold text-zinc-300 hover:border-[var(--accent-highlight)]/30 transition-colors uppercase tracking-tight">{s}</span>
+                                            ))}
+                                            {getSkillAnalysis.common.length === 0 && <span className="text-[10px] text-zinc-600 italic font-black uppercase tracking-widest">Zero tactical overlap detected</span>}
+                                        </div>
+                                    </div>
 
-                                        {/* Unique Skills Grid */}
-                                        <div className={`grid gap-6 ${
+                                    {/* Unique Skills Grid */}
+                                    <div className="space-y-5">
+                                        <span className="text-[8px] font-black text-zinc-600 uppercase tracking-[0.3em] block px-1">Node Specializations</span>
+                                        <div className={`grid gap-5 ${
                                             selectedIds.length === 2 ? 'grid-cols-2' :
-                                            selectedIds.length === 3 ? 'grid-cols-3' :
+                                            selectedIds.length === 3 ? 'grid-cols-3' : 
                                             'grid-cols-2 lg:grid-cols-4'
                                         }`}>
                                             {getSkillAnalysis.unique.map((item, idx) => (
-                                                <div key={idx} className="space-y-3">
-                                                    <span className="block text-[7px] font-black uppercase tracking-widest text-white/40 border-b border-white/5 pb-1.5 truncate">Unique to {item.name}</span>
+                                                <div key={idx} className="space-y-5 p-6 rounded-[var(--radius-lg)] bg-zinc-950/50 border border-white/5 hover:border-white/10 hover:bg-zinc-950 transition-all group">
+                                                    <div className="flex items-center gap-2 border-b border-white/5 pb-4">
+                                                        <div className="w-1 h-3 bg-zinc-800 group-hover:bg-[var(--accent-highlight)] transition-colors"></div>
+                                                        <span className="text-[10px] font-black text-zinc-400 group-hover:text-white uppercase tracking-wider truncate block">{item.name}</span>
+                                                    </div>
                                                     <div className="flex flex-wrap gap-1.5">
                                                         {item.skills.map(s => (
-                                                            <span key={s} className="text-[8px] font-bold text-white/50 bg-white/5 px-1.5 py-0.5 rounded border border-white/5 transition-colors">{s}</span>
+                                                            <span key={s} className="text-[9px] font-bold text-zinc-500 hover:text-zinc-300 transition-colors cursor-default">#{s.replace(/\s+/g, '')}</span>
                                                         ))}
-                                                        {item.skills.length === 0 && <span className="text-[8px] text-white/10 italic">None</span>}
+                                                        {item.skills.length === 0 && <span className="text-[9px] text-zinc-700 italic font-black">NO_UNIQUE_DATA</span>}
                                                     </div>
                                                 </div>
                                             ))}
@@ -505,10 +506,14 @@ const ComparePlayers = ({ players, onPlayerClick, settings, initialSelectedIds, 
                     </div>
                 </div>
             ) : (
-                <div className="text-center py-32 bg-white/5 border border-white/10 rounded-[3rem] border-dashed opacity-20 mx-auto max-w-4xl">
-                    <GitCompare className="w-12 h-12 text-white/20 mx-auto mb-6" />
-                    <span className="block text-sm font-black uppercase tracking-[0.3em] mb-2">Comparison Engine Standby</span>
-                    <p className="text-[10px] uppercase tracking-widest font-bold text-white/40">Select at least two players to initialize side-by-side analysis</p>
+                <div className="text-center py-40 bg-black border border-dashed border-white/5 rounded-[var(--radius-lg)] mx-auto max-w-2xl atlas-reveal shadow-[inset_0_20px_50px_rgba(0,0,0,0.5)]">
+                    <div className="w-20 h-20 bg-zinc-950 rounded-full flex items-center justify-center border border-white/5 mx-auto mb-8 shadow-2xl">
+                        <GitCompare size={32} strokeWidth={1} className="text-zinc-800" />
+                    </div>
+                    <h2 className="text-[13px] font-black text-white uppercase tracking-[0.4em] mb-4">Engine Awaiting Input</h2>
+                    <p className="text-[10px] uppercase tracking-[0.2em] font-bold text-zinc-500 max-w-sm mx-auto leading-relaxed px-6 opacity-60">
+                        Populate selection nodes to initialize side-by-side performance analytics and tactical diagnostics
+                    </p>
                 </div>
             )}
         </div>

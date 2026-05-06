@@ -128,7 +128,7 @@ const SidebarNav = ({
     return (
         <>
             {/* Side Drawer Wrapper (Push Layout) */}
-            <div className={`fixed inset-y-0 left-0 z-[200] pointer-events-none transition-all duration-300 ${isOpen ? 'pointer-events-auto' : ''}`}>
+            <div className={`fixed inset-y-0 left-0 z-[110] md:z-[90] pointer-events-none transition-all duration-300 ${isOpen ? 'pointer-events-auto' : ''}`}>
                 {/* Drawer Content */}
                 <div className={`
                     absolute inset-y-0 left-0 w-[200px] bg-[#0a0a0c] border-r border-white/5 pt-0 md:pt-16
