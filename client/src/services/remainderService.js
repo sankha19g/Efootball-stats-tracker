@@ -11,7 +11,7 @@ import {
     setDoc,
     serverTimestamp
 } from 'firebase/firestore';
-import { db } from '../config/firebase';
+import { db } from '../firebase/firebase';
 
 const REMINDERS_COLLECTION = 'remainders';
 const REMINDER_ITEMS_COLLECTION = 'reminder_items';

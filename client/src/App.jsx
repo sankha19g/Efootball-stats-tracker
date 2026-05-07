@@ -25,7 +25,7 @@ import { PLAYSTYLES, ALL_SKILLS, PLAYER_SKILLS, SPECIAL_SKILLS } from './constan
 const SidebarNav = lazy(() => import('./components/SidebarNav'));
 const TopNav = lazy(() => import('./components/TopNav'));
 const PlayerForm = lazy(() => import('./components/PlayerForm'));
-const Leaderboard = lazy(() => import('./components/Leaderboard'));
+const Leaderboard = lazy(() => import('./pages/Leaderboard'));
 const PlayerDetailsModal = lazy(() => import('./components/PlayerDetailsModal'));
 const ScreenshotsModal = lazy(() => import('./components/ScreenshotsModal'));
 const LinksModal = lazy(() => import('./components/LinksModal'));
@@ -33,17 +33,17 @@ const ImportSummaryModal = lazy(() => import('./components/ImportSummaryModal'))
 const LoginModal = lazy(() => import('./components/LoginModal'));
 const SettingsModal = lazy(() => import('./components/SettingsModal'));
 const AppsDrawer = lazy(() => import('./components/AppsDrawer'));
-const DatabasePlayerList = lazy(() => import('./components/DatabasePlayerList'));
+const DatabasePlayerList = lazy(() => import('./pages/DatabasePlayerList'));
 const QuickStatsView = lazy(() => import('./components/QuickUpdateModal'));
-const SquadBuilder = lazy(() => import('./components/SquadBuilder'));
+const SquadBuilder = lazy(() => import('./pages/SquadBuilder'));
 const ProfileStatsModal = lazy(() => import('./components/ProfileStatsModal'));
 const RemainderModal = lazy(() => import('./components/RemainderModal'));
-const BadgesView = lazy(() => import('./components/BadgesView'));
+const BadgesView = lazy(() => import('./pages/BadgesView'));
 const SocialDrawer = lazy(() => import('./components/SocialDrawer'));
 const BrochureModal = lazy(() => import('./components/BrochureModal'));
-const MySquadDB = lazy(() => import('./components/MySquadDB'));
-const ActivityLog = lazy(() => import('./components/ActivityLog'));
-const ComparePlayers = lazy(() => import('./components/ComparePlayers'));
+const MySquadDB = lazy(() => import('./pages/MySquadDB'));
+const ActivityLog = lazy(() => import('./pages/ActivityLog'));
+const ComparePlayers = lazy(() => import('./pages/ComparePlayers'));
 
 const parseEfDate = (dateStr) => {
   if (!dateStr) return null;

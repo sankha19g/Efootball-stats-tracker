@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import PlayerCard from './PlayerCard';
+import PlayerCard from '../components/PlayerCard';
 import { Search, X, GitCompare, Shield, Activity, Zap, Star, Plus, User, Info } from 'lucide-react';
 
 const ComparePlayers = ({ players, onPlayerClick, settings, initialSelectedIds, onIdsChange }) => {

@@ -1,4 +1,4 @@
-import { db } from '../config/firebase';
+import { db } from '../firebase/firebase';
 import API_URL from '../config/api';
 import {
     collection,

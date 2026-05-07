@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
-import SquadEditor from './SquadEditor';
+import SquadEditor from '../components/SquadEditor';
 
 const FORMATIONS = {
     '4-3-3': [

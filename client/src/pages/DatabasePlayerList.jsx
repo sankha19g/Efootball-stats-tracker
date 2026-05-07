@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { getDatabasePlayers, invalidatePlayerCache } from '../services/footballApi';
 import { deleteFromGlobalDatabase } from '../services/playerService';
-import ScrapeDataModal from './ScrapeDataModal';
+import ScrapeDataModal from '../components/ScrapeDataModal';
 
 const DatabasePlayerList = ({ onAddPlayers, onBack, settings, ownersPlayers = [], showAlert, showConfirm }) => {
     const [players, setPlayers] = useState([]);
