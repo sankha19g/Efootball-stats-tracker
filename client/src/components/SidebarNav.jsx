@@ -15,7 +15,8 @@ import {
     History,
     LogOut,
     X,
-    GitCompare
+    GitCompare,
+    Shuffle
 } from 'lucide-react';
 
 const SidebarNav = ({ 
@@ -116,6 +117,12 @@ const SidebarNav = ({
             icon: GitCompare,
             onClick: () => { setView('compare'); },
             view: 'compare'
+        },
+        {
+            label: 'Random Chooser',
+            icon: Shuffle,
+            onClick: () => { setView('random-chooser'); },
+            view: 'random-chooser'
         },
         {
             label: 'Settings',

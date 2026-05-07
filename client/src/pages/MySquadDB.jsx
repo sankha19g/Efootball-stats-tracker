@@ -41,6 +41,7 @@ const MySquadDB = ({ players, onBack, onImport, onPlayerClick, isSidebarOpen }) 
         rating: '',
         playstyle: 'all',
         skill: 'all',
+        foot: 'all',
         missing: 'all'
     });
 
@@ -160,7 +161,25 @@ const MySquadDB = ({ players, onBack, onImport, onPlayerClick, isSidebarOpen }) 
         }
 
         if (filters.playstyle !== 'all') {
-            result = result.filter(p => p.playstyle === filters.playstyle);
+            result = result.filter(p => {
+                const playstyleVal = p.playstyle || '';
+                const playerPlaystyle = (typeof playstyleVal === 'object' ? (playstyleVal.name || playstyleVal.label || '') : String(playstyleVal)).toLowerCase();
+                return playerPlaystyle === filters.playstyle.toLowerCase();
+            });
+        }
+
+        if (filters.foot && filters.foot !== 'all') {
+            result = result.filter(p => {
+                const footVal = p.strongFoot || p.Foot || p.foot || p['Preferred Foot'] || p['Strong Foot'] || p.strong_foot || p.PreferredFoot || '';
+                const playerFoot = (typeof footVal === 'object' 
+                    ? (footVal.name || footVal.label || footVal.value || footVal.foot || '') 
+                    : String(footVal)).toLowerCase();
+                
+                const target = filters.foot.toLowerCase();
+                return playerFoot.includes(target) || 
+                       (target === 'right' && playerFoot === 'r') || 
+                       (target === 'left' && playerFoot === 'l');
+            });
         }
 
         if (filters.skill !== 'all') {
@@ -422,6 +441,7 @@ const MySquadDB = ({ players, onBack, onImport, onPlayerClick, isSidebarOpen }) 
                                         </select>
                                     </div>
 
+
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
                                             <label className="block text-[10px] font-black uppercase tracking-widest opacity-40 mb-2">Club</label>
@@ -499,6 +519,19 @@ const MySquadDB = ({ players, onBack, onImport, onPlayerClick, isSidebarOpen }) 
                                             {PLAYSTYLES.map(style => (
                                                 <option key={style} value={style} className="bg-[#121216]">{style}</option>
                                             ))}
+                                        </select>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-[10px] font-black uppercase tracking-widest opacity-40 mb-2">Preferred Foot</label>
+                                        <select 
+                                            value={filters.foot}
+                                            onChange={(e) => setFilters(prev => ({ ...prev, foot: e.target.value }))}
+                                            className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-xs font-bold text-white outline-none focus:border-ef-accent/50 transition-all cursor-pointer"
+                                        >
+                                            <option value="all" className="bg-[#121216]">All Feet</option>
+                                            <option value="Right" className="bg-[#121216]">Right Foot</option>
+                                            <option value="Left" className="bg-[#121216]">Left Foot</option>
                                         </select>
                                     </div>
 

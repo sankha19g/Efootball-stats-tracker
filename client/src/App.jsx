@@ -1,6 +1,8 @@
-import { useState, useEffect, useCallback, useMemo, lazy, Suspense, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo, lazy, Suspense, useRef, useTransition, startTransition } from 'react';
 import PlayerCard from './components/PlayerCard';
 import CustomDialog from './components/CustomDialog';
+import SidebarNav from './components/SidebarNav';
+import TopNav from './components/TopNav';
 import { subscribeToAuthChanges, logout } from './services/authService';
 import {
   getPlayers,
@@ -22,8 +24,6 @@ import { searchTeams, searchLeagues, normalizeString } from './services/football
 import { PLAYSTYLES, ALL_SKILLS, PLAYER_SKILLS, SPECIAL_SKILLS } from './constants';
 
 // Lazy Load Heavy Components
-const SidebarNav = lazy(() => import('./components/SidebarNav'));
-const TopNav = lazy(() => import('./components/TopNav'));
 const PlayerForm = lazy(() => import('./components/PlayerForm'));
 const Leaderboard = lazy(() => import('./pages/Leaderboard'));
 const PlayerDetailsModal = lazy(() => import('./components/PlayerDetailsModal'));
@@ -44,6 +44,7 @@ const BrochureModal = lazy(() => import('./components/BrochureModal'));
 const MySquadDB = lazy(() => import('./pages/MySquadDB'));
 const ActivityLog = lazy(() => import('./pages/ActivityLog'));
 const ComparePlayers = lazy(() => import('./pages/ComparePlayers'));
+const RandomChooser = lazy(() => import('./pages/RandomChooser'));
 
 const parseEfDate = (dateStr) => {
   if (!dateStr) return null;
@@ -70,6 +71,7 @@ const generateSource2Url = (nationality, playerId) => {
 };
 
 function App() {
+  const [isPending, startTransition] = useTransition();
   const [players, setPlayers] = useState([]);
   const [squads, setSquads] = useState([]);
   const [view, setView] = useState(() => localStorage.getItem('ef-app-view') || 'list'); // 'list', 'leaderboard', or 'squad-builder'
@@ -273,7 +275,9 @@ function App() {
       return next;
     });
     
-    setView('compare');
+    startTransition(() => {
+      setView('compare');
+    });
     setSelectedPlayer(null); // Close modal
   }, []);
 
@@ -336,6 +340,7 @@ function App() {
   }, [view, user, players]);
   const [filterPlaystyle, setFilterPlaystyle] = useState('All');
   const [filterSkill, setFilterSkill] = useState('All');
+  const [filterFoot, setFilterFoot] = useState('All');
   const [includeSecondary, setIncludeSecondary] = useState(false);
 
   // Custom Dialog State
@@ -1343,6 +1348,21 @@ function App() {
       });
     }
 
+    // Foot Filter
+    if (filterFoot !== 'All') {
+      result = result.filter(p => {
+        const footVal = p.strongFoot || p.Foot || p.foot || p['Preferred Foot'] || p['Strong Foot'] || p.strong_foot || p.PreferredFoot || '';
+        const playerFoot = (typeof footVal === 'object' 
+          ? (footVal.name || footVal.label || footVal.value || footVal.foot || '') 
+          : String(footVal)).toLowerCase();
+        
+        const targetFoot = filterFoot.toLowerCase();
+        return playerFoot.includes(targetFoot) || 
+               (targetFoot === 'right' && playerFoot === 'r') || 
+               (targetFoot === 'left' && playerFoot === 'l');
+      });
+    }
+
     // Missing Details Filter
     if (filterMissing !== 'All') {
       if (filterMissing === 'Missing Picture') {
@@ -1702,7 +1722,7 @@ function App() {
         setIsOpen={setIsSidebarOpen} 
         isOpen={isSidebarOpen}
         isSubView={view !== 'list'} 
-        setView={setView} 
+        setView={(v) => startTransition(() => setView(v))} 
         view={view}
         settings={settings}
         totalPlayers={processedPlayers.length}
@@ -1723,8 +1743,8 @@ function App() {
           isOpen={isSidebarOpen} 
           setIsOpen={setIsSidebarOpen} 
           view={view} 
-          setView={setView}
-          setShowAddPlayer={setShowAddPlayer}
+          setView={(v) => startTransition(() => setView(v))}
+          setShowAddPlayer={(v) => startTransition(() => setShowAddPlayer(v))}
           setShowDatabase={setShowDatabase}
           setShowScreenshots={setShowScreenshots}
           setShowLinks={setShowLinks}
@@ -1743,7 +1763,7 @@ function App() {
         className={`
           transition-all duration-500 ease-in-out
           ${isSidebarOpen ? 'md:ml-[200px] md:w-[calc(100%-200px)] ml-0 w-full' : 'ml-0 w-full'}
-          min-h-screen ${view === 'settings' ? 'pt-44 md:pt-24 p-0' : view === 'compare' ? 'pt-32 md:pt-20 p-3 md:p-8' : 'pt-48 md:pt-28 p-3 md:p-8'}
+          min-h-screen ${view === 'settings' ? 'pt-44 md:pt-24 p-0' : (view === 'compare' || view === 'random-chooser') ? 'pt-32 md:pt-20 p-3 md:p-8' : 'pt-48 md:pt-28 p-3 md:p-8'}
         `}
       >
         {view === 'settings' && (
@@ -1753,7 +1773,7 @@ function App() {
             user={user}
             players={players}
             setPlayers={setPlayers}
-            onClose={() => setView('list')}
+            onClose={() => startTransition(() => setView('list'))}
             generateSource2Url={generateSource2Url}
           />
         )}
@@ -1761,9 +1781,9 @@ function App() {
         {view === 'squad-db' && (
           <MySquadDB
             players={players}
-            onBack={() => setView('list')}
+            onBack={() => startTransition(() => setView('list'))}
             onImport={handleImportSquadJSON}
-            onPlayerClick={setSelectedPlayer}
+            onPlayerClick={(p) => startTransition(() => setSelectedPlayer(p))}
             isSidebarOpen={isSidebarOpen}
           />
         )}
@@ -1774,7 +1794,7 @@ function App() {
             user={user}
             activeSquad={activeSquad}
             onUpdate={(id, updates) => handleUpdatePlayer(id, updates, false)}
-            onClose={() => setView('list')}
+            onClose={() => startTransition(() => setView('list'))}
             isSidebarOpen={isSidebarOpen}
             settings={settings}
           />
@@ -2218,6 +2238,7 @@ function App() {
                       setFilterRating('');
                       setFilterPlaystyle('All');
                       setFilterSkill('All');
+                      setFilterFoot('All');
                       setFilterMissing('All');
                       setIncludeSecondary(false);
                     }}
@@ -2354,6 +2375,18 @@ function App() {
                             <option key={skill} value={skill} className="text-black">{skill}</option>
                           ))}
                         </optgroup>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-black uppercase tracking-widest opacity-30 mb-2">Preferred Foot</label>
+                      <select
+                        value={filterFoot}
+                        onChange={(e) => setFilterFoot(e.target.value)}
+                        className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-2.5 text-xs font-bold text-white outline-none focus:border-ef-accent/40 transition-all font-outfit"
+                      >
+                        <option value="All" className="text-black">All Feet</option>
+                        <option value="Right" className="text-black">Right Foot</option>
+                        <option value="Left" className="text-black">Left Foot</option>
                       </select>
                     </div>
                   </div>
@@ -2587,7 +2620,7 @@ function App() {
                                 settings.cardSize === 'md' ? 'w-[185px] sm:w-[210px]' :
                                 'w-[230px] sm:w-[260px]'
                               } transition-all duration-300 cursor-pointer`}
-                              onClick={() => !isSelectionMode && setSelectedPlayer(player)}
+                              onClick={() => !isSelectionMode && startTransition(() => setSelectedPlayer(player))}
                             >
                               <PlayerCard
                                 player={player}
@@ -2963,6 +2996,14 @@ function App() {
                     settings={settings}
                     initialSelectedIds={compareIds}
                     onIdsChange={setCompareIds}
+                  />
+                )}
+
+                {view === 'random-chooser' && (
+                  <RandomChooser
+                    players={players}
+                    settings={settings}
+                    onPlayerClick={setSelectedPlayer}
                   />
                 )}
               </>
