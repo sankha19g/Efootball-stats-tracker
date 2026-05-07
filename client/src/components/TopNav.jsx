@@ -74,7 +74,7 @@ const TopNav = ({
                 </div>
 
                 {/* Center Section: Search Bar (Desktop) */}
-                <div className="flex-1 max-w-xl flex items-center gap-4 hidden md:flex">
+                <div className="flex-1 max-w-xl hidden md:flex items-center gap-4">
                     <div className="flex-1 relative group">
                         <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none opacity-20 group-focus-within:opacity-100 group-focus-within:text-ef-accent transition-all">
                             <Search className="w-5 h-5" />
@@ -160,7 +160,7 @@ const TopNav = ({
 
                     <div className="h-8 w-[1px] bg-white/5 mx-2 hidden sm:block"></div>
 
-                    <div className="flex flex-col items-end px-3 py-1 bg-white/5 border border-white/10 rounded-xl min-w-[80px] hidden sm:flex">
+                    <div className="hidden sm:flex flex-col items-end px-3 py-1 bg-white/5 border border-white/10 rounded-xl min-w-[80px]">
                         <span className="text-[8px] font-black text-ef-accent uppercase tracking-widest leading-none mb-0.5">Size</span>
                         <span className="text-sm font-black text-white italic leading-none">{totalPlayers}</span>
                     </div>
