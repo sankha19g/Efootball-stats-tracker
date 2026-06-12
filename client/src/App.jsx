@@ -299,7 +299,7 @@ function App() {
   useEffect(() => {
     localStorage.setItem('ef-squad-sort', sortBy);
   }, [sortBy]);
-  const [filterPos, setFilterPos] = useState('All');
+  const [filterPos, setFilterPos] = useState([]);
   const [filterType, setFilterType] = useState('All');
   const [filterInactive, setFilterInactive] = useState(false);
   const [filterMissing, setFilterMissing] = useState('All');
@@ -1299,14 +1299,14 @@ function App() {
     }
 
     // Filter
-    if (filterPos !== 'All') {
+    if (filterPos.length > 0) {
       if (includeSecondary) {
         result = result.filter(p =>
-          p.position === filterPos ||
-          (p.secondaryPosition && p.secondaryPosition.toUpperCase().includes(filterPos.toUpperCase()))
+          filterPos.includes(p.position) ||
+          (p.secondaryPosition && filterPos.some(pos => p.secondaryPosition.toUpperCase().includes(pos.toUpperCase())))
         );
       } else {
-        result = result.filter(p => p.position === filterPos);
+        result = result.filter(p => filterPos.includes(p.position));
       }
     }
     if (filterType !== 'All') {
@@ -2229,7 +2229,7 @@ function App() {
                   <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">Active Filters</h3>
                   <button
                     onClick={() => {
-                      setFilterPos('All');
+                      setFilterPos([]);
                       setFilterType('All');
                       setFilterInactive(false);
                       setFilterLeague('');
@@ -2250,16 +2250,38 @@ function App() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-black uppercase tracking-widest opacity-40 mb-3">Position Filter</label>
-                    <select
-                      value={filterPos}
-                      onChange={(e) => setFilterPos(e.target.value)}
-                      className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm font-bold text-white outline-none focus:border-ef-accent/40 transition-all"
-                    >
-                      {['All', 'CF', 'SS', 'LWF', 'RWF', 'LMF', 'RMF', 'AMF', 'CMF', 'DMF', 'CB', 'LB', 'RB', 'GK'].map(pos => (
-                        <option key={pos} value={pos} className="text-black">{pos === 'All' ? 'All Positions' : pos}</option>
-                      ))}
-                    </select>
-                    {filterPos !== 'All' && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {['All', 'CF', 'SS', 'LWF', 'RWF', 'LMF', 'RMF', 'AMF', 'CMF', 'DMF', 'CB', 'LB', 'RB', 'GK'].map(pos => {
+                        const active = pos === 'All' ? filterPos.length === 0 : filterPos.includes(pos);
+                        return (
+                          <button
+                            key={pos}
+                            type="button"
+                            onClick={() => {
+                              if (pos === 'All') {
+                                setFilterPos([]);
+                              } else {
+                                setFilterPos(prev => {
+                                  if (prev.includes(pos)) {
+                                    return prev.filter(p => p !== pos);
+                                  } else {
+                                    return [...prev, pos];
+                                  }
+                                });
+                              }
+                            }}
+                            className={`px-2 py-1 sm:px-2.5 sm:py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all border ${
+                              active
+                                ? 'bg-ef-accent border-ef-accent text-ef-dark shadow-md shadow-ef-accent/20'
+                                : 'bg-black/40 border-white/10 text-white/60 hover:bg-white/5 hover:text-white'
+                            }`}
+                          >
+                            {pos}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {filterPos.length > 0 && (
                       <div className="mt-3 flex items-center gap-2">
                         <label className="relative inline-flex items-center cursor-pointer">
                           <input
@@ -2629,7 +2651,14 @@ function App() {
                                 isSelected={selectedIds.has(player._id)}
                                 onToggleSelect={handleToggleSelect}
                                 settings={settings}
-                                secondaryMatch={includeSecondary && filterPos !== 'All' && player.secondaryPosition?.toUpperCase().includes(filterPos.toUpperCase()) && player.position !== filterPos ? filterPos : null}
+                                secondaryMatch={
+                                  includeSecondary && 
+                                  filterPos.length > 0 && 
+                                  !filterPos.includes(player.position) && 
+                                  player.secondaryPosition 
+                                    ? filterPos.find(pos => player.secondaryPosition.toUpperCase().includes(pos.toUpperCase())) 
+                                    : null
+                                }
                               />
                             </div>
                           ))}
