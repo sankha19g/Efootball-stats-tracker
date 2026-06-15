@@ -256,13 +256,13 @@ function App() {
 
   const handleAddToCompare = useCallback((playerIds) => {
     const idsToAdd = Array.isArray(playerIds) ? playerIds : [playerIds];
-    
+
     setCompareIds(prev => {
       let next = [...prev];
-      
+
       idsToAdd.forEach(id => {
         if (!id || next.includes(id)) return;
-        
+
         // Find first empty slot
         const emptyIndex = next.indexOf(null);
         if (emptyIndex !== -1) {
@@ -271,10 +271,10 @@ function App() {
           next.push(id);
         }
       });
-      
+
       return next;
     });
-    
+
     startTransition(() => {
       setView('compare');
     });
@@ -300,7 +300,7 @@ function App() {
     localStorage.setItem('ef-squad-sort', sortBy);
   }, [sortBy]);
   const [filterPos, setFilterPos] = useState([]);
-  const [filterType, setFilterType] = useState('All');
+  const [filterTypes, setFilterTypes] = useState([]);
   const [filterInactive, setFilterInactive] = useState(false);
   const [filterMissing, setFilterMissing] = useState('All');
   const [filterLeague, setFilterLeague] = useState('');
@@ -315,9 +315,9 @@ function App() {
       if (view === 'activity-log' && user?.uid) {
         // Run cleanup first
         await cleanupActivityLogs(user.uid);
-        
+
         let logs = await getActivityLogs(user.uid);
-        
+
         // If no logs exist, backfill from existing players for immediate feedback
         if (logs.length === 0 && players.length > 0) {
           const backfill = players.slice(0, 10).map(p => ({
@@ -332,13 +332,13 @@ function App() {
           }));
           logs = backfill;
         }
-        
+
         setActivityLogs(logs);
       }
     };
     fetchLogs();
   }, [view, user, players]);
-  const [filterPlaystyle, setFilterPlaystyle] = useState('All');
+  const [filterPlaystyles, setFilterPlaystyles] = useState([]);
   const [filterSkill, setFilterSkill] = useState('All');
   const [filterFoot, setFilterFoot] = useState('All');
   const [includeSecondary, setIncludeSecondary] = useState(false);
@@ -459,9 +459,48 @@ function App() {
     cardTypes: [],
     playstyles: [],
     minGames: 100,
+    isCustomMinGames: false,
+    customMinGamesVal: '',
     includeSecondary: false
   });
   const [isLbFiltersExpanded, setIsLbFiltersExpanded] = useState(false);
+  const [isPlaystyleDropdownOpen, setIsPlaystyleDropdownOpen] = useState(false);
+  const playstyleDropdownRef = useRef(null);
+  const [isPositionDropdownOpen, setIsPositionDropdownOpen] = useState(false);
+  const positionDropdownRef = useRef(null);
+  const [isCardTypeDropdownOpen, setIsCardTypeDropdownOpen] = useState(false);
+  const cardTypeDropdownRef = useRef(null);
+  const [isSquadPositionDropdownOpen, setIsSquadPositionDropdownOpen] = useState(false);
+  const squadPositionDropdownRef = useRef(null);
+  const [isSquadCardTypeDropdownOpen, setIsSquadCardTypeDropdownOpen] = useState(false);
+  const squadCardTypeDropdownRef = useRef(null);
+  const [isSquadPlaystyleDropdownOpen, setIsSquadPlaystyleDropdownOpen] = useState(false);
+  const squadPlaystyleDropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (playstyleDropdownRef.current && !playstyleDropdownRef.current.contains(event.target)) {
+        setIsPlaystyleDropdownOpen(false);
+      }
+      if (positionDropdownRef.current && !positionDropdownRef.current.contains(event.target)) {
+        setIsPositionDropdownOpen(false);
+      }
+      if (cardTypeDropdownRef.current && !cardTypeDropdownRef.current.contains(event.target)) {
+        setIsCardTypeDropdownOpen(false);
+      }
+      if (squadPositionDropdownRef.current && !squadPositionDropdownRef.current.contains(event.target)) {
+        setIsSquadPositionDropdownOpen(false);
+      }
+      if (squadCardTypeDropdownRef.current && !squadCardTypeDropdownRef.current.contains(event.target)) {
+        setIsSquadCardTypeDropdownOpen(false);
+      }
+      if (squadPlaystyleDropdownRef.current && !squadPlaystyleDropdownRef.current.contains(event.target)) {
+        setIsSquadPlaystyleDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Bulk Edit Search State
   const [bulkClubResults, setBulkClubResults] = useState([]);
@@ -918,7 +957,7 @@ function App() {
           if (player && player.image2 && player.image2.endsWith('.webp')) {
             const newUrl = player.image2.replace('.webp', '.png');
             updatesList.push({ id, updates: { image2: newUrl } });
-            
+
             const idx = updatedPlayers.findIndex(p => p._id === id);
             if (idx !== -1) updatedPlayers[idx] = { ...updatedPlayers[idx], image2: newUrl };
           }
@@ -929,11 +968,11 @@ function App() {
           return;
         }
 
-        await updatePlayersBulk(user.uid, idArray.filter(id => updatesList.some(u => u.id === id)), { 
+        await updatePlayersBulk(user.uid, idArray.filter(id => updatesList.some(u => u.id === id)), {
           // This is a bit tricky since each update is different. 
           // We'll use batchUpdatePlayers from playerService instead.
         });
-        
+
         // Re-import service for batch update
         const { batchUpdatePlayers } = await import('./services/playerService');
         await batchUpdatePlayers(user.uid, updatesList);
@@ -1268,14 +1307,14 @@ function App() {
   }, [
     searchQuery,
     filterPos,
-    filterType,
+    filterTypes,
     filterInactive,
     filterMissing,
     filterLeague,
     filterClub,
     filterNationality,
     filterRating,
-    filterPlaystyle,
+    filterPlaystyles,
     filterSkill,
     sortBy
   ]);
@@ -1309,8 +1348,8 @@ function App() {
         result = result.filter(p => filterPos.includes(p.position));
       }
     }
-    if (filterType !== 'All') {
-      result = result.filter(p => p.cardType === filterType);
+    if (filterTypes.length > 0) {
+      result = result.filter(p => filterTypes.includes(p.cardType));
     }
     if (filterInactive) {
       result = result.filter(p => (p.matches || 0) === 0);
@@ -1328,8 +1367,8 @@ function App() {
     if (filterRating) {
       result = result.filter(p => p.rating && p.rating.toString() === filterRating.toString());
     }
-    if (filterPlaystyle !== 'All') {
-      result = result.filter(p => p.playstyle === filterPlaystyle);
+    if (filterPlaystyles.length > 0) {
+      result = result.filter(p => filterPlaystyles.includes(p.playstyle));
     }
     if (filterSkill !== 'All') {
       const target = filterSkill.toLowerCase().trim();
@@ -1352,14 +1391,14 @@ function App() {
     if (filterFoot !== 'All') {
       result = result.filter(p => {
         const footVal = p.strongFoot || p.Foot || p.foot || p['Preferred Foot'] || p['Strong Foot'] || p.strong_foot || p.PreferredFoot || '';
-        const playerFoot = (typeof footVal === 'object' 
-          ? (footVal.name || footVal.label || footVal.value || footVal.foot || '') 
+        const playerFoot = (typeof footVal === 'object'
+          ? (footVal.name || footVal.label || footVal.value || footVal.foot || '')
           : String(footVal)).toLowerCase();
-        
+
         const targetFoot = filterFoot.toLowerCase();
-        return playerFoot.includes(targetFoot) || 
-               (targetFoot === 'right' && playerFoot === 'r') || 
-               (targetFoot === 'left' && playerFoot === 'l');
+        return playerFoot.includes(targetFoot) ||
+          (targetFoot === 'right' && playerFoot === 'r') ||
+          (targetFoot === 'left' && playerFoot === 'l');
       });
     }
 
@@ -1520,7 +1559,7 @@ function App() {
           if (fieldNames[k]) {
             const oldVal = originalPlayer[k];
             const newVal = updatesToSave[k];
-            
+
             // Normalize values for comparison
             const normalize = (val) => {
               if (val === null || val === undefined) return '';
@@ -1540,7 +1579,7 @@ function App() {
               // Ensure we don't show "None -> None" or similar no-op labels
               const displayOld = normOld || 'None';
               const displayNew = normNew || 'None';
-              
+
               if (displayOld !== displayNew) {
                 changes.push(`${fieldNames[k]} (${displayOld} → ${displayNew})`);
               }
@@ -1555,7 +1594,7 @@ function App() {
             description: `${originalPlayer.name}: Updated ${changes.join(', ')}.`,
             player: { id: originalPlayer._id, name: originalPlayer.name, position: originalPlayer.position, rating: updatesToSave.rating || originalPlayer.rating, image: updatesToSave.image || originalPlayer.image }
           });
-          
+
           if (newLog) {
             setActivityLogs(prev => [newLog, ...prev]);
           }
@@ -1716,13 +1755,13 @@ function App() {
 
   return (
     <div className={`min-h-screen bg-[#000000] selection:bg-ef-accent selection:text-black ${settings.highPerf ? 'eco-mode ![animation:none] ![transition:none] *:![animation:none] *:![transition:none]' : ''}`}>
-      <TopNav 
-        searchQuery={searchQuery} 
-        setSearchQuery={setSearchQuery} 
-        setIsOpen={setIsSidebarOpen} 
+      <TopNav
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        setIsOpen={setIsSidebarOpen}
         isOpen={isSidebarOpen}
-        isSubView={view !== 'list'} 
-        setView={(v) => startTransition(() => setView(v))} 
+        isSubView={view !== 'list'}
+        setView={(v) => startTransition(() => setView(v))}
         view={view}
         settings={settings}
         totalPlayers={processedPlayers.length}
@@ -1739,10 +1778,10 @@ function App() {
       />
 
       <Suspense fallback={<LoadingFallback />}>
-        <SidebarNav 
-          isOpen={isSidebarOpen} 
-          setIsOpen={setIsSidebarOpen} 
-          view={view} 
+        <SidebarNav
+          isOpen={isSidebarOpen}
+          setIsOpen={setIsSidebarOpen}
+          view={view}
           setView={(v) => startTransition(() => setView(v))}
           setShowAddPlayer={(v) => startTransition(() => setShowAddPlayer(v))}
           setShowDatabase={setShowDatabase}
@@ -1756,756 +1795,902 @@ function App() {
           setShowSocial={setShowSocial}
           setShowBrochure={setShowBrochure}
         />
-      
 
-      {/* Main Content Area (Pushed by Sidebar) */}
-      <main 
-        className={`
+
+        {/* Main Content Area (Pushed by Sidebar) */}
+        <main
+          className={`
           transition-all duration-500 ease-in-out
           ${isSidebarOpen ? 'md:ml-[200px] md:w-[calc(100%-200px)] ml-0 w-full' : 'ml-0 w-full'}
           min-h-screen ${view === 'settings' ? 'pt-44 md:pt-24 p-0' : (view === 'compare' || view === 'random-chooser') ? 'pt-32 md:pt-20 p-3 md:p-8' : 'pt-48 md:pt-28 p-3 md:p-8'}
         `}
-      >
-        {view === 'settings' && (
-          <SettingsModal
-            settings={settings}
-            setSettings={setSettings}
-            user={user}
-            players={players}
-            setPlayers={setPlayers}
-            onClose={() => startTransition(() => setView('list'))}
-            generateSource2Url={generateSource2Url}
-          />
-        )}
+        >
+          {view === 'settings' && (
+            <SettingsModal
+              settings={settings}
+              setSettings={setSettings}
+              user={user}
+              players={players}
+              setPlayers={setPlayers}
+              onClose={() => startTransition(() => setView('list'))}
+              generateSource2Url={generateSource2Url}
+            />
+          )}
 
-        {view === 'squad-db' && (
-          <MySquadDB
-            players={players}
-            onBack={() => startTransition(() => setView('list'))}
-            onImport={handleImportSquadJSON}
-            onPlayerClick={(p) => startTransition(() => setSelectedPlayer(p))}
-            isSidebarOpen={isSidebarOpen}
-          />
-        )}
+          {view === 'squad-db' && (
+            <MySquadDB
+              players={players}
+              onBack={() => startTransition(() => setView('list'))}
+              onImport={handleImportSquadJSON}
+              onPlayerClick={(p) => startTransition(() => setSelectedPlayer(p))}
+              isSidebarOpen={isSidebarOpen}
+            />
+          )}
 
-        {view === 'quick-stats' && (
-          <QuickStatsView
-            players={players}
-            user={user}
-            activeSquad={activeSquad}
-            onUpdate={(id, updates) => handleUpdatePlayer(id, updates, false)}
-            onClose={() => startTransition(() => setView('list'))}
-            isSidebarOpen={isSidebarOpen}
-            settings={settings}
-          />
-        )}
+          {view === 'quick-stats' && (
+            <QuickStatsView
+              players={players}
+              user={user}
+              activeSquad={activeSquad}
+              onUpdate={(id, updates) => handleUpdatePlayer(id, updates, false)}
+              onClose={() => startTransition(() => setView('list'))}
+              isSidebarOpen={isSidebarOpen}
+              settings={settings}
+            />
+          )}
 
-        {view === 'activity-log' && (
-          <ActivityLog 
-            activities={activityLogs} 
-            isSidebarOpen={isSidebarOpen}
-            settings={settings}
-          />
-        )}
+          {view === 'activity-log' && (
+            <ActivityLog
+              activities={activityLogs}
+              isSidebarOpen={isSidebarOpen}
+              settings={settings}
+            />
+          )}
 
 
 
-      {/* Bulk Edit Modal */}
-      {showBulkEdit && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[1000] p-4 animate-fade-in backdrop-blur-sm">
-          <div className="w-full max-w-md max-h-[95vh] flex flex-col bg-ef-card border border-white/10 rounded-3xl overflow-hidden shadow-2xl animate-slide-up">
-            <div className="p-6 border-b border-white/5 flex justify-between items-center bg-white/5">
-              <h3 className="text-xl font-black flex items-center gap-3">
-                <span className="text-ef-blue">📝</span>
-                <span className="bg-gradient-to-r from-white to-white/60 bg-clip-text text-transparent uppercase italic">Bulk Edit Players</span>
-              </h3>
-              <button
-                onClick={() => setShowBulkEdit(false)}
-                className="text-white/40 hover:text-white transition-colors"
-              >✕</button>
-            </div>
-
-            <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-6">
-              <p className="text-[10px] font-black uppercase tracking-widest opacity-40">Updating {selectedIds.size} Selected Players</p>
-
-              {/* Suggestions Datalists */}
-              <datalist id="bulk-club-list">
-                {[...new Set(players.map(p => p.club))].filter(Boolean).sort().map(club => (
-                  <option key={club} value={club} />
-                ))}
-              </datalist>
-              <datalist id="bulk-league-list">
-                {[...new Set(players.map(p => p.league))].filter(Boolean).sort().map(league => (
-                  <option key={league} value={league} />
-                ))}
-              </datalist>
-              <datalist id="bulk-nat-list">
-                {[...new Set(players.map(p => p.nationality))].filter(Boolean).sort().map(nat => (
-                  <option key={nat} value={nat} />
-                ))}
-              </datalist>
-
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-[10px] font-black uppercase tracking-widest opacity-30 mb-2">Change Playstyle</label>
-                    <select
-                      value={bulkEditData.playstyle}
-                      onChange={(e) => setBulkEditData(prev => ({ ...prev, playstyle: e.target.value }))}
-                      className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm font-bold text-white outline-none focus:border-ef-blue/40 transition-all"
-                    >
-                      <option value="" className="text-black italic">-- Keep Original --</option>
-                      {PLAYSTYLES.map(style => (
-                        <option key={style} value={style} className="text-black">{style}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] font-black uppercase tracking-widest opacity-30 mb-2">Change Card Type</label>
-                    <select
-                      value={bulkEditData.cardType}
-                      onChange={(e) => setBulkEditData(prev => ({ ...prev, cardType: e.target.value }))}
-                      className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm font-bold text-white outline-none focus:border-ef-blue/40 transition-all"
-                    >
-                      <option value="" className="text-black italic">-- Keep Original --</option>
-                      {['Normal', 'Legend', 'Epic', 'Featured', 'POTW', 'BigTime', 'ShowTime'].map(type => (
-                        <option key={type} value={type} className="text-black">{type}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-[10px] font-black uppercase tracking-widest opacity-30 mb-2">Change Rating</label>
-                    <input
-                      type="number"
-                      placeholder="Enter rating..."
-                      value={bulkEditData.rating}
-                      onChange={(e) => setBulkEditData(prev => ({ ...prev, rating: e.target.value }))}
-                      className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm font-bold text-white outline-none focus:border-ef-blue/40 transition-all placeholder:text-white/10"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="relative">
-                    <label className="block text-[10px] font-black uppercase tracking-widest opacity-30 mb-2">Change Club Name</label>
-                    <div className="relative">
-                      <input
-                        type="text"
-                        placeholder="Search club..."
-                        value={bulkEditData.club}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setBulkEditData(prev => ({ ...prev, club: val }));
-                          if (bulkClubSearchTimeout.current) clearTimeout(bulkClubSearchTimeout.current);
-                          bulkClubSearchTimeout.current = setTimeout(() => handleBulkClubSearch(val), 400);
-                        }}
-                        onFocus={() => bulkEditData.club?.length >= 2 && setShowBulkClubResults(true)}
-                        onBlur={() => setTimeout(() => setShowBulkClubResults(false), 200)}
-                        className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm font-bold text-white outline-none focus:border-ef-blue/40 transition-all placeholder:text-white/10"
-                      />
-                      {isBulkSearchingClub && (
-                        <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                          <div className="w-3 h-3 border-2 border-ef-accent border-t-transparent rounded-full animate-spin"></div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] font-black uppercase tracking-widest opacity-30 mb-2">Change League</label>
-                    <input
-                      type="text"
-                      placeholder="Enter league..."
-                      list="bulk-league-list"
-                      value={bulkEditData.league}
-                      onChange={(e) => setBulkEditData(prev => ({ ...prev, league: e.target.value }))}
-                      className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm font-bold text-white outline-none focus:border-ef-blue/40 transition-all placeholder:text-white/10"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="relative">
-                    <label className="block text-[10px] font-black uppercase tracking-widest opacity-30 mb-2">Change Nationality</label>
-                    <div className="relative">
-                      <input
-                        type="text"
-                        placeholder="Search nation..."
-                        value={bulkEditData.nationality}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setBulkEditData(prev => ({ ...prev, nationality: val }));
-                          if (bulkNationSearchTimeout.current) clearTimeout(bulkNationSearchTimeout.current);
-                          bulkNationSearchTimeout.current = setTimeout(() => handleBulkNationSearch(val), 400);
-                        }}
-                        onFocus={() => bulkEditData.nationality?.length >= 2 && setShowBulkNationResults(true)}
-                        onBlur={() => setTimeout(() => setShowBulkNationResults(false), 200)}
-                        className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm font-bold text-white outline-none focus:border-ef-blue/40 transition-all placeholder:text-white/10"
-                      />
-                      {isBulkSearchingNation && (
-                        <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                          <div className="w-3 h-3 border-2 border-ef-accent border-t-transparent rounded-full animate-spin"></div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] font-black uppercase tracking-widest opacity-30 mb-2">Change Age</label>
-                    <input
-                      type="number"
-                      placeholder="Enter age..."
-                      value={bulkEditData.age}
-                      onChange={(e) => setBulkEditData(prev => ({ ...prev, age: e.target.value }))}
-                      className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm font-bold text-white outline-none focus:border-ef-blue/40 transition-all placeholder:text-white/10"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-[10px] font-black uppercase tracking-widest opacity-30 mb-2">Change Height (cm)</label>
-                    <input
-                      type="number"
-                      placeholder="Enter height..."
-                      value={bulkEditData.height}
-                      onChange={(e) => setBulkEditData(prev => ({ ...prev, height: e.target.value }))}
-                      className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm font-bold text-white outline-none focus:border-ef-blue/40 transition-all placeholder:text-white/10"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] font-black uppercase tracking-widest opacity-30 mb-2">Change Strong Foot</label>
-                    <select
-                      value={bulkEditData.strongFoot}
-                      onChange={(e) => setBulkEditData(prev => ({ ...prev, strongFoot: e.target.value }))}
-                      className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm font-bold text-white outline-none focus:border-ef-blue/40 transition-all"
-                    >
-                      <option value="" className="text-black italic">-- Keep Original --</option>
-                      <option value="Right" className="text-black">Right Foot</option>
-                      <option value="Left" className="text-black">Left Foot</option>
-                    </select>
-                  </div>
-                </div>
-
-                {showBulkClubResults && (
-                  <div className="absolute z-[60] left-6 right-6 mt-0 bg-[#1a1a1e] border border-white/10 rounded-xl shadow-2xl overflow-hidden max-h-[200px] overflow-y-auto">
-                    {bulkClubResults.length > 0 ? (
-                      bulkClubResults.map(club => (
-                        <div
-                          key={club.idTeam}
-                          onClick={() => handleSelectBulkClub(club)}
-                          className={`px-4 py-3 hover:bg-white/10 cursor-pointer flex items-center gap-3 transition-colors border-b border-white/5 last:border-0 ${club.isLocal ? 'bg-ef-accent/5' : ''}`}
-                        >
-                          <div className="relative">
-                            <img src={club.strBadge} alt="" className="w-8 h-8 object-contain" />
-                            {club.isLocal && (
-                              <div className="absolute -top-1 -right-1 bg-ef-accent text-black text-[6px] font-black px-1 rounded-sm shadow-sm ring-1 ring-black/10">BADGE</div>
-                            )}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-baseline gap-2">
-                              <span className="text-xs font-black text-white truncate">{club.strTeam}</span>
-                              {club.isLocal && <span className="text-[7px] text-ef-accent font-black uppercase tracking-tighter opacity-60">Existing</span>}
-                            </div>
-                            <div className="text-[8px] uppercase font-bold opacity-30 truncate">{club.strLeague || 'No League Info'}</div>
-                          </div>
-                          <div className="text-xs opacity-20">➜</div>
-                        </div>
-                      ))
-                    ) : (
-                      !isBulkSearchingClub && bulkEditData.club?.length >= 2 && (
-                        <div className="px-4 py-6 text-center text-white/40 text-[10px] font-bold uppercase tracking-widest">
-                          No clubs found
-                        </div>
-                      )
-                    )}
-                  </div>
-                )}
-
-                {showBulkNationResults && (
-                  <div className="absolute z-[60] left-6 right-6 mt-0 bg-[#1a1a1e] border border-white/10 rounded-xl shadow-2xl overflow-hidden max-h-[200px] overflow-y-auto">
-                    {bulkNationResults.length > 0 ? (
-                      bulkNationResults.map(nation => (
-                        <div
-                          key={nation.idTeam || nation.name}
-                          onClick={() => handleSelectBulkNation(nation)}
-                          className={`px-4 py-3 hover:bg-white/10 cursor-pointer flex items-center gap-3 transition-colors border-b border-white/5 last:border-0 ${nation.isLocal ? 'bg-ef-accent/5' : ''}`}
-                        >
-                          <div className="relative">
-                            <img src={nation.flag} alt="" className="w-8 h-8 object-contain" />
-                            {nation.isLocal && (
-                              <div className="absolute -top-1 -right-1 bg-ef-accent text-black text-[6px] font-black px-1 rounded-sm shadow-sm ring-1 ring-black/10">BADGE</div>
-                            )}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-baseline gap-2">
-                              <span className="text-xs font-black text-white truncate">{nation.name}</span>
-                              {nation.isLocal && <span className="text-[7px] text-ef-accent font-black uppercase tracking-tighter opacity-60">Existing</span>}
-                            </div>
-                          </div>
-                          <div className="text-xs opacity-20">➜</div>
-                        </div>
-                      ))
-                    ) : (
-                      !isBulkSearchingNation && bulkEditData.nationality?.length >= 2 && (
-                        <div className="px-4 py-6 text-center text-white/40 text-[10px] font-bold uppercase tracking-widest">
-                          No nations found
-                        </div>
-                      )
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {bulkEditData.league && (
-                <div className="p-3 bg-white/5 border border-white/10 rounded-xl flex items-center gap-3 animate-fade-in">
-                  <img src={bulkEditData.logos?.league} alt="" className="w-6 h-6 opacity-60" />
-                  <div>
-                    <p className="text-[8px] font-black text-white/30 uppercase tracking-widest">Auto-detected League</p>
-                    <p className="text-[10px] font-bold text-ef-accent uppercase">{bulkEditData.league}</p>
-                  </div>
-                </div>
-              )}
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="relative group">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    id="bulk-club-badge-input"
-                    className="hidden"
-                    onChange={(e) => handleBulkBadgeUpload('club', e.target.files[0])}
-                  />
+          {/* Bulk Edit Modal */}
+          {showBulkEdit && (
+            <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[1000] p-4 animate-fade-in backdrop-blur-sm">
+              <div className="w-full max-w-md max-h-[95vh] flex flex-col bg-ef-card border border-white/10 rounded-3xl overflow-hidden shadow-2xl animate-slide-up">
+                <div className="p-6 border-b border-white/5 flex justify-between items-center bg-white/5">
+                  <h3 className="text-xl font-black flex items-center gap-3">
+                    <span className="text-ef-blue">📝</span>
+                    <span className="bg-gradient-to-r from-white to-white/60 bg-clip-text text-transparent uppercase italic">Bulk Edit Players</span>
+                  </h3>
                   <button
-                    onClick={() => document.getElementById('bulk-club-badge-input').click()}
-                    className={`w-full py-4 border rounded-xl flex flex-col items-center justify-center gap-2 transition-all ${bulkEditData.logos?.club ? 'bg-ef-accent/10 border-ef-accent text-ef-accent' : 'bg-black/40 border-white/10 text-white/40 hover:bg-white/5 hover:text-white'}`}
-                  >
-                    {bulkEditData.logos?.club ? (
-                      <img src={bulkEditData.logos.club} className="w-6 h-6 object-contain" alt="" />
-                    ) : (
-                      <span className="text-xl">🛡️</span>
-                    )}
-                    <span className="text-[8px] font-black uppercase tracking-widest">{bulkEditData.logos?.club ? 'Change Club' : 'Add Club'}</span>
-                  </button>
+                    onClick={() => setShowBulkEdit(false)}
+                    className="text-white/40 hover:text-white transition-colors"
+                  >✕</button>
                 </div>
 
-                <div className="relative group">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    id="bulk-nation-badge-input"
-                    className="hidden"
-                    onChange={(e) => handleBulkBadgeUpload('country', e.target.files[0])}
-                  />
-                  <button
-                    onClick={() => document.getElementById('bulk-nation-badge-input').click()}
-                    className={`w-full py-4 border rounded-xl flex flex-col items-center justify-center gap-2 transition-all ${bulkEditData.logos?.country ? 'bg-ef-blue/10 border-ef-blue text-ef-blue' : 'bg-black/40 border-white/10 text-white/40 hover:bg-white/5 hover:text-white'}`}
-                  >
-                    {bulkEditData.logos?.country ? (
-                      <img src={bulkEditData.logos.country} className="w-6 h-6 object-contain" alt="" />
-                    ) : (
-                      <span className="text-xl">🏴</span>
-                    )}
-                    <span className="text-[8px] font-black uppercase tracking-widest">{bulkEditData.logos?.country ? 'Change Nation' : 'Add Nation'}</span>
-                  </button>
-                </div>
-              </div>
+                <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-6">
+                  <p className="text-[10px] font-black uppercase tracking-widest opacity-40">Updating {selectedIds.size} Selected Players</p>
 
-              {/* Bulk Tags */}
-              <div className="pt-4 border-t border-white/5">
-                <label className="block text-[10px] font-black uppercase tracking-widest opacity-30 mb-2">Add Bulk Tags</label>
-                <div className="flex gap-2 mb-3">
-                  <input
-                    type="text"
-                    value={bulkTagInput}
-                    onChange={(e) => setBulkTagInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        const tag = bulkTagInput.trim().toLowerCase().replace(/#/g, '');
-                        if (tag && !bulkEditData.tags.includes(tag)) {
-                          setBulkEditData(prev => ({ ...prev, tags: [...prev.tags, tag] }));
-                          setBulkTagInput('');
-                        }
-                      }
-                    }}
-                    placeholder="Type and press Enter to add tag..."
-                    className="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm font-bold text-white outline-none focus:border-ef-accent/40 transition-all placeholder:text-white/10"
-                  />
-                  <button
-                    onClick={() => {
-                      const tag = bulkTagInput.trim().toLowerCase().replace(/#/g, '');
-                      if (tag && !bulkEditData.tags.includes(tag)) {
-                        setBulkEditData(prev => ({ ...prev, tags: [...prev.tags, tag] }));
-                        setBulkTagInput('');
-                      }
-                    }}
-                    className="px-4 bg-ef-accent text-ef-dark rounded-xl font-black uppercase tracking-tighter text-[10px] hover:scale-105 active:scale-95 transition-all"
-                  >
-                    Add
-                  </button>
-                </div>
-                {bulkEditData.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-2">
-                    {bulkEditData.tags.map(tag => (
-                      <span key={tag} className="flex items-center gap-1.5 px-3 py-1 bg-ef-accent/10 border border-ef-accent/30 rounded-full text-ef-accent text-[9px] font-black uppercase tracking-widest group">
-                        #{tag}
-                        <button
-                          onClick={() => setBulkEditData(prev => ({ ...prev, tags: prev.tags.filter(t => t !== tag) }))}
-                          className="hover:text-white transition-colors"
-                        >✕</button>
-                      </span>
+                  {/* Suggestions Datalists */}
+                  <datalist id="bulk-club-list">
+                    {[...new Set(players.map(p => p.club))].filter(Boolean).sort().map(club => (
+                      <option key={club} value={club} />
                     ))}
-                  </div>
-                )}
-              </div>
+                  </datalist>
+                  <datalist id="bulk-league-list">
+                    {[...new Set(players.map(p => p.league))].filter(Boolean).sort().map(league => (
+                      <option key={league} value={league} />
+                    ))}
+                  </datalist>
+                  <datalist id="bulk-nat-list">
+                    {[...new Set(players.map(p => p.nationality))].filter(Boolean).sort().map(nat => (
+                      <option key={nat} value={nat} />
+                    ))}
+                  </datalist>
 
-              {/* Link inputs for badges */}
-              <div className="grid grid-cols-2 gap-3 pt-2">
-                <div>
-                  <label className="block text-[8px] font-black uppercase tracking-widest opacity-30 mb-1 ml-1">Or Paste Club Link</label>
-                  <input
-                    type="text"
-                    placeholder="https://..."
-                    value={bulkEditData.logos?.club?.startsWith('data:image') ? '' : bulkEditData.logos?.club}
-                    onChange={(e) => setBulkEditData(prev => ({ ...prev, logos: { ...prev.logos, club: e.target.value } }))}
-                    className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-[9px] font-bold text-white outline-none focus:border-ef-accent/40 transition-all placeholder:text-white/5"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[8px] font-black uppercase tracking-widest opacity-30 mb-1 ml-1">Or Paste Nation Link</label>
-                  <input
-                    type="text"
-                    placeholder="https://..."
-                    value={bulkEditData.logos?.country?.startsWith('data:image') ? '' : bulkEditData.logos?.country}
-                    onChange={(e) => setBulkEditData(prev => ({ ...prev, logos: { ...prev.logos, country: e.target.value } }))}
-                    className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-[9px] font-bold text-white outline-none focus:border-ef-blue/40 transition-all placeholder:text-white/5"
-                  />
-                </div>
-              </div>
-            </div>
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-[10px] font-black uppercase tracking-widest opacity-30 mb-2">Change Playstyle</label>
+                        <select
+                          value={bulkEditData.playstyle}
+                          onChange={(e) => setBulkEditData(prev => ({ ...prev, playstyle: e.target.value }))}
+                          className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm font-bold text-white outline-none focus:border-ef-blue/40 transition-all"
+                        >
+                          <option value="" className="text-black italic">-- Keep Original --</option>
+                          {PLAYSTYLES.map(style => (
+                            <option key={style} value={style} className="text-black">{style}</option>
+                          ))}
+                        </select>
+                      </div>
 
-            <div className="p-6 pt-0 flex flex-col gap-3">
-              <button
-                onClick={handleBulkConvertToPng}
-                className="w-full py-4 rounded-xl bg-white/5 border border-white/10 text-white font-black uppercase tracking-widest text-[10px] transition-all hover:bg-white/10 flex items-center justify-center gap-2"
-              >
-                🖼️ Force PNG Extension (Source 2)
-              </button>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setShowBulkEdit(false)}
-                  className="flex-1 py-4 px-6 rounded-xl bg-white/5 border border-white/10 text-white/40 font-black uppercase tracking-widest text-[10px] transition-all hover:bg-white/10"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleBulkUpdate}
-                  className="flex-1 py-4 px-6 rounded-xl bg-ef-blue text-white font-black uppercase tracking-widest text-[10px] transition-all shadow-lg shadow-ef-blue/20 hover:scale-[1.02] active:scale-95"
-                >
-                  Apply Changes
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Toggleable Filter/Sort Controls */}
-      {
-        view === 'list' && showFilters && (
-          <div className="max-w-6xl mx-auto mb-8 p-6 bg-ef-card border border-white/20 rounded-3xl animate-slide-up shadow-2xl relative overflow-hidden">
-            <div className="absolute top-0 left-0 w-1 h-full bg-ef-accent"></div>
-
-            <div className="flex flex-col md:flex-row gap-8">
-              {/* Left Column: Filters */}
-              <div className="flex-1 space-y-6">
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">Active Filters</h3>
-                  <button
-                    onClick={() => {
-                      setFilterPos([]);
-                      setFilterType('All');
-                      setFilterInactive(false);
-                      setFilterLeague('');
-                      setFilterClub('');
-                      setFilterNationality('');
-                      setFilterRating('');
-                      setFilterPlaystyle('All');
-                      setFilterSkill('All');
-                      setFilterFoot('All');
-                      setFilterMissing('All');
-                      setIncludeSecondary(false);
-                    }}
-                    className="text-[10px] font-black uppercase tracking-widest text-ef-accent hover:opacity-80 transition-opacity"
-                  >
-                    Clear All
-                  </button>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-black uppercase tracking-widest opacity-40 mb-3">Position Filter</label>
-                    <div className="flex flex-wrap gap-1.5">
-                      {['All', 'CF', 'SS', 'LWF', 'RWF', 'LMF', 'RMF', 'AMF', 'CMF', 'DMF', 'CB', 'LB', 'RB', 'GK'].map(pos => {
-                        const active = pos === 'All' ? filterPos.length === 0 : filterPos.includes(pos);
-                        return (
-                          <button
-                            key={pos}
-                            type="button"
-                            onClick={() => {
-                              if (pos === 'All') {
-                                setFilterPos([]);
-                              } else {
-                                setFilterPos(prev => {
-                                  if (prev.includes(pos)) {
-                                    return prev.filter(p => p !== pos);
-                                  } else {
-                                    return [...prev, pos];
-                                  }
-                                });
-                              }
-                            }}
-                            className={`px-2 py-1 sm:px-2.5 sm:py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all border ${
-                              active
-                                ? 'bg-ef-accent border-ef-accent text-ef-dark shadow-md shadow-ef-accent/20'
-                                : 'bg-black/40 border-white/10 text-white/60 hover:bg-white/5 hover:text-white'
-                            }`}
-                          >
-                            {pos}
-                          </button>
-                        );
-                      })}
+                      <div>
+                        <label className="block text-[10px] font-black uppercase tracking-widest opacity-30 mb-2">Change Card Type</label>
+                        <select
+                          value={bulkEditData.cardType}
+                          onChange={(e) => setBulkEditData(prev => ({ ...prev, cardType: e.target.value }))}
+                          className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm font-bold text-white outline-none focus:border-ef-blue/40 transition-all"
+                        >
+                          <option value="" className="text-black italic">-- Keep Original --</option>
+                          {['Normal', 'Legend', 'Epic', 'Featured', 'POTW', 'BigTime', 'ShowTime'].map(type => (
+                            <option key={type} value={type} className="text-black">{type}</option>
+                          ))}
+                        </select>
+                      </div>
                     </div>
-                    {filterPos.length > 0 && (
-                      <div className="mt-3 flex items-center gap-2">
-                        <label className="relative inline-flex items-center cursor-pointer">
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-[10px] font-black uppercase tracking-widest opacity-30 mb-2">Change Rating</label>
+                        <input
+                          type="number"
+                          placeholder="Enter rating..."
+                          value={bulkEditData.rating}
+                          onChange={(e) => setBulkEditData(prev => ({ ...prev, rating: e.target.value }))}
+                          className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm font-bold text-white outline-none focus:border-ef-blue/40 transition-all placeholder:text-white/10"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="relative">
+                        <label className="block text-[10px] font-black uppercase tracking-widest opacity-30 mb-2">Change Club Name</label>
+                        <div className="relative">
                           <input
-                            type="checkbox"
-                            className="sr-only peer"
-                            checked={includeSecondary}
-                            onChange={(e) => setIncludeSecondary(e.target.checked)}
+                            type="text"
+                            placeholder="Search club..."
+                            value={bulkEditData.club}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setBulkEditData(prev => ({ ...prev, club: val }));
+                              if (bulkClubSearchTimeout.current) clearTimeout(bulkClubSearchTimeout.current);
+                              bulkClubSearchTimeout.current = setTimeout(() => handleBulkClubSearch(val), 400);
+                            }}
+                            onFocus={() => bulkEditData.club?.length >= 2 && setShowBulkClubResults(true)}
+                            onBlur={() => setTimeout(() => setShowBulkClubResults(false), 200)}
+                            className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm font-bold text-white outline-none focus:border-ef-blue/40 transition-all placeholder:text-white/10"
                           />
-                          <div className="w-9 h-5 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white/40 after:border-white/10 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-ef-accent peer-checked:after:bg-ef-dark"></div>
-                        </label>
-                        <span className={`text-[10px] font-black uppercase tracking-wider transition-colors ${includeSecondary ? 'text-ef-accent' : 'opacity-30'}`}>
-                          Include Secondary Positions
-                        </span>
+                          {isBulkSearchingClub && (
+                            <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                              <div className="w-3 h-3 border-2 border-ef-accent border-t-transparent rounded-full animate-spin"></div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] font-black uppercase tracking-widest opacity-30 mb-2">Change League</label>
+                        <input
+                          type="text"
+                          placeholder="Enter league..."
+                          list="bulk-league-list"
+                          value={bulkEditData.league}
+                          onChange={(e) => setBulkEditData(prev => ({ ...prev, league: e.target.value }))}
+                          className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm font-bold text-white outline-none focus:border-ef-blue/40 transition-all placeholder:text-white/10"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="relative">
+                        <label className="block text-[10px] font-black uppercase tracking-widest opacity-30 mb-2">Change Nationality</label>
+                        <div className="relative">
+                          <input
+                            type="text"
+                            placeholder="Search nation..."
+                            value={bulkEditData.nationality}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setBulkEditData(prev => ({ ...prev, nationality: val }));
+                              if (bulkNationSearchTimeout.current) clearTimeout(bulkNationSearchTimeout.current);
+                              bulkNationSearchTimeout.current = setTimeout(() => handleBulkNationSearch(val), 400);
+                            }}
+                            onFocus={() => bulkEditData.nationality?.length >= 2 && setShowBulkNationResults(true)}
+                            onBlur={() => setTimeout(() => setShowBulkNationResults(false), 200)}
+                            className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm font-bold text-white outline-none focus:border-ef-blue/40 transition-all placeholder:text-white/10"
+                          />
+                          {isBulkSearchingNation && (
+                            <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                              <div className="w-3 h-3 border-2 border-ef-accent border-t-transparent rounded-full animate-spin"></div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] font-black uppercase tracking-widest opacity-30 mb-2">Change Age</label>
+                        <input
+                          type="number"
+                          placeholder="Enter age..."
+                          value={bulkEditData.age}
+                          onChange={(e) => setBulkEditData(prev => ({ ...prev, age: e.target.value }))}
+                          className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm font-bold text-white outline-none focus:border-ef-blue/40 transition-all placeholder:text-white/10"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-[10px] font-black uppercase tracking-widest opacity-30 mb-2">Change Height (cm)</label>
+                        <input
+                          type="number"
+                          placeholder="Enter height..."
+                          value={bulkEditData.height}
+                          onChange={(e) => setBulkEditData(prev => ({ ...prev, height: e.target.value }))}
+                          className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm font-bold text-white outline-none focus:border-ef-blue/40 transition-all placeholder:text-white/10"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] font-black uppercase tracking-widest opacity-30 mb-2">Change Strong Foot</label>
+                        <select
+                          value={bulkEditData.strongFoot}
+                          onChange={(e) => setBulkEditData(prev => ({ ...prev, strongFoot: e.target.value }))}
+                          className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm font-bold text-white outline-none focus:border-ef-blue/40 transition-all"
+                        >
+                          <option value="" className="text-black italic">-- Keep Original --</option>
+                          <option value="Right" className="text-black">Right Foot</option>
+                          <option value="Left" className="text-black">Left Foot</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {showBulkClubResults && (
+                      <div className="absolute z-[60] left-6 right-6 mt-0 bg-[#1a1a1e] border border-white/10 rounded-xl shadow-2xl overflow-hidden max-h-[200px] overflow-y-auto">
+                        {bulkClubResults.length > 0 ? (
+                          bulkClubResults.map(club => (
+                            <div
+                              key={club.idTeam}
+                              onClick={() => handleSelectBulkClub(club)}
+                              className={`px-4 py-3 hover:bg-white/10 cursor-pointer flex items-center gap-3 transition-colors border-b border-white/5 last:border-0 ${club.isLocal ? 'bg-ef-accent/5' : ''}`}
+                            >
+                              <div className="relative">
+                                <img src={club.strBadge} alt="" className="w-8 h-8 object-contain" />
+                                {club.isLocal && (
+                                  <div className="absolute -top-1 -right-1 bg-ef-accent text-black text-[6px] font-black px-1 rounded-sm shadow-sm ring-1 ring-black/10">BADGE</div>
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-baseline gap-2">
+                                  <span className="text-xs font-black text-white truncate">{club.strTeam}</span>
+                                  {club.isLocal && <span className="text-[7px] text-ef-accent font-black uppercase tracking-tighter opacity-60">Existing</span>}
+                                </div>
+                                <div className="text-[8px] uppercase font-bold opacity-30 truncate">{club.strLeague || 'No League Info'}</div>
+                              </div>
+                              <div className="text-xs opacity-20">➜</div>
+                            </div>
+                          ))
+                        ) : (
+                          !isBulkSearchingClub && bulkEditData.club?.length >= 2 && (
+                            <div className="px-4 py-6 text-center text-white/40 text-[10px] font-bold uppercase tracking-widest">
+                              No clubs found
+                            </div>
+                          )
+                        )}
+                      </div>
+                    )}
+
+                    {showBulkNationResults && (
+                      <div className="absolute z-[60] left-6 right-6 mt-0 bg-[#1a1a1e] border border-white/10 rounded-xl shadow-2xl overflow-hidden max-h-[200px] overflow-y-auto">
+                        {bulkNationResults.length > 0 ? (
+                          bulkNationResults.map(nation => (
+                            <div
+                              key={nation.idTeam || nation.name}
+                              onClick={() => handleSelectBulkNation(nation)}
+                              className={`px-4 py-3 hover:bg-white/10 cursor-pointer flex items-center gap-3 transition-colors border-b border-white/5 last:border-0 ${nation.isLocal ? 'bg-ef-accent/5' : ''}`}
+                            >
+                              <div className="relative">
+                                <img src={nation.flag} alt="" className="w-8 h-8 object-contain" />
+                                {nation.isLocal && (
+                                  <div className="absolute -top-1 -right-1 bg-ef-accent text-black text-[6px] font-black px-1 rounded-sm shadow-sm ring-1 ring-black/10">BADGE</div>
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-baseline gap-2">
+                                  <span className="text-xs font-black text-white truncate">{nation.name}</span>
+                                  {nation.isLocal && <span className="text-[7px] text-ef-accent font-black uppercase tracking-tighter opacity-60">Existing</span>}
+                                </div>
+                              </div>
+                              <div className="text-xs opacity-20">➜</div>
+                            </div>
+                          ))
+                        ) : (
+                          !isBulkSearchingNation && bulkEditData.nationality?.length >= 2 && (
+                            <div className="px-4 py-6 text-center text-white/40 text-[10px] font-bold uppercase tracking-widest">
+                              No nations found
+                            </div>
+                          )
+                        )}
                       </div>
                     )}
                   </div>
 
-                  <div>
-                    <label className="block text-xs font-black uppercase tracking-widest opacity-40 mb-3">Card Type Filter</label>
-                    <select
-                      value={filterType}
-                      onChange={(e) => setFilterType(e.target.value)}
-                      className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm font-bold text-white outline-none focus:border-ef-accent/40 transition-all"
-                    >
-                      {['All', 'Normal', 'Legend', 'Epic', 'Featured', 'POTW', 'BigTime', 'ShowTime'].map(type => (
-                        <option key={type} value={type} className="text-black">{type === 'All' ? 'All Card Types' : type}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-white/5">
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-[10px] font-black uppercase tracking-widest opacity-30 mb-2">Club Name</label>
-                      <input
-                        type="text"
-                        placeholder="Search club..."
-                        list="bulk-club-list"
-                        value={filterClub}
-                        onChange={(e) => setFilterClub(e.target.value)}
-                        className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-2.5 text-xs font-bold text-white outline-none focus:border-ef-accent/40 transition-all uppercase placeholder:text-white/10"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-black uppercase tracking-widest opacity-30 mb-2">League</label>
-                      <input
-                        type="text"
-                        placeholder="Search league..."
-                        list="bulk-league-list"
-                        value={filterLeague}
-                        onChange={(e) => setFilterLeague(e.target.value)}
-                        className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-2.5 text-xs font-bold text-white outline-none focus:border-ef-accent/40 transition-all uppercase placeholder:text-white/10"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-black uppercase tracking-widest opacity-30 mb-2">Rating</label>
-                      <input
-                        type="number"
-                        placeholder="Exact rating..."
-                        value={filterRating}
-                        onChange={(e) => setFilterRating(e.target.value)}
-                        className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-2.5 text-xs font-bold text-white outline-none focus:border-ef-accent/40 transition-all placeholder:text-white/10"
-                        min="1"
-                        max="150"
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-[10px] font-black uppercase tracking-widest opacity-30 mb-2">Nationality</label>
-                      <input
-                        type="text"
-                        placeholder="Search country..."
-                        list="bulk-nat-list"
-                        value={filterNationality}
-                        onChange={(e) => setFilterNationality(e.target.value)}
-                        className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-2.5 text-xs font-bold text-white outline-none focus:border-ef-accent/40 transition-all uppercase placeholder:text-white/10"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-black uppercase tracking-widest opacity-30 mb-2">Playstyle</label>
-                      <select
-                        value={filterPlaystyle}
-                        onChange={(e) => setFilterPlaystyle(e.target.value)}
-                        className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-2.5 text-xs font-bold text-white outline-none focus:border-ef-accent/40 transition-all font-outfit"
-                      >
-                        <option value="All" className="text-black">All Styles</option>
-                        {PLAYSTYLES.map(style => (
-                          <option key={style} value={style} className="text-black">{style}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-black uppercase tracking-widest opacity-30 mb-2">Skill Filter</label>
-                      <select
-                        value={filterSkill}
-                        onChange={(e) => setFilterSkill(e.target.value)}
-                        className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-2.5 text-xs font-bold text-white outline-none focus:border-ef-accent/40 transition-all font-outfit"
-                      >
-                        <option value="All" className="text-black">All Skills</option>
-                        <option value="Any Special Skill" className="text-black font-black">✨ Any Special Skill</option>
-
-                        <optgroup label="Special Skills" className="text-black bg-white/5">
-                          {SPECIAL_SKILLS.map(skill => (
-                            <option key={skill} value={skill} className="text-black">{skill}</option>
-                          ))}
-                        </optgroup>
-
-                        <optgroup label="Standard Skills" className="text-black bg-white/5">
-                          {PLAYER_SKILLS.map(skill => (
-                            <option key={skill} value={skill} className="text-black">{skill}</option>
-                          ))}
-                        </optgroup>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-black uppercase tracking-widest opacity-30 mb-2">Preferred Foot</label>
-                      <select
-                        value={filterFoot}
-                        onChange={(e) => setFilterFoot(e.target.value)}
-                        className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-2.5 text-xs font-bold text-white outline-none focus:border-ef-accent/40 transition-all font-outfit"
-                      >
-                        <option value="All" className="text-black">All Feet</option>
-                        <option value="Right" className="text-black">Right Foot</option>
-                        <option value="Left" className="text-black">Left Foot</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Divider */}
-              <div className="w-full md:w-px h-px md:h-auto bg-white/10 flex-shrink-0"></div>
-
-              {/* Right Column: Sort */}
-              <div className="md:w-72 flex flex-col justify-start">
-                <label className="block text-xs font-black uppercase tracking-widest opacity-40 mb-3">Sort By</label>
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  className="w-full bg-black/40 border border-white/10 rounded-xl px-5 py-3 text-sm font-bold outline-none cursor-pointer hover:border-ef-accent/50 transition-all text-white"
-                >
-                  <option value="rating" className="text-black">Overall Rating</option>
-                  <option value="uploaded_desc" className="text-black">Date Uploaded (Newest)</option>
-                  <option value="uploaded_asc" className="text-black">Date Uploaded (Oldest)</option>
-                  <option value="dateAdded_desc" className="text-black">Date Added (Newest)</option>
-                  <option value="dateAdded_asc" className="text-black">Date Added (Oldest)</option>
-                  <option value="goals" className="text-black">Top Scorer</option>
-                  <option value="assists" className="text-black">Most Assists</option>
-                  <option value="name" className="text-black">Player Name</option>
-                  <option value="position" className="text-black">Position</option>
-                </select>
-
-                <div className="mt-8">
-                  <label className="block text-xs font-black uppercase tracking-widest opacity-40 mb-3">Participation</label>
-                  <button
-                    onClick={() => setFilterInactive(!filterInactive)}
-                    className={`w-full py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all border ${filterInactive ? 'bg-ef-accent border-ef-accent text-ef-dark shadow-lg shadow-ef-accent/20' : 'bg-white/5 border-white/10 text-white/40 hover:bg-white/10 hover:text-white'}`}
-                  >
-                    {filterInactive ? '🎯 Showing 0 Matches' : '👻 Show Inactive'}
-                  </button>
-                </div>
-
-                <div className="mt-6 pt-6 border-t border-white/5">
-                  <label className="block text-xs font-black uppercase tracking-widest opacity-40 mb-3">Performance</label>
-                  <button
-                    onClick={() => {
-                      setSettings(prev => ({ ...prev, enablePagination: !prev.enablePagination }));
-                      setCurrentPage(1);
-                    }}
-                    className={`w-full py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all border ${settings.enablePagination ? 'bg-ef-blue border-ef-blue text-white shadow-lg' : 'bg-white/5 border-white/10 text-white/40 hover:bg-white/10 hover:text-white'}`}
-                  >
-                    {settings.enablePagination ? '📖 Pagination Enabled' : '📜 Infinite Scroll Mode'}
-                  </button>
-                  {settings.enablePagination && (
-                    <div className="mt-3 flex items-center justify-between px-1">
-                      <span className="text-[10px] font-black uppercase tracking-widest opacity-30">Per Page:</span>
-                      <div className="flex gap-1">
-                        {[20, 40, 80].map(size => (
-                          <button
-                            key={size}
-                            onClick={() => setSettings(prev => ({ ...prev, itemsPerPage: size }))}
-                            className={`w-8 h-8 rounded-lg text-[10px] font-black transition-all border ${settings.itemsPerPage === size ? 'bg-ef-blue border-ef-blue text-white' : 'bg-white/5 border-white/10 text-white/40 hover:text-white'}`}
-                          >
-                            {size}
-                          </button>
-                        ))}
+                  {bulkEditData.league && (
+                    <div className="p-3 bg-white/5 border border-white/10 rounded-xl flex items-center gap-3 animate-fade-in">
+                      <img src={bulkEditData.logos?.league} alt="" className="w-6 h-6 opacity-60" />
+                      <div>
+                        <p className="text-[8px] font-black text-white/30 uppercase tracking-widest">Auto-detected League</p>
+                        <p className="text-[10px] font-bold text-ef-accent uppercase">{bulkEditData.league}</p>
                       </div>
                     </div>
                   )}
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="relative group">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        id="bulk-club-badge-input"
+                        className="hidden"
+                        onChange={(e) => handleBulkBadgeUpload('club', e.target.files[0])}
+                      />
+                      <button
+                        onClick={() => document.getElementById('bulk-club-badge-input').click()}
+                        className={`w-full py-4 border rounded-xl flex flex-col items-center justify-center gap-2 transition-all ${bulkEditData.logos?.club ? 'bg-ef-accent/10 border-ef-accent text-ef-accent' : 'bg-black/40 border-white/10 text-white/40 hover:bg-white/5 hover:text-white'}`}
+                      >
+                        {bulkEditData.logos?.club ? (
+                          <img src={bulkEditData.logos.club} className="w-6 h-6 object-contain" alt="" />
+                        ) : (
+                          <span className="text-xl">🛡️</span>
+                        )}
+                        <span className="text-[8px] font-black uppercase tracking-widest">{bulkEditData.logos?.club ? 'Change Club' : 'Add Club'}</span>
+                      </button>
+                    </div>
+
+                    <div className="relative group">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        id="bulk-nation-badge-input"
+                        className="hidden"
+                        onChange={(e) => handleBulkBadgeUpload('country', e.target.files[0])}
+                      />
+                      <button
+                        onClick={() => document.getElementById('bulk-nation-badge-input').click()}
+                        className={`w-full py-4 border rounded-xl flex flex-col items-center justify-center gap-2 transition-all ${bulkEditData.logos?.country ? 'bg-ef-blue/10 border-ef-blue text-ef-blue' : 'bg-black/40 border-white/10 text-white/40 hover:bg-white/5 hover:text-white'}`}
+                      >
+                        {bulkEditData.logos?.country ? (
+                          <img src={bulkEditData.logos.country} className="w-6 h-6 object-contain" alt="" />
+                        ) : (
+                          <span className="text-xl">🏴</span>
+                        )}
+                        <span className="text-[8px] font-black uppercase tracking-widest">{bulkEditData.logos?.country ? 'Change Nation' : 'Add Nation'}</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Bulk Tags */}
+                  <div className="pt-4 border-t border-white/5">
+                    <label className="block text-[10px] font-black uppercase tracking-widest opacity-30 mb-2">Add Bulk Tags</label>
+                    <div className="flex gap-2 mb-3">
+                      <input
+                        type="text"
+                        value={bulkTagInput}
+                        onChange={(e) => setBulkTagInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            const tag = bulkTagInput.trim().toLowerCase().replace(/#/g, '');
+                            if (tag && !bulkEditData.tags.includes(tag)) {
+                              setBulkEditData(prev => ({ ...prev, tags: [...prev.tags, tag] }));
+                              setBulkTagInput('');
+                            }
+                          }
+                        }}
+                        placeholder="Type and press Enter to add tag..."
+                        className="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm font-bold text-white outline-none focus:border-ef-accent/40 transition-all placeholder:text-white/10"
+                      />
+                      <button
+                        onClick={() => {
+                          const tag = bulkTagInput.trim().toLowerCase().replace(/#/g, '');
+                          if (tag && !bulkEditData.tags.includes(tag)) {
+                            setBulkEditData(prev => ({ ...prev, tags: [...prev.tags, tag] }));
+                            setBulkTagInput('');
+                          }
+                        }}
+                        className="px-4 bg-ef-accent text-ef-dark rounded-xl font-black uppercase tracking-tighter text-[10px] hover:scale-105 active:scale-95 transition-all"
+                      >
+                        Add
+                      </button>
+                    </div>
+                    {bulkEditData.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-2">
+                        {bulkEditData.tags.map(tag => (
+                          <span key={tag} className="flex items-center gap-1.5 px-3 py-1 bg-ef-accent/10 border border-ef-accent/30 rounded-full text-ef-accent text-[9px] font-black uppercase tracking-widest group">
+                            #{tag}
+                            <button
+                              onClick={() => setBulkEditData(prev => ({ ...prev, tags: prev.tags.filter(t => t !== tag) }))}
+                              className="hover:text-white transition-colors"
+                            >✕</button>
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Link inputs for badges */}
+                  <div className="grid grid-cols-2 gap-3 pt-2">
+                    <div>
+                      <label className="block text-[8px] font-black uppercase tracking-widest opacity-30 mb-1 ml-1">Or Paste Club Link</label>
+                      <input
+                        type="text"
+                        placeholder="https://..."
+                        value={bulkEditData.logos?.club?.startsWith('data:image') ? '' : bulkEditData.logos?.club}
+                        onChange={(e) => setBulkEditData(prev => ({ ...prev, logos: { ...prev.logos, club: e.target.value } }))}
+                        className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-[9px] font-bold text-white outline-none focus:border-ef-accent/40 transition-all placeholder:text-white/5"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[8px] font-black uppercase tracking-widest opacity-30 mb-1 ml-1">Or Paste Nation Link</label>
+                      <input
+                        type="text"
+                        placeholder="https://..."
+                        value={bulkEditData.logos?.country?.startsWith('data:image') ? '' : bulkEditData.logos?.country}
+                        onChange={(e) => setBulkEditData(prev => ({ ...prev, logos: { ...prev.logos, country: e.target.value } }))}
+                        className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-[9px] font-bold text-white outline-none focus:border-ef-blue/40 transition-all placeholder:text-white/5"
+                      />
+                    </div>
+                  </div>
                 </div>
 
-                <div className="mt-6">
-                  <label className="block text-xs font-black uppercase tracking-widest opacity-40 mb-3">Missing Details</label>
-                  <select
-                    value={filterMissing}
-                    onChange={(e) => setFilterMissing(e.target.value)}
-                    className="w-full bg-black/40 border border-white/10 rounded-xl px-5 py-3 text-sm font-bold outline-none cursor-pointer hover:border-ef-accent/50 transition-all text-white"
+                <div className="p-6 pt-0 flex flex-col gap-3">
+                  <button
+                    onClick={handleBulkConvertToPng}
+                    className="w-full py-4 rounded-xl bg-white/5 border border-white/10 text-white font-black uppercase tracking-widest text-[10px] transition-all hover:bg-white/10 flex items-center justify-center gap-2"
                   >
-                    <option value="All" className="text-black">All Players</option>
-                    <option value="Missing Picture" className="text-black">Missing Picture</option>
-                    <option value="Missing Player ID" className="text-black">Missing Player ID</option>
-                    <option value="Missing Playstyle" className="text-black">Missing Playstyle</option>
-                    <option value="Missing Card Type" className="text-black">Missing Card Type</option>
-                    <option value="Missing Club" className="text-black">Missing Club</option>
-                    <option value="Missing League" className="text-black">Missing League</option>
-                    <option value="Missing Club Badge" className="text-black">Missing Club Badge</option>
-                    <option value="Missing Country Badge" className="text-black">Missing Country Badge</option>
-                    <option value="Missing Age" className="text-black">Missing Age</option>
-                    <option value="Missing Height" className="text-black">Missing Height</option>
-                    <option value="Missing Tags" className="text-black">Missing Tags</option>
-                    <option value="Missing Foot" className="text-black">Missing Foot</option>
-                    <option value="No Skills Found" className="text-black">No Skills Found</option>
-                    <option value="No Additional Skills" className="text-black">No Additional Skills (0/5)</option>
-                    <option value="Incomplete Additional Skills" className="text-black">Incomplete Additional Skills (1–4/5)</option>
-                  </select>
+                    🖼️ Force PNG Extension (Source 2)
+                  </button>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => setShowBulkEdit(false)}
+                      className="flex-1 py-4 px-6 rounded-xl bg-white/5 border border-white/10 text-white/40 font-black uppercase tracking-widest text-[10px] transition-all hover:bg-white/10"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleBulkUpdate}
+                      className="flex-1 py-4 px-6 rounded-xl bg-ef-blue text-white font-black uppercase tracking-widest text-[10px] transition-all shadow-lg shadow-ef-blue/20 hover:scale-[1.02] active:scale-95"
+                    >
+                      Apply Changes
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        )
-      }
+          )}
+
+          {/* Toggleable Filter/Sort Controls */}
+          {
+            view === 'list' && showFilters && (
+              <div className="max-w-6xl mx-auto mb-8 p-6 bg-ef-card border border-white/20 rounded-3xl animate-slide-up shadow-2xl relative z-30">
+                <div className="absolute top-0 left-0 w-1 h-full bg-ef-accent"></div>
+
+                <div className="flex flex-col md:flex-row gap-8">
+                  {/* Left Column: Filters */}
+                  <div className="flex-1 space-y-6">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">Active Filters</h3>
+                      <button
+                        onClick={() => {
+                          setFilterPos([]);
+                          setFilterTypes([]);
+                          setFilterInactive(false);
+                          setFilterLeague('');
+                          setFilterClub('');
+                          setFilterNationality('');
+                          setFilterRating('');
+                          setFilterPlaystyles([]);
+                          setFilterSkill('All');
+                          setFilterFoot('All');
+                          setFilterMissing('All');
+                          setIncludeSecondary(false);
+                        }}
+                        className="text-[10px] font-black uppercase tracking-widest text-ef-accent hover:opacity-80 transition-opacity"
+                      >
+                        Clear All
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="relative" ref={squadPositionDropdownRef}>
+                        <label className="block text-xs font-black uppercase tracking-widest opacity-40 mb-3">Positions</label>
+                        <button
+                          type="button"
+                          onClick={() => setIsSquadPositionDropdownOpen(!isSquadPositionDropdownOpen)}
+                          className="w-full flex items-center justify-between bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs font-bold text-white outline-none hover:border-ef-accent/40 focus:border-ef-accent/40 transition-all text-left"
+                        >
+                          <span className="truncate pr-2">
+                            {filterPos.length === 0
+                              ? 'All Positions'
+                              : `${filterPos.length} Selected (${filterPos.slice(0, 2).join(', ')}${filterPos.length > 2 ? '...' : ''})`
+                            }
+                          </span>
+                          <span className={`text-[10px] opacity-40 transition-transform duration-300 ${isSquadPositionDropdownOpen ? 'rotate-180' : ''}`}>▼</span>
+                        </button>
+
+                        {isSquadPositionDropdownOpen && (
+                          <div
+                            className="absolute left-0 right-0 z-50 mt-2 max-h-60 overflow-y-auto border border-white/10 rounded-xl shadow-2xl p-2 custom-scrollbar animate-dropdown"
+                            style={{ backgroundColor: '#121214', opacity: 1 }}
+                          >
+                            <div className="flex justify-between items-center px-2 py-1.5 mb-1.5 border-b border-white/5">
+                              <button
+                                type="button"
+                                onClick={() => setFilterPos([])}
+                                className="text-[9px] font-black uppercase tracking-wider text-white/40 hover:text-white transition-colors"
+                              >
+                                Clear All
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setFilterPos(['CF', 'SS', 'LWF', 'RWF', 'LMF', 'RMF', 'AMF', 'CMF', 'DMF', 'CB', 'LB', 'RB', 'GK'])}
+                                className="text-[9px] font-black uppercase tracking-wider text-ef-accent hover:text-white transition-colors"
+                              >
+                                Select All
+                              </button>
+                            </div>
+                            <div className="space-y-0.5">
+                              {['CF', 'SS', 'LWF', 'RWF', 'LMF', 'RMF', 'AMF', 'CMF', 'DMF', 'CB', 'LB', 'RB', 'GK'].map(pos => {
+                                const isSelected = filterPos.includes(pos);
+                                return (
+                                  <button
+                                    key={pos}
+                                    type="button"
+                                    onClick={() => {
+                                      setFilterPos(prev => {
+                                        if (prev.includes(pos)) {
+                                          return prev.filter(p => p !== pos);
+                                        } else {
+                                          return [...prev, pos];
+                                        }
+                                      });
+                                    }}
+                                    className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-bold transition-all text-left hover:bg-white/5 ${isSelected ? 'text-ef-accent bg-white/5' : 'text-white/60 hover:text-white'}`}
+                                  >
+                                    <span>{pos}</span>
+                                    {isSelected ? (
+                                      <span className="text-ef-accent text-[10px]">✓</span>
+                                    ) : (
+                                      <span className="w-3 h-3 rounded border border-white/10 flex-shrink-0"></span>
+                                    )}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+
+                        {filterPos.length > 0 && (
+                          <div className="mt-3 flex items-center gap-2">
+                            <label className="relative inline-flex items-center cursor-pointer">
+                              <input
+                                type="checkbox"
+                                className="sr-only peer"
+                                checked={includeSecondary}
+                                onChange={(e) => setIncludeSecondary(e.target.checked)}
+                              />
+                              <div className="w-9 h-5 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white/40 after:border-white/10 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-ef-accent peer-checked:after:bg-ef-dark"></div>
+                            </label>
+                            <span className={`text-[10px] font-black uppercase tracking-wider transition-colors ${includeSecondary ? 'text-ef-accent' : 'opacity-30'}`}>
+                              Include Secondary Positions
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="relative" ref={squadCardTypeDropdownRef}>
+                        <label className="block text-xs font-black uppercase tracking-widest opacity-40 mb-3">Card Type Filter</label>
+                        <button
+                          type="button"
+                          onClick={() => setIsSquadCardTypeDropdownOpen(!isSquadCardTypeDropdownOpen)}
+                          className="w-full flex items-center justify-between bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs font-bold text-white outline-none hover:border-ef-accent/40 focus:border-ef-accent/40 transition-all text-left"
+                        >
+                          <span className="truncate pr-2">
+                            {filterTypes.length === 0
+                              ? 'All Card Types'
+                              : `${filterTypes.length} Selected (${filterTypes.slice(0, 2).join(', ')}${filterTypes.length > 2 ? '...' : ''})`
+                            }
+                          </span>
+                          <span className={`text-[10px] opacity-40 transition-transform duration-300 ${isSquadCardTypeDropdownOpen ? 'rotate-180' : ''}`}>▼</span>
+                        </button>
+
+                        {isSquadCardTypeDropdownOpen && (
+                          <div
+                            className="absolute left-0 right-0 z-50 mt-2 max-h-60 overflow-y-auto border border-white/10 rounded-xl shadow-2xl p-2 custom-scrollbar animate-dropdown"
+                            style={{ backgroundColor: '#121214', opacity: 1 }}
+                          >
+                            <div className="flex justify-between items-center px-2 py-1.5 mb-1.5 border-b border-white/5">
+                              <button
+                                type="button"
+                                onClick={() => setFilterTypes([])}
+                                className="text-[9px] font-black uppercase tracking-wider text-white/40 hover:text-white transition-colors"
+                              >
+                                Clear All
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setFilterTypes(['Normal', 'Legend', 'Epic', 'Featured', 'POTW', 'BigTime', 'ShowTime'])}
+                                className="text-[9px] font-black uppercase tracking-wider text-ef-accent hover:text-white transition-colors"
+                              >
+                                Select All
+                              </button>
+                            </div>
+                            <div className="space-y-0.5">
+                              {['Normal', 'Legend', 'Epic', 'Featured', 'POTW', 'BigTime', 'ShowTime'].map(type => {
+                                const isSelected = filterTypes.includes(type);
+                                return (
+                                  <button
+                                    key={type}
+                                    type="button"
+                                    onClick={() => {
+                                      setFilterTypes(prev => {
+                                        if (prev.includes(type)) {
+                                          return prev.filter(t => t !== type);
+                                        } else {
+                                          return [...prev, type];
+                                        }
+                                      });
+                                    }}
+                                    className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-bold transition-all text-left hover:bg-white/5 ${isSelected ? 'text-ef-accent bg-white/5' : 'text-white/60 hover:text-white'}`}
+                                  >
+                                    <span>{type}</span>
+                                    {isSelected ? (
+                                      <span className="text-ef-accent text-[10px]">✓</span>
+                                    ) : (
+                                      <span className="w-3 h-3 rounded border border-white/10 flex-shrink-0"></span>
+                                    )}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-white/5">
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-[10px] font-black uppercase tracking-widest opacity-30 mb-2">Club Name</label>
+                          <input
+                            type="text"
+                            placeholder="Search club..."
+                            list="bulk-club-list"
+                            value={filterClub}
+                            onChange={(e) => setFilterClub(e.target.value)}
+                            className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-2.5 text-xs font-bold text-white outline-none focus:border-ef-accent/40 transition-all uppercase placeholder:text-white/10"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-black uppercase tracking-widest opacity-30 mb-2">League</label>
+                          <input
+                            type="text"
+                            placeholder="Search league..."
+                            list="bulk-league-list"
+                            value={filterLeague}
+                            onChange={(e) => setFilterLeague(e.target.value)}
+                            className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-2.5 text-xs font-bold text-white outline-none focus:border-ef-accent/40 transition-all uppercase placeholder:text-white/10"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-black uppercase tracking-widest opacity-30 mb-2">Rating</label>
+                          <input
+                            type="number"
+                            placeholder="Exact rating..."
+                            value={filterRating}
+                            onChange={(e) => setFilterRating(e.target.value)}
+                            className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-2.5 text-xs font-bold text-white outline-none focus:border-ef-accent/40 transition-all placeholder:text-white/10"
+                            min="1"
+                            max="150"
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-[10px] font-black uppercase tracking-widest opacity-30 mb-2">Nationality</label>
+                          <input
+                            type="text"
+                            placeholder="Search country..."
+                            list="bulk-nat-list"
+                            value={filterNationality}
+                            onChange={(e) => setFilterNationality(e.target.value)}
+                            className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-2.5 text-xs font-bold text-white outline-none focus:border-ef-accent/40 transition-all uppercase placeholder:text-white/10"
+                          />
+                        </div>
+                        <div className="relative" ref={squadPlaystyleDropdownRef}>
+                          <label className="block text-[10px] font-black uppercase tracking-widest opacity-30 mb-2">Playstyle</label>
+                          <button
+                            type="button"
+                            onClick={() => setIsSquadPlaystyleDropdownOpen(!isSquadPlaystyleDropdownOpen)}
+                            className="w-full flex items-center justify-between bg-black/20 border border-white/10 rounded-xl px-4 py-2.5 text-xs font-bold text-white outline-none hover:border-ef-accent/40 focus:border-ef-accent/40 transition-all text-left"
+                          >
+                            <span className="truncate pr-2">
+                              {filterPlaystyles.length === 0
+                                ? 'All Playstyles'
+                                : `${filterPlaystyles.length} Selected (${filterPlaystyles.slice(0, 1).join(', ')}${filterPlaystyles.length > 1 ? '...' : ''})`
+                              }
+                            </span>
+                            <span className={`text-[10px] opacity-40 transition-transform duration-300 ${isSquadPlaystyleDropdownOpen ? 'rotate-180' : ''}`}>▼</span>
+                          </button>
+
+                          {isSquadPlaystyleDropdownOpen && (
+                            <div
+                              className="absolute left-0 right-0 z-50 mt-2 max-h-60 overflow-y-auto border border-white/10 rounded-xl shadow-2xl p-2 custom-scrollbar animate-dropdown"
+                              style={{ backgroundColor: '#121214', opacity: 1 }}
+                            >
+                              <div className="flex justify-between items-center px-2 py-1.5 mb-1.5 border-b border-white/5">
+                                <button
+                                  type="button"
+                                  onClick={() => setFilterPlaystyles([])}
+                                  className="text-[9px] font-black uppercase tracking-wider text-white/40 hover:text-white transition-colors"
+                                >
+                                  Clear All
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setFilterPlaystyles([...PLAYSTYLES])}
+                                  className="text-[9px] font-black uppercase tracking-wider text-ef-accent hover:text-white transition-colors"
+                                >
+                                  Select All
+                                </button>
+                              </div>
+                              <div className="space-y-0.5">
+                                {PLAYSTYLES.map(style => {
+                                  const isSelected = filterPlaystyles.includes(style);
+                                  return (
+                                    <button
+                                      key={style}
+                                      type="button"
+                                      onClick={() => {
+                                        setFilterPlaystyles(prev => {
+                                          if (prev.includes(style)) {
+                                            return prev.filter(s => s !== style);
+                                          } else {
+                                            return [...prev, style];
+                                          }
+                                        });
+                                      }}
+                                      className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-bold transition-all text-left hover:bg-white/5 ${isSelected ? 'text-ef-accent bg-white/5' : 'text-white/60 hover:text-white'}`}
+                                    >
+                                      <span>{style}</span>
+                                      {isSelected ? (
+                                        <span className="text-ef-accent text-[10px]">✓</span>
+                                      ) : (
+                                        <span className="w-3 h-3 rounded border border-white/10 flex-shrink-0"></span>
+                                      )}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-black uppercase tracking-widest opacity-30 mb-2">Skill Filter</label>
+                          <select
+                            value={filterSkill}
+                            onChange={(e) => setFilterSkill(e.target.value)}
+                            className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-2.5 text-xs font-bold text-white outline-none focus:border-ef-accent/40 transition-all font-outfit"
+                          >
+                            <option value="All" className="text-black">All Skills</option>
+                            <option value="Any Special Skill" className="text-black font-black">✨ Any Special Skill</option>
+
+                            <optgroup label="Special Skills" className="text-black bg-white/5">
+                              {SPECIAL_SKILLS.map(skill => (
+                                <option key={skill} value={skill} className="text-black">{skill}</option>
+                              ))}
+                            </optgroup>
+
+                            <optgroup label="Standard Skills" className="text-black bg-white/5">
+                              {PLAYER_SKILLS.map(skill => (
+                                <option key={skill} value={skill} className="text-black">{skill}</option>
+                              ))}
+                            </optgroup>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-black uppercase tracking-widest opacity-30 mb-2">Preferred Foot</label>
+                          <select
+                            value={filterFoot}
+                            onChange={(e) => setFilterFoot(e.target.value)}
+                            className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-2.5 text-xs font-bold text-white outline-none focus:border-ef-accent/40 transition-all font-outfit"
+                          >
+                            <option value="All" className="text-black">All Feet</option>
+                            <option value="Right" className="text-black">Right Foot</option>
+                            <option value="Left" className="text-black">Left Foot</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Divider */}
+                  <div className="w-full md:w-px h-px md:h-auto bg-white/10 flex-shrink-0"></div>
+
+                  {/* Right Column: Sort */}
+                  <div className="md:w-72 flex flex-col justify-start">
+                    <label className="block text-xs font-black uppercase tracking-widest opacity-40 mb-3">Sort By</label>
+                    <select
+                      value={sortBy}
+                      onChange={(e) => setSortBy(e.target.value)}
+                      className="w-full bg-black/40 border border-white/10 rounded-xl px-5 py-3 text-sm font-bold outline-none cursor-pointer hover:border-ef-accent/50 transition-all text-white"
+                    >
+                      <option value="rating" className="text-black">Overall Rating</option>
+                      <option value="uploaded_desc" className="text-black">Date Uploaded (Newest)</option>
+                      <option value="uploaded_asc" className="text-black">Date Uploaded (Oldest)</option>
+                      <option value="dateAdded_desc" className="text-black">Date Added (Newest)</option>
+                      <option value="dateAdded_asc" className="text-black">Date Added (Oldest)</option>
+                      <option value="goals" className="text-black">Top Scorer</option>
+                      <option value="assists" className="text-black">Most Assists</option>
+                      <option value="name" className="text-black">Player Name</option>
+                      <option value="position" className="text-black">Position</option>
+                    </select>
+
+                    <div className="mt-8">
+                      <label className="block text-xs font-black uppercase tracking-widest opacity-40 mb-3">Participation</label>
+                      <button
+                        onClick={() => setFilterInactive(!filterInactive)}
+                        className={`w-full py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all border ${filterInactive ? 'bg-ef-accent border-ef-accent text-ef-dark shadow-lg shadow-ef-accent/20' : 'bg-white/5 border-white/10 text-white/40 hover:bg-white/10 hover:text-white'}`}
+                      >
+                        {filterInactive ? '🎯 Showing 0 Matches' : '👻 Show Inactive'}
+                      </button>
+                    </div>
+
+                    <div className="mt-6 pt-6 border-t border-white/5">
+                      <label className="block text-xs font-black uppercase tracking-widest opacity-40 mb-3">Performance</label>
+                      <button
+                        onClick={() => {
+                          setSettings(prev => ({ ...prev, enablePagination: !prev.enablePagination }));
+                          setCurrentPage(1);
+                        }}
+                        className={`w-full py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all border ${settings.enablePagination ? 'bg-ef-blue border-ef-blue text-white shadow-lg' : 'bg-white/5 border-white/10 text-white/40 hover:bg-white/10 hover:text-white'}`}
+                      >
+                        {settings.enablePagination ? '📖 Pagination Enabled' : '📜 Infinite Scroll Mode'}
+                      </button>
+                      {settings.enablePagination && (
+                        <div className="mt-3 flex items-center justify-between px-1">
+                          <span className="text-[10px] font-black uppercase tracking-widest opacity-30">Per Page:</span>
+                          <div className="flex gap-1">
+                            {[20, 40, 80].map(size => (
+                              <button
+                                key={size}
+                                onClick={() => setSettings(prev => ({ ...prev, itemsPerPage: size }))}
+                                className={`w-8 h-8 rounded-lg text-[10px] font-black transition-all border ${settings.itemsPerPage === size ? 'bg-ef-blue border-ef-blue text-white' : 'bg-white/5 border-white/10 text-white/40 hover:text-white'}`}
+                              >
+                                {size}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="mt-6">
+                      <label className="block text-xs font-black uppercase tracking-widest opacity-40 mb-3">Missing Details</label>
+                      <select
+                        value={filterMissing}
+                        onChange={(e) => setFilterMissing(e.target.value)}
+                        className="w-full bg-black/40 border border-white/10 rounded-xl px-5 py-3 text-sm font-bold outline-none cursor-pointer hover:border-ef-accent/50 transition-all text-white"
+                      >
+                        <option value="All" className="text-black">All Players</option>
+                        <option value="Missing Picture" className="text-black">Missing Picture</option>
+                        <option value="Missing Player ID" className="text-black">Missing Player ID</option>
+                        <option value="Missing Playstyle" className="text-black">Missing Playstyle</option>
+                        <option value="Missing Card Type" className="text-black">Missing Card Type</option>
+                        <option value="Missing Club" className="text-black">Missing Club</option>
+                        <option value="Missing League" className="text-black">Missing League</option>
+                        <option value="Missing Club Badge" className="text-black">Missing Club Badge</option>
+                        <option value="Missing Country Badge" className="text-black">Missing Country Badge</option>
+                        <option value="Missing Age" className="text-black">Missing Age</option>
+                        <option value="Missing Height" className="text-black">Missing Height</option>
+                        <option value="Missing Tags" className="text-black">Missing Tags</option>
+                        <option value="Missing Foot" className="text-black">Missing Foot</option>
+                        <option value="No Skills Found" className="text-black">No Skills Found</option>
+                        <option value="No Additional Skills" className="text-black">No Additional Skills (0/5)</option>
+                        <option value="Incomplete Additional Skills" className="text-black">Incomplete Additional Skills (1–4/5)</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )
+          }
 
 
 
@@ -2633,15 +2818,14 @@ function App() {
                       return (
                         <div className={`flex flex-wrap justify-center gap-3 md:gap-4 ${settings.highPerf ? '![animation:none]' : ''}`}>
                           {visiblePlayers.map(player => (
-                            <div 
+                            <div
                               key={player._id}
-                              className={`${
-                                settings.cardSize === 'mini' ? 'w-[85px] sm:w-[100px]' :
-                                settings.cardSize === 'xs' ? 'w-[105px] sm:w-[125px]' :
-                                settings.cardSize === 'sm' ? 'w-[145px] sm:w-[165px]' :
-                                settings.cardSize === 'md' ? 'w-[185px] sm:w-[210px]' :
-                                'w-[230px] sm:w-[260px]'
-                              } transition-all duration-300 cursor-pointer`}
+                              className={`${settings.cardSize === 'mini' ? 'w-[85px] sm:w-[100px]' :
+                                  settings.cardSize === 'xs' ? 'w-[105px] sm:w-[125px]' :
+                                    settings.cardSize === 'sm' ? 'w-[145px] sm:w-[165px]' :
+                                      settings.cardSize === 'md' ? 'w-[185px] sm:w-[210px]' :
+                                        'w-[230px] sm:w-[260px]'
+                                } transition-all duration-300 cursor-pointer`}
                               onClick={() => !isSelectionMode && startTransition(() => setSelectedPlayer(player))}
                             >
                               <PlayerCard
@@ -2652,19 +2836,31 @@ function App() {
                                 onToggleSelect={handleToggleSelect}
                                 settings={settings}
                                 secondaryMatch={
-                                  includeSecondary && 
-                                  filterPos.length > 0 && 
-                                  !filterPos.includes(player.position) && 
-                                  player.secondaryPosition 
-                                    ? filterPos.find(pos => player.secondaryPosition.toUpperCase().includes(pos.toUpperCase())) 
+                                  includeSecondary &&
+                                    filterPos.length > 0 &&
+                                    !filterPos.includes(player.position) &&
+                                    player.secondaryPosition
+                                    ? filterPos.find(pos => player.secondaryPosition.toUpperCase().includes(pos.toUpperCase()))
                                     : null
                                 }
                               />
                             </div>
                           ))}
                           {visiblePlayers.length === 0 && (
-                            <div className="col-span-full text-center py-20 opacity-30 border-2 border-dashed border-white/10 rounded-xl w-full">
-                              {user ? 'No players found. Add your first card!' : 'Please login to view your squad.'}
+                            <div className="col-span-full text-center py-20 border-2 border-dashed border-white/10 rounded-xl w-full flex flex-col items-center justify-center gap-4">
+                              {user ? (
+                                <p className="text-white/30 text-sm">No players found. Add your first card!</p>
+                              ) : (
+                                <>
+                                  <p className="text-white/50 font-bold text-sm">Please login to view your squad.</p>
+                                  <button
+                                    onClick={() => setShowLogin(true)}
+                                    className="px-6 py-3 rounded-xl bg-ef-accent text-ef-dark hover:bg-ef-accent/90 transition-all font-black text-xs uppercase tracking-wider active:scale-95 shadow-lg shadow-ef-accent/20"
+                                  >
+                                    Log In
+                                  </button>
+                                </>
+                              )}
                             </div>
                           )}
                         </div>
@@ -2690,7 +2886,7 @@ function App() {
                             {(() => {
                               const totalPages = Math.ceil(processedPlayers.length / settings.itemsPerPage);
                               const items = [];
-                              
+
                               const addPage = (page) => {
                                 items.push(
                                   <button
@@ -2755,10 +2951,10 @@ function App() {
                 {view === 'leaderboard' && (
                   <div className="space-y-6">
                     {/* Leaderboard Multi-Filters */}
-                    <div className="bg-ef-card border border-white/10 rounded-2xl shadow-xl animate-dropdown mb-6 overflow-hidden">
+                    <div className="bg-ef-card border border-white/10 rounded-2xl shadow-xl animate-dropdown mb-6 relative z-30">
                       <button
                         onClick={() => setIsLbFiltersExpanded(!isLbFiltersExpanded)}
-                        className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-all text-left"
+                        className={`w-full flex items-center justify-between p-4 hover:bg-white/5 transition-all text-left ${isLbFiltersExpanded ? 'rounded-t-2xl' : 'rounded-2xl'}`}
                       >
                         <div className="flex items-center gap-3">
                           <span className="text-ef-accent text-lg">⚡</span>
@@ -2785,30 +2981,66 @@ function App() {
                       {isLbFiltersExpanded && (
                         <div className="p-6 pt-0 border-t border-white/5 transition-all duration-300">
                           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
-                            <div className="md:col-span-4">
+                            {/* Positions Dropdown */}
+                            <div className="md:col-span-2 relative" ref={positionDropdownRef}>
                               <label className="block text-[10px] font-black uppercase tracking-[0.2em] opacity-40 mb-3">Positions</label>
-                              <div className="flex flex-wrap gap-2">
-                                {['CF', 'SS', 'LWF', 'RWF', 'LMF', 'RMF', 'AMF', 'CMF', 'DMF', 'CB', 'LB', 'RB', 'GK'].map(pos => (
-                                  <button
-                                    key={pos}
-                                    onClick={() => toggleLbFilter('positions', pos)}
-                                    className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border ${lbFilters.positions.includes(pos)
-                                      ? 'bg-ef-accent border-ef-accent text-ef-dark shadow-lg shadow-ef-accent/20'
-                                      : 'bg-white/5 border-white/10 text-white/40 hover:text-white hover:border-white/20'
-                                      }`}
-                                  >
-                                    {pos}
-                                  </button>
-                                ))}
-                                {lbFilters.positions.length > 0 && (
-                                  <button
-                                    onClick={() => setLbFilters(prev => ({ ...prev, positions: [], includeSecondary: false }))}
-                                    className="px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-500/20 transition-all"
-                                  >
-                                    Reset
-                                  </button>
-                                )}
-                              </div>
+                              <button
+                                type="button"
+                                onClick={() => setIsPositionDropdownOpen(!isPositionDropdownOpen)}
+                                className="w-full flex items-center justify-between bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs font-bold text-white outline-none hover:border-ef-accent/40 focus:border-ef-accent/40 transition-all text-left"
+                              >
+                                <span className="truncate pr-2">
+                                  {lbFilters.positions.length === 0
+                                    ? 'All Positions'
+                                    : `${lbFilters.positions.length} Selected (${lbFilters.positions.slice(0, 2).join(', ')}${lbFilters.positions.length > 2 ? '...' : ''})`
+                                  }
+                                </span>
+                                <span className={`text-[10px] opacity-40 transition-transform duration-300 ${isPositionDropdownOpen ? 'rotate-180' : ''}`}>▼</span>
+                              </button>
+
+                              {isPositionDropdownOpen && (
+                                <div
+                                  className="absolute left-0 right-0 z-50 mt-2 max-h-60 overflow-y-auto border border-white/10 rounded-xl shadow-2xl p-2 custom-scrollbar animate-dropdown"
+                                  style={{ backgroundColor: '#121214', opacity: 1 }}
+                                >
+                                  <div className="flex justify-between items-center px-2 py-1.5 mb-1.5 border-b border-white/5">
+                                    <button
+                                      type="button"
+                                      onClick={() => setLbFilters(prev => ({ ...prev, positions: [], includeSecondary: false }))}
+                                      className="text-[9px] font-black uppercase tracking-wider text-white/40 hover:text-white transition-colors"
+                                    >
+                                      Clear All
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => setLbFilters(prev => ({ ...prev, positions: ['CF', 'SS', 'LWF', 'RWF', 'LMF', 'RMF', 'AMF', 'CMF', 'DMF', 'CB', 'LB', 'RB', 'GK'] }))}
+                                      className="text-[9px] font-black uppercase tracking-wider text-ef-accent hover:text-white transition-colors"
+                                    >
+                                      Select All
+                                    </button>
+                                  </div>
+                                  <div className="space-y-0.5">
+                                    {['CF', 'SS', 'LWF', 'RWF', 'LMF', 'RMF', 'AMF', 'CMF', 'DMF', 'CB', 'LB', 'RB', 'GK'].map(pos => {
+                                      const isSelected = lbFilters.positions.includes(pos);
+                                      return (
+                                        <button
+                                          key={pos}
+                                          type="button"
+                                          onClick={() => toggleLbFilter('positions', pos)}
+                                          className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-bold transition-all text-left hover:bg-white/5 ${isSelected ? 'text-ef-accent bg-white/5' : 'text-white/60 hover:text-white'}`}
+                                        >
+                                          <span>{pos}</span>
+                                          {isSelected ? (
+                                            <span className="text-ef-accent text-[10px]">✓</span>
+                                          ) : (
+                                            <span className="w-3 h-3 rounded border border-white/10 flex-shrink-0"></span>
+                                          )}
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              )}
                               <div className="mt-3 flex items-center gap-2">
                                 <label className="relative inline-flex items-center cursor-pointer">
                                   <input
@@ -2824,37 +3056,133 @@ function App() {
                                 </span>
                               </div>
                             </div>
-                            <div>
-                              <label className="block text-xs font-black uppercase tracking-widest opacity-40 mb-2">Club</label>
-                              <input
-                                type="text"
-                                placeholder="e.g. Barcelona"
-                                value={lbFilters.club}
-                                onChange={(e) => setLbFilters({ ...lbFilters, club: e.target.value })}
-                                className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm font-bold text-white outline-none focus:border-ef-accent transition-all"
-                              />
+
+                            {/* Card Types Dropdown */}
+                            <div className="md:col-span-2 relative" ref={cardTypeDropdownRef}>
+                              <label className="block text-[10px] font-black uppercase tracking-[0.2em] opacity-40 mb-3">Card Types</label>
+                              <button
+                                type="button"
+                                onClick={() => setIsCardTypeDropdownOpen(!isCardTypeDropdownOpen)}
+                                className="w-full flex items-center justify-between bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs font-bold text-white outline-none hover:border-ef-accent/40 focus:border-ef-accent/40 transition-all text-left"
+                              >
+                                <span className="truncate pr-2">
+                                  {lbFilters.cardTypes.length === 0
+                                    ? 'All Card Types'
+                                    : `${lbFilters.cardTypes.length} Selected (${lbFilters.cardTypes.slice(0, 2).join(', ')}${lbFilters.cardTypes.length > 2 ? '...' : ''})`
+                                  }
+                                </span>
+                                <span className={`text-[10px] opacity-40 transition-transform duration-300 ${isCardTypeDropdownOpen ? 'rotate-180' : ''}`}>▼</span>
+                              </button>
+
+                              {isCardTypeDropdownOpen && (
+                                <div
+                                  className="absolute left-0 right-0 z-50 mt-2 max-h-60 overflow-y-auto border border-white/10 rounded-xl shadow-2xl p-2 custom-scrollbar animate-dropdown"
+                                  style={{ backgroundColor: '#121214', opacity: 1 }}
+                                >
+                                  <div className="flex justify-between items-center px-2 py-1.5 mb-1.5 border-b border-white/5">
+                                    <button
+                                      type="button"
+                                      onClick={() => setLbFilters(prev => ({ ...prev, cardTypes: [] }))}
+                                      className="text-[9px] font-black uppercase tracking-wider text-white/40 hover:text-white transition-colors"
+                                    >
+                                      Clear All
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => setLbFilters(prev => ({ ...prev, cardTypes: ['Normal', 'Legend', 'Epic', 'Featured', 'POTW', 'BigTime', 'ShowTime'] }))}
+                                      className="text-[9px] font-black uppercase tracking-wider text-ef-accent hover:text-white transition-colors"
+                                    >
+                                      Select All
+                                    </button>
+                                  </div>
+                                  <div className="space-y-0.5">
+                                    {['Normal', 'Legend', 'Epic', 'Featured', 'POTW', 'BigTime', 'ShowTime'].map(type => {
+                                      const isSelected = lbFilters.cardTypes.includes(type);
+                                      return (
+                                        <button
+                                          key={type}
+                                          type="button"
+                                          onClick={() => toggleLbFilter('cardTypes', type)}
+                                          className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-bold transition-all text-left hover:bg-white/5 ${isSelected ? 'text-ef-accent bg-white/5' : 'text-white/60 hover:text-white'}`}
+                                        >
+                                          <span>{type}</span>
+                                          {isSelected ? (
+                                            <span className="text-ef-accent text-[10px]">✓</span>
+                                          ) : (
+                                            <span className="w-3 h-3 rounded border border-white/10 flex-shrink-0"></span>
+                                          )}
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              )}
                             </div>
-                            <div>
-                              <label className="block text-xs font-black uppercase tracking-widest opacity-40 mb-2">League</label>
-                              <input
-                                type="text"
-                                placeholder="e.g. La Liga"
-                                value={lbFilters.league}
-                                onChange={(e) => setLbFilters({ ...lbFilters, league: e.target.value })}
-                                className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm font-bold text-white outline-none focus:border-ef-accent transition-all"
-                              />
+
+                            {/* Playstyles Dropdown */}
+                            <div className="md:col-span-2 relative" ref={playstyleDropdownRef}>
+                              <label className="block text-[10px] font-black uppercase tracking-[0.2em] opacity-40 mb-3">Playstyles</label>
+                              <button
+                                type="button"
+                                onClick={() => setIsPlaystyleDropdownOpen(!isPlaystyleDropdownOpen)}
+                                className="w-full flex items-center justify-between bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs font-bold text-white outline-none hover:border-ef-accent/40 focus:border-ef-accent/40 transition-all text-left"
+                              >
+                                <span className="truncate pr-2">
+                                  {lbFilters.playstyles.length === 0
+                                    ? 'All Playstyles'
+                                    : `${lbFilters.playstyles.length} Selected (${lbFilters.playstyles.slice(0, 1).join(', ')}${lbFilters.playstyles.length > 1 ? '...' : ''})`
+                                  }
+                                </span>
+                                <span className={`text-[10px] opacity-40 transition-transform duration-300 ${isPlaystyleDropdownOpen ? 'rotate-180' : ''}`}>▼</span>
+                              </button>
+
+                              {isPlaystyleDropdownOpen && (
+                                <div
+                                  className="absolute left-0 right-0 z-50 mt-2 max-h-60 overflow-y-auto border border-white/10 rounded-xl shadow-2xl p-2 custom-scrollbar animate-dropdown"
+                                  style={{ backgroundColor: '#121214', opacity: 1 }}
+                                >
+                                  <div className="flex justify-between items-center px-2 py-1.5 mb-1.5 border-b border-white/5">
+                                    <button
+                                      type="button"
+                                      onClick={() => setLbFilters(prev => ({ ...prev, playstyles: [] }))}
+                                      className="text-[9px] font-black uppercase tracking-wider text-white/40 hover:text-white transition-colors"
+                                    >
+                                      Clear All
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => setLbFilters(prev => ({ ...prev, playstyles: [...PLAYSTYLES] }))}
+                                      className="text-[9px] font-black uppercase tracking-wider text-ef-accent hover:text-white transition-colors"
+                                    >
+                                      Select All
+                                    </button>
+                                  </div>
+                                  <div className="space-y-0.5">
+                                    {PLAYSTYLES.map(style => {
+                                      const isSelected = lbFilters.playstyles.includes(style);
+                                      return (
+                                        <button
+                                          key={style}
+                                          type="button"
+                                          onClick={() => toggleLbFilter('playstyles', style)}
+                                          className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-bold transition-all text-left hover:bg-white/5 ${isSelected ? 'text-ef-accent bg-white/5' : 'text-white/60 hover:text-white'}`}
+                                        >
+                                          <span>{style}</span>
+                                          {isSelected ? (
+                                            <span className="text-ef-accent text-[10px]">✓</span>
+                                          ) : (
+                                            <span className="w-3 h-3 rounded border border-white/10 flex-shrink-0"></span>
+                                          )}
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              )}
                             </div>
-                            <div>
-                              <label className="block text-xs font-black uppercase tracking-widest opacity-40 mb-2">Country</label>
-                              <input
-                                type="text"
-                                placeholder="e.g. Brazil"
-                                value={lbFilters.country}
-                                onChange={(e) => setLbFilters({ ...lbFilters, country: e.target.value })}
-                                className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm font-bold text-white outline-none focus:border-ef-accent transition-all"
-                              />
-                            </div>
-                            <div>
+
+                            {/* Skill Selection */}
+                            <div className="md:col-span-2">
                               <label className="block text-xs font-black uppercase tracking-widest opacity-40 mb-2">Skill</label>
                               <select
                                 value={lbFilters.skill}
@@ -2877,55 +3205,57 @@ function App() {
                                 </optgroup>
                               </select>
                             </div>
-                            <div className="md:col-span-2">
-                              <label className="block text-[10px] font-black uppercase tracking-[0.2em] opacity-40 mb-3">Card Types</label>
-                              <div className="flex flex-wrap gap-2">
-                                {['Normal', 'Legend', 'Epic', 'Featured', 'POTW', 'BigTime', 'ShowTime'].map(type => (
-                                  <button
-                                    key={type}
-                                    onClick={() => toggleLbFilter('cardTypes', type)}
-                                    className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all border ${lbFilters.cardTypes.includes(type)
-                                      ? 'bg-ef-blue border-ef-blue text-ef-dark shadow-lg'
-                                      : 'bg-white/5 border-white/10 text-white/40 hover:text-white'
-                                      }`}
-                                  >
-                                    {type}
-                                  </button>
-                                ))}
-                              </div>
+
+                            {/* Club Input */}
+                            <div>
+                              <label className="block text-xs font-black uppercase tracking-widest opacity-40 mb-2">Club</label>
+                              <input
+                                type="text"
+                                placeholder="e.g. Barcelona"
+                                value={lbFilters.club}
+                                onChange={(e) => setLbFilters({ ...lbFilters, club: e.target.value })}
+                                className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm font-bold text-white outline-none focus:border-ef-accent transition-all"
+                              />
                             </div>
+
+                            {/* League Input */}
+                            <div>
+                              <label className="block text-xs font-black uppercase tracking-widest opacity-40 mb-2">League</label>
+                              <input
+                                type="text"
+                                placeholder="e.g. La Liga"
+                                value={lbFilters.league}
+                                onChange={(e) => setLbFilters({ ...lbFilters, league: e.target.value })}
+                                className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm font-bold text-white outline-none focus:border-ef-accent transition-all"
+                              />
+                            </div>
+
+                            {/* Country Input */}
                             <div className="md:col-span-2">
-                              <label className="block text-[10px] font-black uppercase tracking-[0.2em] opacity-40 mb-3">Playstyles</label>
-                              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 h-32 overflow-y-auto custom-scrollbar pr-2 p-1">
-                                {PLAYSTYLES.map(style => (
-                                  <button
-                                    key={style}
-                                    onClick={() => toggleLbFilter('playstyles', style)}
-                                    className={`px-2 py-1.5 rounded text-[8px] font-bold text-left uppercase tracking-tighter transition-all border ${lbFilters.playstyles.includes(style)
-                                      ? 'bg-white/20 border-white/40 text-white'
-                                      : 'bg-white/5 border-white/5 text-white/30 hover:bg-white/10'
-                                      }`}
-                                  >
-                                    {style}
-                                  </button>
-                                ))}
-                              </div>
+                              <label className="block text-xs font-black uppercase tracking-widest opacity-40 mb-2">Country</label>
+                              <input
+                                type="text"
+                                placeholder="e.g. Brazil"
+                                value={lbFilters.country}
+                                onChange={(e) => setLbFilters({ ...lbFilters, country: e.target.value })}
+                                className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm font-bold text-white outline-none focus:border-ef-accent transition-all"
+                              />
                             </div>
                             <div className="md:col-span-4 mt-4 border-t border-white/5 pt-0 md:pt-4">
                               <label className="block text-[10px] font-black uppercase tracking-[0.2em] opacity-40 mb-3">Minimum Games Played</label>
-                              <div className="flex gap-6">
+                              <div className="flex flex-wrap items-center gap-4 sm:gap-6">
                                 <label className="flex items-center gap-3 cursor-pointer group">
                                   <div className="relative flex items-center justify-center">
                                     <input
                                       type="radio"
                                       name="minGames"
-                                      checked={lbFilters.minGames === 0}
-                                      onChange={() => setLbFilters({ ...lbFilters, minGames: 0 })}
+                                      checked={lbFilters.minGames === 0 && !lbFilters.isCustomMinGames}
+                                      onChange={() => setLbFilters({ ...lbFilters, minGames: 0, isCustomMinGames: false })}
                                       className="peer appearance-none w-5 h-5 border-2 border-white/10 rounded-full checked:border-ef-accent transition-all"
                                     />
                                     <div className="absolute w-2.5 h-2.5 rounded-full bg-ef-accent scale-0 peer-checked:scale-100 transition-transform"></div>
                                   </div>
-                                  <span className={`text-xs font-black uppercase tracking-widest transition-colors ${lbFilters.minGames === 0 ? 'text-ef-accent' : 'text-white/40 group-hover:text-white/60'}`}>All</span>
+                                  <span className={`text-xs font-black uppercase tracking-widest transition-colors ${lbFilters.minGames === 0 && !lbFilters.isCustomMinGames ? 'text-ef-accent' : 'text-white/40 group-hover:text-white/60'}`}>All</span>
                                 </label>
 
                                 <label className="flex items-center gap-3 cursor-pointer group">
@@ -2933,13 +3263,13 @@ function App() {
                                     <input
                                       type="radio"
                                       name="minGames"
-                                      checked={lbFilters.minGames === 50}
-                                      onChange={() => setLbFilters({ ...lbFilters, minGames: 50 })}
+                                      checked={lbFilters.minGames === 50 && !lbFilters.isCustomMinGames}
+                                      onChange={() => setLbFilters({ ...lbFilters, minGames: 50, isCustomMinGames: false })}
                                       className="peer appearance-none w-5 h-5 border-2 border-white/10 rounded-full checked:border-ef-accent transition-all"
                                     />
                                     <div className="absolute w-2.5 h-2.5 rounded-full bg-ef-accent scale-0 peer-checked:scale-100 transition-transform"></div>
                                   </div>
-                                  <span className={`text-xs font-black uppercase tracking-widest transition-colors ${lbFilters.minGames === 50 ? 'text-ef-accent' : 'text-white/40 group-hover:text-white/60'}`}>Min games 50</span>
+                                  <span className={`text-xs font-black uppercase tracking-widest transition-colors ${lbFilters.minGames === 50 && !lbFilters.isCustomMinGames ? 'text-ef-accent' : 'text-white/40 group-hover:text-white/60'}`}>Min games 50</span>
                                 </label>
 
                                 <label className="flex items-center gap-3 cursor-pointer group">
@@ -2947,14 +3277,43 @@ function App() {
                                     <input
                                       type="radio"
                                       name="minGames"
-                                      checked={lbFilters.minGames === 100}
-                                      onChange={() => setLbFilters({ ...lbFilters, minGames: 100 })}
+                                      checked={lbFilters.minGames === 100 && !lbFilters.isCustomMinGames}
+                                      onChange={() => setLbFilters({ ...lbFilters, minGames: 100, isCustomMinGames: false })}
                                       className="peer appearance-none w-5 h-5 border-2 border-white/10 rounded-full checked:border-ef-accent transition-all"
                                     />
                                     <div className="absolute w-2.5 h-2.5 rounded-full bg-ef-accent scale-0 peer-checked:scale-100 transition-transform"></div>
                                   </div>
-                                  <span className={`text-xs font-black uppercase tracking-widest transition-colors ${lbFilters.minGames === 100 ? 'text-ef-accent' : 'text-white/40 group-hover:text-white/60'}`}>Min games 100</span>
+                                  <span className={`text-xs font-black uppercase tracking-widest transition-colors ${lbFilters.minGames === 100 && !lbFilters.isCustomMinGames ? 'text-ef-accent' : 'text-white/40 group-hover:text-white/60'}`}>Min games 100</span>
                                 </label>
+
+                                <div className="flex items-center gap-3">
+                                  <label className="flex items-center gap-3 cursor-pointer group">
+                                    <div className="relative flex items-center justify-center">
+                                      <input
+                                        type="radio"
+                                        name="minGames"
+                                        checked={lbFilters.isCustomMinGames}
+                                        onChange={() => setLbFilters({ ...lbFilters, isCustomMinGames: true })}
+                                        className="peer appearance-none w-5 h-5 border-2 border-white/10 rounded-full checked:border-ef-accent transition-all"
+                                      />
+                                      <div className="absolute w-2.5 h-2.5 rounded-full bg-ef-accent scale-0 peer-checked:scale-100 transition-transform"></div>
+                                    </div>
+                                    <span className={`text-xs font-black uppercase tracking-widest transition-colors ${lbFilters.isCustomMinGames ? 'text-ef-accent' : 'text-white/40 group-hover:text-white/60'}`}>Custom</span>
+                                  </label>
+
+                                  <input
+                                    type="number"
+                                    placeholder="Enter min..."
+                                    value={lbFilters.customMinGamesVal}
+                                    onChange={(e) => setLbFilters({ ...lbFilters, customMinGamesVal: e.target.value, isCustomMinGames: true })}
+                                    onFocus={() => setLbFilters({ ...lbFilters, isCustomMinGames: true })}
+                                    className={`w-24 bg-black/40 border rounded-lg px-2.5 py-1 text-xs font-bold text-white outline-none transition-all placeholder:text-white/10 ${lbFilters.isCustomMinGames
+                                        ? 'border-ef-accent/40 focus:border-ef-accent/70'
+                                        : 'border-white/10 opacity-50 hover:opacity-100'
+                                      }`}
+                                    min="0"
+                                  />
+                                </div>
                               </div>
                             </div>
                           </div>
@@ -2980,7 +3339,8 @@ function App() {
                             : ((p.skills && p.skills.includes(lbFilters.skill)) || (p.additionalSkills && p.additionalSkills.includes(lbFilters.skill))));
                         const matchesType = lbFilters.cardTypes.length === 0 || lbFilters.cardTypes.includes(p.cardType);
                         const matchesStyle = lbFilters.playstyles.length === 0 || lbFilters.playstyles.includes(p.playstyle);
-                        const matchesMinGames = (p.matches || 0) >= lbFilters.minGames;
+                        const targetMinGames = lbFilters.isCustomMinGames ? (parseInt(lbFilters.customMinGamesVal, 10) || 0) : lbFilters.minGames;
+                        const matchesMinGames = (p.matches || 0) >= targetMinGames;
                         return matchesPos && matchesClub && matchesLeague && matchesCountry && matchesSkill && matchesType && matchesStyle && matchesMinGames;
                       })}
                       onPlayerClick={setSelectedPlayer}
@@ -3038,32 +3398,32 @@ function App() {
               </>
             )}
           </div>
-        {showDatabase && (
-          <DatabasePlayerList
-            onAddPlayers={handleBulkAddPlayers}
-            onBack={() => setShowDatabase(false)}
-            settings={settings}
-            ownersPlayers={players}
+          {showDatabase && (
+            <DatabasePlayerList
+              onAddPlayers={handleBulkAddPlayers}
+              onBack={() => setShowDatabase(false)}
+              settings={settings}
+              ownersPlayers={players}
+              showAlert={showAlert}
+              showConfirm={showConfirm}
+            />
+          )}
+
+        </main>
+
+        {showRemainder && (
+          <RemainderModal
+            user={user}
+            onClose={() => setShowRemainder(false)}
             showAlert={showAlert}
             showConfirm={showConfirm}
           />
         )}
-
-      </main>
-      
-      {showRemainder && (
-        <RemainderModal
-          user={user}
-          onClose={() => setShowRemainder(false)}
-          showAlert={showAlert}
-          showConfirm={showConfirm}
+        <SocialDrawer
+          isOpen={showSocial}
+          onClose={() => setShowSocial(false)}
         />
-      )}
-      <SocialDrawer
-        isOpen={showSocial}
-        onClose={() => setShowSocial(false)}
-      />
-    </Suspense>
+      </Suspense>
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { normalizeString } from '../services/footballApi';
 
 const getDisplayPosition = (player, activePositions = [], includeSecondary = false) => {
@@ -22,7 +23,7 @@ const getDisplayPosition = (player, activePositions = [], includeSecondary = fal
     return player.position;
 };
 
-const LeaderboardCard = ({ title, players, valueKey, colorClass, suffix = '', isRatio = false, onExpand, onPlayerClick, activePositions, includeSecondary, settings }) => (
+const LeaderboardCard = ({ title, players, valueKey, colorClass, suffix = '', isRatio = false, onExpand, onPlayerClick, activePositions, includeSecondary, settings, useExpMultiplier }) => (
     <div className="bg-ef-card p-6 rounded-2xl border border-white/10 shadow-xl flex flex-col h-full animate-slide-up relative group hover:border-white/20 transition-colors">
         <div className="flex justify-between items-start mb-6">
             <h3 className={`text-lg font-black uppercase tracking-widest ${colorClass}`}>{title}</h3>
@@ -38,10 +39,24 @@ const LeaderboardCard = ({ title, players, valueKey, colorClass, suffix = '', is
             {players.slice(0, 5).map((player, idx) => {
                 let rawValue = valueKey === 'totalGA'
                     ? (player.goals || 0) + (player.assists || 0)
+                    : valueKey === 'completePlayer'
+                    ? (() => {
+                        const g = player.goals || 0;
+                        const a = player.assists || 0;
+                        if (g === 0 || a === 0) return 0;
+                        return (g + a) * (Math.min(g, a) / Math.max(g, a));
+                      })()
                     : (player[valueKey] || 0);
 
                 const displayValue = isRatio
-                    ? (rawValue / (player.matches || 1)).toFixed(2)
+                    ? (() => {
+                        const base = rawValue / (player.matches || 1);
+                        if (!useExpMultiplier) return base.toFixed(2);
+                        const multiplier = Math.max(0, Math.log10(player.matches || 1));
+                        return (base * multiplier).toFixed(2);
+                      })()
+                    : valueKey === 'completePlayer'
+                    ? Number(rawValue.toFixed(1))
                     : rawValue;
 
                 const displayPos = getDisplayPosition(player, activePositions, includeSecondary);
@@ -54,10 +69,10 @@ const LeaderboardCard = ({ title, players, valueKey, colorClass, suffix = '', is
                                 {(() => {
                                     const img = settings?.preferredImageSource === 2 ? (player.image2 || player.image) : (player.image || player.image2);
                                     return img ? (
-                                        <img 
-                                            src={img} 
-                                            alt="" 
-                                            className="w-full h-full object-cover" 
+                                        <img
+                                            src={img}
+                                            alt=""
+                                            className="w-full h-full object-cover"
                                         />
                                     ) : (
                                         <div className="w-full h-full flex items-center justify-center text-[10px] opacity-50">👤</div>
@@ -145,10 +160,10 @@ const MiniPlayerCard = ({ player, activePositions, includeSecondary, settings })
             {(() => {
                 const img = settings?.preferredImageSource === 2 ? (player.image2 || player.image) : (player.image || player.image2);
                 return img ? (
-                    <img 
-                        src={img} 
-                        alt="" 
-                        className="w-full h-full object-cover relative z-0" 
+                    <img
+                        src={img}
+                        alt=""
+                        className="w-full h-full object-cover relative z-0"
                     />
                 ) : (
                     <div className="w-full h-full flex items-center justify-center bg-white/5 opacity-20">
@@ -170,7 +185,7 @@ const MiniPlayerCard = ({ player, activePositions, includeSecondary, settings })
     );
 };
 
-const FullListModal = ({ title, players, valueKey, colorClass, suffix, isRatio, onClose, onPlayerClick, activePositions, includeSecondary, settings }) => {
+const FullListModal = ({ id, title, players, valueKey, colorClass, suffix, isRatio, onClose, onPlayerClick, activePositions, includeSecondary, settings, useExpMultiplier }) => {
     const [search, setSearch] = useState('');
 
     const filteredPlayers = players
@@ -186,7 +201,7 @@ const FullListModal = ({ title, players, valueKey, colorClass, suffix, isRatio, 
         <div className="fixed inset-0 bg-black/95 backdrop-blur-xl z-[100] flex items-center justify-center p-4 md:p-8 animate-fade-in">
             <div className="bg-[#0b0b0d] border border-white/10 rounded-3xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-[0_0_100px_rgba(0,0,0,0.8)] overflow-hidden">
                 {/* Modal Header */}
-                <div className="p-8 border-b border-white/5 flex justify-between items-center bg-gradient-to-br from-white/[0.02] to-transparent">
+                <div className="p-6 border-b border-white/5 flex justify-between items-center bg-gradient-to-br from-white/[0.02] to-transparent">
                     <div>
                         <h2 className={`text-2xl font-black uppercase tracking-tighter ${colorClass}`}>{title}</h2>
                         <p className="text-[10px] font-black uppercase tracking-[0.3em] opacity-30 mt-1">Full Ranking Data</p>
@@ -214,16 +229,30 @@ const FullListModal = ({ title, players, valueKey, colorClass, suffix, isRatio, 
                         {filteredPlayers.map((player) => {
                             let rawValue = valueKey === 'totalGA'
                                 ? (player.goals || 0) + (player.assists || 0)
+                                : valueKey === 'completePlayer'
+                                ? (() => {
+                                    const g = player.goals || 0;
+                                    const a = player.assists || 0;
+                                    if (g === 0 || a === 0) return 0;
+                                    return (g + a) * (Math.min(g, a) / Math.max(g, a));
+                                  })()
                                 : (player[valueKey] || 0);
 
                             const displayValue = isRatio
-                                ? (rawValue / (player.matches || 1)).toFixed(2)
+                                ? (() => {
+                                    const base = rawValue / (player.matches || 1);
+                                    if (!useExpMultiplier) return base.toFixed(2);
+                                    const multiplier = Math.max(0, Math.log10(player.matches || 1));
+                                    return (base * multiplier).toFixed(2);
+                                  })()
+                                : valueKey === 'completePlayer'
+                                ? Number(rawValue.toFixed(1))
                                 : rawValue;
 
                             const displayPos = getDisplayPosition(player, activePositions, includeSecondary);
 
                             return (
-                                <li key={player._id} className="flex items-center gap-4 p-3 rounded-2xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.05] hover:border-white/10 transition-all group/item cursor-pointer" onClick={() => { onPlayerClick(player); onClose(); }}>
+                                <li key={player._id} className="flex items-center gap-4 p-1 px-4 rounded-2xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.05] hover:border-white/10 transition-all group/item cursor-pointer" onClick={() => { onPlayerClick(player); onClose(); }}>
                                     <span className="font-mono text-base opacity-20 w-8 shrink-0">{player.rank}</span>
 
                                     {/* Mini Card Visual */}
@@ -245,6 +274,26 @@ const FullListModal = ({ title, players, valueKey, colorClass, suffix, isRatio, 
                                     </div>
 
                                     <div className="flex items-baseline gap-1.5 shrink-0 pr-2">
+                                        {valueKey === 'completePlayer' && (
+                                            <span className="text-xs opacity-30 font-bold mr-1.5">
+                                                ({player.goals || 0} G - {player.assists || 0} A)
+                                            </span>
+                                        )}
+                                        {id === 'gpg' && (
+                                            <span className="text-xs opacity-30 font-bold mr-1.5">
+                                                ({player.goals || 0} G / {player.matches || 0} M)
+                                            </span>
+                                        )}
+                                        {id === 'apg' && (
+                                            <span className="text-xs opacity-30 font-bold mr-1.5">
+                                                ({player.assists || 0} A / {player.matches || 0} M)
+                                            </span>
+                                        )}
+                                        {id === 'gapg' && (
+                                            <span className="text-xs opacity-30 font-bold mr-1.5">
+                                                ({(player.goals || 0) + (player.assists || 0)} G+A / {player.matches || 0} M)
+                                            </span>
+                                        )}
                                         <span className={`font-black text-2xl ${colorClass}`}>{displayValue}</span>
                                         {suffix && <span className="text-[10px] opacity-30 font-black uppercase tracking-widest">{suffix}</span>}
                                     </div>
@@ -266,6 +315,7 @@ const FullListModal = ({ title, players, valueKey, colorClass, suffix, isRatio, 
 
 const Leaderboard = ({ players, onPlayerClick, activePositions, includeSecondary, settings }) => {
     const [expandedCategory, setExpandedCategory] = useState(null);
+    const [useExpMultiplier, setUseExpMultiplier] = useState(false);
 
     // Sorting Utilities
     const getSorted = (calcFn) => [...players].sort((a, b) => calcFn(b) - calcFn(a));
@@ -277,15 +327,83 @@ const Leaderboard = ({ players, onPlayerClick, activePositions, includeSecondary
         { id: 'assists', title: 'Top Assists', players: getSorted(p => p.assists || 0), valueKey: 'assists', colorClass: 'text-ef-blue' },
         { id: 'matches', title: 'Most Games', players: getSorted(p => p.matches || 0), valueKey: 'matches', colorClass: 'text-white', suffix: 'MTCH' },
         { id: 'ga', title: 'Most G+A', players: getSorted(p => (p.goals || 0) + (p.assists || 0)), valueKey: 'totalGA', colorClass: 'text-pink-500' },
-        { id: 'gpg', title: 'Goals / GM', players: getSortedRatio(p => (p.goals || 0) / p.matches), valueKey: 'goals', colorClass: 'text-ef-accent', isRatio: true, suffix: 'AVG', isPerformance: true },
-        { id: 'apg', title: 'Assists / GM', players: getSortedRatio(p => (p.assists || 0) / p.matches), valueKey: 'assists', colorClass: 'text-ef-blue', isRatio: true, suffix: 'AVG', isPerformance: true },
-        { id: 'gapg', title: 'G+A / GM', players: getSortedRatio(p => ((p.goals || 0) + (p.assists || 0)) / p.matches), valueKey: 'totalGA', colorClass: 'text-pink-500', isRatio: true, suffix: 'AVG', isPerformance: true }
+        {
+            id: 'complete',
+            title: 'Complete Player',
+            players: getSorted(p => {
+                const g = p.goals || 0;
+                const a = p.assists || 0;
+                if (g === 0 || a === 0) return 0;
+                return (g + a) * (Math.min(g, a) / Math.max(g, a));
+            }),
+            valueKey: 'completePlayer',
+            colorClass: 'text-violet-400',
+            suffix: 'PTS'
+        },
+        {
+            id: 'gpg',
+            title: 'Goals / GM',
+            players: getSortedRatio(p => {
+                const base = (p.goals || 0) / p.matches;
+                if (!useExpMultiplier) return base;
+                return base * Math.max(0, Math.log10(p.matches || 1));
+            }),
+            valueKey: 'goals',
+            colorClass: 'text-ef-accent',
+            isRatio: true,
+            suffix: 'AVG',
+            isPerformance: true
+        },
+        {
+            id: 'apg',
+            title: 'Assists / GM',
+            players: getSortedRatio(p => {
+                const base = (p.assists || 0) / p.matches;
+                if (!useExpMultiplier) return base;
+                return base * Math.max(0, Math.log10(p.matches || 1));
+            }),
+            valueKey: 'assists',
+            colorClass: 'text-ef-blue',
+            isRatio: true,
+            suffix: 'AVG',
+            isPerformance: true
+        },
+        {
+            id: 'gapg',
+            title: 'G+A / GM',
+            players: getSortedRatio(p => {
+                const base = ((p.goals || 0) + (p.assists || 0)) / p.matches;
+                if (!useExpMultiplier) return base;
+                return base * Math.max(0, Math.log10(p.matches || 1));
+            }),
+            valueKey: 'totalGA',
+            colorClass: 'text-pink-500',
+            isRatio: true,
+            suffix: 'AVG',
+            isPerformance: true
+        }
     ];
 
     return (
         <div className="max-w-6xl mx-auto pb-12 px-4">
             <div className="mb-12">
-                <h2 className="text-sm font-black uppercase tracking-[0.4em] opacity-20 text-center mb-10 text-ef-accent">Performance Ratios (Per Game)</h2>
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-10">
+                    <div className="hidden sm:block w-32"></div> {/* Left spacer */}
+                    <h2 className="text-lg font-black uppercase tracking-[0.4em] opacity-70 text-center text-ef-accent">Performance Ratios (Per Game)</h2>
+                    <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl px-3 py-1.5 hover:bg-white/[0.08] transition-all">
+                        <span className="text-[9px] font-black uppercase tracking-wider text-white/50">XP Multiplier [log₁₀(M)]</span>
+                        <label className="relative inline-flex items-center cursor-pointer scale-90">
+                            <input
+                                type="checkbox"
+                                className="sr-only peer"
+                                checked={useExpMultiplier}
+                                onChange={(e) => setUseExpMultiplier(e.target.checked)}
+                            />
+                            <div className="w-8 h-4 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[1px] after:left-[1px] after:bg-white/40 after:border-white/10 after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-ef-accent peer-checked:after:bg-ef-dark"></div>
+                        </label>
+                    </div>
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {categories.filter(c => c.isPerformance).map(cat => (
                         <LeaderboardCard
@@ -296,6 +414,7 @@ const Leaderboard = ({ players, onPlayerClick, activePositions, includeSecondary
                             activePositions={activePositions}
                             includeSecondary={includeSecondary}
                             settings={settings}
+                            useExpMultiplier={useExpMultiplier}
                         />
                     ))}
                 </div>
@@ -312,12 +431,13 @@ const Leaderboard = ({ players, onPlayerClick, activePositions, includeSecondary
                             activePositions={activePositions}
                             includeSecondary={includeSecondary}
                             settings={settings}
+                            useExpMultiplier={useExpMultiplier}
                         />
                     ))}
                 </div>
             </div>
 
-            {expandedCategory && (
+            {expandedCategory && createPortal(
                 <FullListModal
                     {...expandedCategory}
                     onClose={() => setExpandedCategory(null)}
@@ -325,7 +445,9 @@ const Leaderboard = ({ players, onPlayerClick, activePositions, includeSecondary
                     activePositions={activePositions}
                     includeSecondary={includeSecondary}
                     settings={settings}
-                />
+                    useExpMultiplier={useExpMultiplier}
+                />,
+                document.body
             )}
         </div>
     );
