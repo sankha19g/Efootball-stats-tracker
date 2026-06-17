@@ -112,25 +112,25 @@ function App() {
     return saved ? JSON.parse(saved) : {
       cardSize: 'sm',
       showLabels: true,
-      showRatings: true,
-      showPosition: true,
-      showClub: true,
-      showStats: true,
-      showPlaystyle: true,
-      showClubBadge: true,
-      showNationBadge: true,
+      showRatings: false,
+      showPosition: false,
+      showClub: false,
+      showStats: false,
+      showPlaystyle: false,
+      showClubBadge: false,
+      showNationBadge: false,
       customStatSlots: ['matches', 'goals', 'assists'],
       highPerf: false,
       enablePagination: false,
       itemsPerPage: 40,
       activeSquadId: null,
       appLogo: '',
-      preferredImageSource: 1,
+      preferredImageSource: 3,
       showDetailsPosition: true,
       showDetailsRatings: true,
       showDetailsClubBadge: true,
       showDetailsNationBadge: true,
-      cardCornerStyle: 'rounded',
+      cardCornerStyle: 'sharp',
       cardHudStyle: 'default'
     };
   });
@@ -1444,6 +1444,11 @@ function App() {
           const filled = (p.additionalSkills || []).filter(s => s && s.trim() !== '').length;
           return filled > 0 && filled < 5;
         });
+      } else if (filterMissing === 'Missing Special Skills') {
+        result = result.filter(p => {
+          const pSkills = [...(p.skills || []), ...(p.additionalSkills || [])];
+          return !pSkills.some(s => SPECIAL_SKILLS.includes(s));
+        });
       }
     }
 
@@ -2684,6 +2689,7 @@ function App() {
                         <option value="No Skills Found" className="text-black">No Skills Found</option>
                         <option value="No Additional Skills" className="text-black">No Additional Skills (0/5)</option>
                         <option value="Incomplete Additional Skills" className="text-black">Incomplete Additional Skills (1–4/5)</option>
+                        <option value="Missing Special Skills" className="text-black">Missing Special Skills</option>
                       </select>
                     </div>
                   </div>
@@ -2821,10 +2827,10 @@ function App() {
                             <div
                               key={player._id}
                               className={`${settings.cardSize === 'mini' ? 'w-[85px] sm:w-[100px]' :
-                                  settings.cardSize === 'xs' ? 'w-[105px] sm:w-[125px]' :
-                                    settings.cardSize === 'sm' ? 'w-[145px] sm:w-[165px]' :
-                                      settings.cardSize === 'md' ? 'w-[185px] sm:w-[210px]' :
-                                        'w-[230px] sm:w-[260px]'
+                                settings.cardSize === 'xs' ? 'w-[105px] sm:w-[125px]' :
+                                  settings.cardSize === 'sm' ? 'w-[145px] sm:w-[165px]' :
+                                    settings.cardSize === 'md' ? 'w-[185px] sm:w-[210px]' :
+                                      'w-[230px] sm:w-[260px]'
                                 } transition-all duration-300 cursor-pointer`}
                               onClick={() => !isSelectionMode && startTransition(() => setSelectedPlayer(player))}
                             >
@@ -3308,8 +3314,8 @@ function App() {
                                     onChange={(e) => setLbFilters({ ...lbFilters, customMinGamesVal: e.target.value, isCustomMinGames: true })}
                                     onFocus={() => setLbFilters({ ...lbFilters, isCustomMinGames: true })}
                                     className={`w-24 bg-black/40 border rounded-lg px-2.5 py-1 text-xs font-bold text-white outline-none transition-all placeholder:text-white/10 ${lbFilters.isCustomMinGames
-                                        ? 'border-ef-accent/40 focus:border-ef-accent/70'
-                                        : 'border-white/10 opacity-50 hover:opacity-100'
+                                      ? 'border-ef-accent/40 focus:border-ef-accent/70'
+                                      : 'border-white/10 opacity-50 hover:opacity-100'
                                       }`}
                                     min="0"
                                   />

@@ -210,6 +210,10 @@ const MySquadDB = ({ players, onBack, onImport, onPlayerClick, isSidebarOpen }) 
                     case 'No Skills Found': return (!p.skills || p.skills.length === 0);
                     case 'No Additional Skills': return (!p.additionalSkills || p.additionalSkills.length === 0);
                     case 'Incomplete Additional Skills': return p.additionalSkills && p.additionalSkills.length > 0 && p.additionalSkills.length < 5;
+                    case 'Missing Special Skills': {
+                        const pSkills = [...(p.skills || []), ...(p.additionalSkills || [])];
+                        return !pSkills.some(s => SPECIAL_SKILLS.includes(s));
+                    }
                     default: return true;
                 }
             });
@@ -569,7 +573,8 @@ const MySquadDB = ({ players, onBack, onImport, onPlayerClick, isSidebarOpen }) 
                                                 'Missing Picture', 'Missing Player ID', 'Missing Playstyle', 'Missing Card Type',
                                                 'Missing Club', 'Missing League', 'Missing Club Badge', 'Missing Country Badge',
                                                 'Missing Age', 'Missing Height', 'Missing Tags', 'Missing Foot',
-                                                'No Skills Found', 'No Additional Skills', 'Incomplete Additional Skills'
+                                                'No Skills Found', 'No Additional Skills', 'Incomplete Additional Skills',
+                                                'Missing Special Skills'
                                             ].map(opt => (
                                                 <option key={opt} value={opt} className="bg-[#121216]">{opt}</option>
                                             ))}

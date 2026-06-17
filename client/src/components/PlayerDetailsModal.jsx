@@ -460,10 +460,10 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
             if (navigator.vibrate) {
                 navigator.vibrate(50);
             }
-            
+
             // Build a simulated event
             const simulatedEvent = {
-                preventDefault: () => {},
+                preventDefault: () => { },
                 clientX: touchStartPosRef.current.x,
                 clientY: touchStartPosRef.current.y,
                 currentTarget: e.currentTarget
@@ -1021,7 +1021,7 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
                 </button>
 
                 {/* Left Side: Card Visual & Quick Info */}
-                <div className={`w-full md:w-1/3 p-6 md:p-8 pt-24 md:pt-28 flex flex-col gap-4 md:gap-6 ${getCardStyles(formData.cardType).bg} md:border-r border-white/5 relative overflow-hidden h-fit md:h-full shrink-0 group/left font-sans`}>
+                <div className={`w-full md:w-1/3 px-4 pt-4 md:p-8 pt-20 md:pt-28 flex flex-col gap-4 md:gap-6 ${getCardStyles(formData.cardType).bg} md:border-r border-white/5 relative overflow-hidden h-fit md:h-full shrink-0 group/left font-sans`}>
 
                     {/* Dynamic Background Glow & Decorative Elements */}
                     <div className="absolute inset-0 pointer-events-none">
@@ -1033,7 +1033,40 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
                         )}
                         <div className={`absolute -top-24 -left-24 w-64 h-64 bg-gradient-to-br ${getCardStyles(formData.cardType).leak} blur-3xl opacity-30`}></div>
                     </div>
-
+                    {/* Player name here for mobile */}
+                    <div className="md:hidden flex flex-wrap items-baseline gap-x-4 gap-y-2">
+                        <h1 className="text-3xl md:text-4xl font-black text-white uppercase tracking-tighter leading-tight drop-shadow-lg flex items-center gap-2">
+                            <span>{formData.name}</span>
+                            <button
+                                type="button"
+                                onContextMenu={handleRatingContextMenu}
+                                onTouchStart={(e) => handleTouchStart(e, 'rating')}
+                                onTouchEnd={handleTouchEnd}
+                                onTouchMove={handleTouchMove}
+                                className="text-2xl md:text-3xl font-black text-ef-accent font-mono bg-ef-accent/10 px-2 py-0.5 rounded-lg border border-ef-accent/20 cursor-context-menu select-none transition-all active:scale-95 focus:outline-none"
+                                title="Right click or hold to edit rating"
+                            >
+                                {formData.rating}
+                            </button>
+                        </h1>
+                        <div className="flex items-center gap-2.5">
+                            <div className="flex items-center h-[26px] px-[10px] bg-ef-accent rounded-md text-ef-dark shadow-lg shadow-ef-accent/10">
+                                <span className="text-[13px] font-medium tracking-tight font-inter">{formData.position}</span>
+                            </div>
+                            {formData.secondaryPosition && (
+                                <span className="text-[13px] font-medium text-ef-accent/30 tracking-tight font-inter">{formData.secondaryPosition}</span>
+                            )}
+                            {formData.playstyle && formData.playstyle !== 'None' && (
+                                <div className="flex items-center gap-2.5">
+                                    <span className="text-white/10 text-[13px] font-medium">/</span>
+                                    <span className="text-[13px] font-medium tracking-tight text-ef-accent/60 italic font-inter">
+                                        {formData.playstyle}
+                                    </span>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                    {/* end */}
                     <div className="flex-1 flex flex-col gap-6 relative z-10 md:overflow-y-auto md:custom-scrollbar pr-1 md:pr-2">
 
                         <div className="flex flex-col items-center gap-4 w-full">
@@ -1236,7 +1269,7 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
                     <>
                         {!isEditing && (
                             <div className="flex flex-col items-start text-left gap-2 w-full px-4 md:px-6 mb-2">
-                                <div className="flex flex-wrap items-baseline gap-x-4 gap-y-2">
+                                <div className="hidden md:flex flex-wrap items-baseline gap-x-4 gap-y-2">
                                     <h1 className="text-3xl md:text-4xl font-black text-white uppercase tracking-tighter leading-tight drop-shadow-lg flex items-center gap-2">
                                         <span>{formData.name}</span>
                                         <button

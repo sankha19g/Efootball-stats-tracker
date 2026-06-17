@@ -108,7 +108,7 @@ const SettingsModal = ({ onClose, settings, setSettings, user, players, setPlaye
 
         // Find players missing Source 2
         const missingPlayers = players.filter(p => !p.image2 || p.image2 === '');
-        
+
         // Ask if they want to update ONLY missing or ALL players
         let playersToProcess = [];
         let isForce = false;
@@ -139,7 +139,7 @@ const SettingsModal = ({ onClose, settings, setSettings, user, players, setPlaye
                 // Check all possible ID fields
                 const pid = p.playerId || p.pesdb_id || p.id || p.ID;
                 const url = generateSource2Url(p.nationality, pid);
-                
+
                 if (url) {
                     updatesList.push({ id: p._id, updates: { image2: url } });
                     const idx = updatedPlayers.findIndex(up => up._id === p._id);
@@ -152,7 +152,7 @@ const SettingsModal = ({ onClose, settings, setSettings, user, players, setPlaye
             // Perform batch updates in chunks of 500 (Firestore limit is 500)
             const CHUNK_SIZE = 400;
             const { batchUpdatePlayers } = await import('../services/playerService');
-            
+
             for (let i = 0; i < updatesList.length; i += CHUNK_SIZE) {
                 const chunk = updatesList.slice(i, i + CHUNK_SIZE);
                 await batchUpdatePlayers(user.uid, chunk);
@@ -171,7 +171,7 @@ const SettingsModal = ({ onClose, settings, setSettings, user, players, setPlaye
     };
 
     const tabs = [
-        { id: 'card', label: 'Front Card Aesthetics', icon: '🖼️' },
+        { id: 'card', label: 'Card Aesthetics', icon: '🖼️' },
         { id: 'general', label: 'General / Perf', icon: '⚙️' },
         { id: 'branding', label: 'Branding', icon: '🏷️' },
         { id: 'maintenance', label: 'Maintenance', icon: '🛠️' }
@@ -237,10 +237,10 @@ const SettingsModal = ({ onClose, settings, setSettings, user, players, setPlaye
                                         <button
                                             key={item.id}
                                             onClick={() => toggleSetting(item.id)}
-                                            className="w-full flex items-center justify-between p-4 bg-white/[0.03] border border-white/5 rounded-2xl hover:bg-white/[0.05] transition-all group"
+                                            className="w-full flex items-center justify-between px-3 py-1 bg-white/[0.03] border border-white/5 rounded-2xl hover:bg-white/[0.05] transition-all group"
                                         >
                                             <span className="text-[10px] font-black text-white/80 uppercase tracking-widest">{item.label}</span>
-                                            <div className={`w-9 h-5 rounded-full relative transition-all duration-300 ${settings[item.id] !== false ? 'bg-white/40' : 'bg-white/10'}`}>
+                                            <div className={`w-9 h-5 rounded-full relative transition-all duration-300 ${settings[item.id] !== false ? 'bg-[rgb(0,255,136)]' : 'bg-white/40'}`}>
                                                 <div className={`absolute top-1 w-3 h-3 rounded-full bg-white transition-all duration-300 shadow-sm ${settings[item.id] !== false ? 'translate-x-5' : 'translate-x-1'}`}></div>
                                             </div>
                                         </button>
@@ -249,7 +249,7 @@ const SettingsModal = ({ onClose, settings, setSettings, user, players, setPlaye
                             </section>
 
                             <section className="space-y-4 pt-6 border-t border-white/5">
-                                <h4 className="text-[9px] font-black text-ef-blue uppercase tracking-widest pl-1">Card Corner Style</h4>
+                                <h4 className="text-sm font-black text-ef-blue uppercase tracking-widest pl-1">Card Corner Style</h4>
                                 <div className="bg-[#111111] p-4 rounded-2xl border border-white/10 flex items-center gap-2">
                                     <button
                                         onClick={() => setSettings(prev => ({ ...prev, cardCornerStyle: 'rounded' }))}
@@ -267,7 +267,7 @@ const SettingsModal = ({ onClose, settings, setSettings, user, players, setPlaye
                             </section>
 
                             <section className="space-y-4 pt-6 border-t border-white/5">
-                                <h4 className="text-[9px] font-black text-ef-accent uppercase tracking-widest pl-1">HUD Design Style</h4>
+                                <h4 className="text-sm font-black text-ef-accent uppercase tracking-widest pl-1">HUD Design Style</h4>
                                 <div className="bg-[#111111] p-4 rounded-2xl border border-white/10 flex items-center gap-2">
                                     <button
                                         onClick={() => setSettings(prev => ({ ...prev, cardHudStyle: 'default' }))}
@@ -296,10 +296,10 @@ const SettingsModal = ({ onClose, settings, setSettings, user, players, setPlaye
                                         <button
                                             key={item.id}
                                             onClick={() => toggleSetting(item.id)}
-                                            className="w-full flex items-center justify-between p-4 bg-white/[0.03] border border-white/5 rounded-2xl hover:bg-white/[0.05] transition-all group"
+                                            className="w-full flex items-center justify-between px-3 py-1 bg-white/[0.03] border border-white/5 rounded-2xl hover:bg-white/[0.05] transition-all group"
                                         >
                                             <span className="text-[10px] font-black text-white/80 uppercase tracking-widest">{item.label}</span>
-                                            <div className={`w-9 h-5 rounded-full relative transition-all duration-300 ${settings[item.id] !== false ? 'bg-ef-blue/40' : 'bg-white/10'}`}>
+                                            <div className={`w-9 h-5 rounded-full relative transition-all duration-300 ${settings[item.id] !== false ? 'bg-[rgb(0,255,136)]' : 'bg-white/40'}`}>
                                                 <div className={`absolute top-1 w-3 h-3 rounded-full bg-white transition-all duration-300 shadow-sm ${settings[item.id] !== false ? 'translate-x-5' : 'translate-x-1'}`}></div>
                                             </div>
                                         </button>
@@ -308,13 +308,13 @@ const SettingsModal = ({ onClose, settings, setSettings, user, players, setPlaye
                             </section>
 
                             <section className="space-y-4 pt-6 border-t border-white/5">
-                                <h4 className="text-[9px] font-black text-ef-accent uppercase tracking-widest pl-1">Image Source Preference</h4>
+                                <h4 className="text-sm font-black text-ef-accent uppercase tracking-widest pl-1">Image Source Preference</h4>
                                 <div className="bg-[#111111] p-4 rounded-2xl border border-white/10 flex items-center gap-2">
                                     <button
                                         onClick={() => setSettings(prev => ({ ...prev, preferredImageSource: 1 }))}
                                         className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${settings.preferredImageSource === 1 ? 'bg-ef-accent text-ef-dark' : 'bg-white/5 text-white/40 hover:bg-white/10'}`}
                                     >
-                                        Source 1
+                                        Source 1-PESDB
                                     </button>
                                     <button
                                         onClick={() => setSettings(prev => ({ ...prev, preferredImageSource: 2 }))}
@@ -326,7 +326,7 @@ const SettingsModal = ({ onClose, settings, setSettings, user, players, setPlaye
                                         onClick={() => setSettings(prev => ({ ...prev, preferredImageSource: 3 }))}
                                         className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${settings.preferredImageSource === 3 ? 'bg-orange-500 text-white' : 'bg-white/5 text-white/40 hover:bg-white/10'}`}
                                     >
-                                        Source 3 (Master)
+                                        Source 3 (Master)-eFHUB
                                     </button>
                                 </div>
                                 <p className="text-[8px] font-bold text-white/20 uppercase tracking-widest leading-relaxed px-2">
@@ -335,7 +335,7 @@ const SettingsModal = ({ onClose, settings, setSettings, user, players, setPlaye
                             </section>
 
                             <section className="space-y-4 pt-6 border-t border-white/5">
-                                <h4 className="text-[9px] font-black text-white/40 uppercase tracking-widest pl-1">Grid Display Config</h4>
+                                <h4 className="text-sm font-black text-white/40 uppercase tracking-widest pl-1">Grid Display Config</h4>
                                 <div className="bg-[#111111] p-6 rounded-[2rem] border border-white/10 space-y-4">
                                     {/* Main Toggle Inside the Box */}
                                     <button
@@ -400,7 +400,7 @@ const SettingsModal = ({ onClose, settings, setSettings, user, players, setPlaye
                     {activeTab === 'general' && (
                         <div className="animate-fade-in space-y-10">
                             <section className="space-y-4">
-                                <h4 className="text-[9px] font-black text-ef-accent uppercase tracking-widest pl-1">Gallery Density</h4>
+                                <h4 className="text-sm font-black text-ef-accent uppercase tracking-widest pl-1">Gallery Density</h4>
                                 <div className="bg-white/[0.03] p-6 rounded-[2rem] border border-white/5 space-y-6">
                                     <div className="flex justify-between items-center">
                                         <span className="text-[10px] font-black text-white/80 uppercase tracking-widest">Card Scale</span>
@@ -423,7 +423,7 @@ const SettingsModal = ({ onClose, settings, setSettings, user, players, setPlaye
                             </section>
 
                             <section className="space-y-4">
-                                <h4 className="text-[9px] font-black text-white/40 uppercase tracking-widest pl-1">Optimization</h4>
+                                <h4 className="text-sm font-black text-white/40 uppercase tracking-widest pl-1">Optimization</h4>
                                 <button
                                     onClick={() => toggleSetting('highPerf')}
                                     className="w-full flex items-center justify-between p-4 bg-[#111111] border border-white/10 rounded-2xl hover:bg-[#1a1a1a] transition-all group"
@@ -443,7 +443,7 @@ const SettingsModal = ({ onClose, settings, setSettings, user, players, setPlaye
                     {activeTab === 'branding' && (
                         <div className="animate-fade-in space-y-6">
                             <section className="space-y-4">
-                                <h4 className="text-[9px] font-black text-white/40 uppercase tracking-widest pl-1">Personalization</h4>
+                                <h4 className="text-sm font-black text-white/40 uppercase tracking-widest pl-1">Personalization</h4>
                                 <div
                                     onDragOver={handleDragOver}
                                     onDragLeave={handleDragLeave}
@@ -484,7 +484,7 @@ const SettingsModal = ({ onClose, settings, setSettings, user, players, setPlaye
                     {activeTab === 'maintenance' && (
                         <div className="animate-fade-in space-y-6">
                             <section className="space-y-4">
-                                <h4 className="text-[9px] font-black text-white/40 uppercase tracking-widest pl-1">Database Repair</h4>
+                                <h4 className="text-sm font-black text-white/40 uppercase tracking-widest pl-1">Database Repair</h4>
                                 <div className="bg-[#111111] p-8 rounded-[2rem] border border-white/10 space-y-8 flex flex-col items-center text-center">
                                     <div className="space-y-2">
                                         <h5 className="text-[11px] font-black text-white uppercase tracking-widest">Playstyle Auto-Fix</h5>
@@ -514,12 +514,12 @@ const SettingsModal = ({ onClose, settings, setSettings, user, players, setPlaye
                             </section>
 
                             <section className="space-y-4">
-                                <h4 className="text-[9px] font-black text-white/40 uppercase tracking-widest pl-1">Media Generation</h4>
+                                <h4 className="text-sm font-black text-white/40 uppercase tracking-widest pl-1">Media Generation</h4>
                                 <div className="bg-[#111111] p-8 rounded-[2rem] border border-white/10 space-y-8 flex flex-col items-center text-center">
                                     <div className="space-y-2">
                                         <h5 className="text-[11px] font-black text-white uppercase tracking-widest">Source 2 Auto-Generator</h5>
                                         <p className="text-[8px] font-bold text-white/30 uppercase leading-relaxed max-w-[280px]">
-                                            Automatically adds Source 2 images for players using the master pattern. 
+                                            Automatically adds Source 2 images for players using the master pattern.
                                             <span className="text-ef-accent block mt-1">Handles .webp and .png fallbacks automatically.</span>
                                         </p>
                                     </div>
