@@ -1035,7 +1035,7 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
                     </div>
                     {/* Player name here for mobile */}
                     <div className="md:hidden flex flex-wrap items-baseline gap-x-4 gap-y-2">
-                        <h1 className="text-3xl md:text-4xl font-black text-white uppercase tracking-tighter leading-tight drop-shadow-lg flex items-center gap-2">
+                        <h1 className=" text-3xl md:text-4xl mt-10 font-black text-white uppercase tracking-tighter leading-tight drop-shadow-lg flex items-center gap-2">
                             <span>{formData.name}</span>
                             <button
                                 type="button"

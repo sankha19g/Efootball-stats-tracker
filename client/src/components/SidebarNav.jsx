@@ -1,16 +1,16 @@
-import { 
-    Users, 
-    Trophy, 
-    Layout, 
-    Zap, 
-    PlusSquare, 
-    ClipboardList, 
-    PenTool, 
-    BarChart3, 
-    BookOpen, 
-    Camera, 
-    Link2, 
-    Shield, 
+import {
+    Users,
+    Trophy,
+    Layout,
+    Zap,
+    PlusSquare,
+    ClipboardList,
+    PenTool,
+    BarChart3,
+    BookOpen,
+    Camera,
+    Link2,
+    Shield,
     Settings,
     History,
     LogOut,
@@ -19,22 +19,22 @@ import {
     Shuffle
 } from 'lucide-react';
 
-const SidebarNav = ({ 
-    isOpen, 
-    setIsOpen, 
-    view, 
-    setView, 
-    setShowAddPlayer, 
-    setShowDatabase, 
-    setShowScreenshots, 
-    setShowLinks, 
-    user, 
-    setShowLogin, 
-    handleLogout, 
-    showAlert, 
-    setShowProfileStats, 
-    setShowSocial, 
-    setShowBrochure 
+const SidebarNav = ({
+    isOpen,
+    setIsOpen,
+    view,
+    setView,
+    setShowAddPlayer,
+    setShowDatabase,
+    setShowScreenshots,
+    setShowLinks,
+    user,
+    setShowLogin,
+    handleLogout,
+    showAlert,
+    setShowProfileStats,
+    setShowSocial,
+    setShowBrochure
 }) => {
 
     const isSubView = view !== 'list';
@@ -146,7 +146,7 @@ const SidebarNav = ({
                     {/* Header with Close Button (Mobile Only) */}
                     <div className="md:hidden flex items-center justify-between p-4 border-b border-white/5">
                         <span className="text-xs font-black text-ef-accent uppercase italic">Menu</span>
-                        <button 
+                        <button
                             onClick={() => setIsOpen(false)}
                             className="w-8 h-8 flex items-center justify-center rounded-lg bg-white/5 border border-white/10 text-white"
                         >
