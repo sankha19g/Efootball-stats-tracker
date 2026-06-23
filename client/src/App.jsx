@@ -1449,6 +1449,8 @@ function App() {
           const pSkills = [...(p.skills || []), ...(p.additionalSkills || [])];
           return !pSkills.some(s => SPECIAL_SKILLS.includes(s));
         });
+      } else if (filterMissing === 'Country Name = Club Name') {
+        result = result.filter(p => p.nationality && p.club && p.nationality.trim().toLowerCase() === p.club.trim().toLowerCase());
       }
     }
 
@@ -2690,6 +2692,7 @@ function App() {
                         <option value="No Additional Skills" className="text-black">No Additional Skills (0/5)</option>
                         <option value="Incomplete Additional Skills" className="text-black">Incomplete Additional Skills (1–4/5)</option>
                         <option value="Missing Special Skills" className="text-black">Missing Special Skills</option>
+                        <option value="Country Name = Club Name" className="text-black">Country Name = Club Name</option>
                       </select>
                     </div>
                   </div>

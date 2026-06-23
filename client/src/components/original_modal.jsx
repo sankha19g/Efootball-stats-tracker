@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+﻿import { useState, useEffect, useRef, useMemo } from 'react';
 import { PLAYSTYLES, TOP_LEAGUES, SPECIAL_SKILLS, PLAYER_SKILLS, ALL_SKILLS } from '../constants';
 import { searchLeagues, searchTeams, searchCountries, getFlagUrl } from '../services/footballApi';
 import SavedProgressionsModal from './SavedProgressionsModal';
@@ -91,10 +91,6 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
     const [editRatingValue, setEditRatingValue] = useState(99);
     const ratingContextMenuRef = useRef(null);
 
-    // Position Context Menu State
-    const [positionContextMenu, setPositionContextMenu] = useState(null);
-    const positionContextMenuRef = useRef(null);
-
     // Touch Long Press Refs
     const touchTimeoutRef = useRef(null);
     const touchStartPosRef = useRef({ x: 0, y: 0 });
@@ -154,10 +150,6 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
             // Rating Context Menu
             if (ratingContextMenuRef.current && !ratingContextMenuRef.current.contains(event.target)) {
                 setRatingContextMenu(null);
-            }
-            // Position Context Menu
-            if (positionContextMenuRef.current && !positionContextMenuRef.current.contains(event.target)) {
-                setPositionContextMenu(null);
             }
         };
 
@@ -453,76 +445,6 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
         });
     };
 
-    const handlePositionContextMenu = (e) => {
-        e.preventDefault();
-
-        const viewportWidth = window.innerWidth;
-        const viewportHeight = window.innerHeight;
-        const menuWidth = 280;
-        const menuHeight = 240;
-
-        let posX = e.clientX;
-        let posY = e.clientY;
-
-        if ((!posX || posX === 0) && (!posY || posY === 0) && e.currentTarget) {
-            const rect = e.currentTarget.getBoundingClientRect();
-            posX = rect.left + rect.width / 2;
-            posY = rect.top + rect.height / 2;
-        }
-
-        if (posX + menuWidth > viewportWidth) {
-            posX = viewportWidth - menuWidth - 10;
-        }
-        if (posY + menuHeight > viewportHeight) {
-            posY = viewportHeight - menuHeight - 10;
-        }
-
-        posX = Math.max(10, posX);
-        posY = Math.max(10, posY);
-
-        setPositionContextMenu({
-            x: posX,
-            y: posY
-        });
-    };
-
-    const handleTogglePosition = (pos) => {
-        const mainPos = (formData.position || player.position || '').trim().toUpperCase();
-        if (pos === mainPos) return;
-
-        const parsePositionsList = (fieldValue) => {
-            if (!fieldValue) return [];
-            if (Array.isArray(fieldValue)) {
-                return fieldValue.map(s => s.trim().toUpperCase()).filter(Boolean);
-            }
-            return String(fieldValue).split(/[\s,/;]+/).map(s => s.trim().toUpperCase()).filter(Boolean);
-        };
-
-        const secPositions = parsePositionsList(formData.secondaryPosition);
-        const addPositions = parsePositionsList(formData.additionalPositions);
-        const secondarySet = new Set([...secPositions, ...addPositions]);
-
-        if (secondarySet.has(pos)) {
-            secondarySet.delete(pos);
-        } else {
-            secondarySet.add(pos);
-        }
-
-        const newSecondaryList = Array.from(secondarySet);
-        const secondaryStr = newSecondaryList.join(', ');
-
-        onUpdate(player._id, {
-            secondaryPosition: secondaryStr,
-            additionalPositions: newSecondaryList
-        }, false);
-
-        setFormData(prev => ({
-            ...prev,
-            secondaryPosition: secondaryStr,
-            additionalPositions: secondaryStr
-        }));
-    };
-
     const handleTouchStart = (e, type) => {
         // Clear any existing timer just in case
         if (touchTimeoutRef.current) {
@@ -551,8 +473,6 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
                 handleStatsContextMenu(simulatedEvent);
             } else if (type === 'rating') {
                 handleRatingContextMenu(simulatedEvent);
-            } else if (type === 'position') {
-                handlePositionContextMenu(simulatedEvent);
             }
             touchTimeoutRef.current = null;
         }, 600);
@@ -688,11 +608,11 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
     if (!player) return null;
 
     const rankingOptions = [
-        { id: 'all', label: 'Entire Squad', icon: '🌎' },
-        { id: 'position', label: 'By Position', icon: '🎯' },
-        { id: 'league', label: 'By League', icon: '🏆' },
-        { id: 'club', label: 'By Club', icon: '🛡️' },
-        { id: 'country', label: 'By Country', icon: '🏳️' }
+        { id: 'all', label: 'Entire Squad', icon: '≡ƒîÄ' },
+        { id: 'position', label: 'By Position', icon: '≡ƒÄ»' },
+        { id: 'league', label: 'By League', icon: '≡ƒÅå' },
+        { id: 'club', label: 'By Club', icon: '≡ƒ¢í∩╕Å' },
+        { id: 'country', label: 'By Country', icon: '≡ƒÅ│∩╕Å' }
     ];
 
     const getRankInfo = () => {
@@ -806,26 +726,26 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
     }, [players, player, comparisonStat, comparisonContext, settings?.preferredImageSource]);
 
     const compOptions = [
-        { id: 'goals', label: 'Goals', icon: '⚽' },
-        { id: 'assists', label: 'Assists', icon: '🎯' },
-        { id: 'matches', label: 'Matches', icon: '🏟️' },
-        { id: 'ga', label: 'G+A', icon: '🔥' },
-        { id: 'gpg', label: 'Goals/Game', icon: '⚡' },
-        { id: 'apg', label: 'Assists/Game', icon: '👟' },
-        { id: 'gapg', label: 'G+A/Game', icon: '⭐' }
+        { id: 'goals', label: 'Goals', icon: 'ΓÜ╜' },
+        { id: 'assists', label: 'Assists', icon: '≡ƒÄ»' },
+        { id: 'matches', label: 'Matches', icon: '≡ƒÅƒ∩╕Å' },
+        { id: 'ga', label: 'G+A', icon: '≡ƒöÑ' },
+        { id: 'gpg', label: 'Goals/Game', icon: 'ΓÜí' },
+        { id: 'apg', label: 'Assists/Game', icon: '≡ƒæƒ' },
+        { id: 'gapg', label: 'G+A/Game', icon: 'Γ¡É' }
     ];
 
     const compContextOptions = [
-        { id: 'all', label: 'All Players', icon: '🌎' },
-        { id: 'position', label: 'Same Position', icon: '📍' },
-        { id: 'league', label: 'Same League', icon: '🏆' },
-        { id: 'club', label: 'Same Club', icon: '🛡️' },
-        { id: 'country', label: 'Same Country', icon: '🏳️' },
-        { id: 'playstyle', label: 'Same Playstyle', icon: '🎮' },
-        { id: 'card_type', label: 'Same Card Type', icon: '🃏' }
+        { id: 'all', label: 'All Players', icon: '≡ƒîÄ' },
+        { id: 'position', label: 'Same Position', icon: '≡ƒôì' },
+        { id: 'league', label: 'Same League', icon: '≡ƒÅå' },
+        { id: 'club', label: 'Same Club', icon: '≡ƒ¢í∩╕Å' },
+        { id: 'country', label: 'Same Country', icon: '≡ƒÅ│∩╕Å' },
+        { id: 'playstyle', label: 'Same Playstyle', icon: '≡ƒÄ«' },
+        { id: 'card_type', label: 'Same Card Type', icon: '≡ƒâÅ' }
     ];
 
-    // ─── Smart Awards Computation ─────────────────────────────────────────────
+    // ΓöÇΓöÇΓöÇ Smart Awards Computation ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
     const playerAwards = useMemo(() => {
         if (!players || players.length < 2) return [];
 
@@ -854,20 +774,20 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
             return sec.includes(pos) || trained.includes(pos);
         };
 
-        // ── Primary group definitions ─────────────────────────────────────────
+        // ΓöÇΓöÇ Primary group definitions ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
         const groupDefs = [
             {
                 key: 'position',
                 label: player.position,
                 groupLabel: 'Position',
-                emoji: '🎯',
+                emoji: '≡ƒÄ»',
                 filter: p => p.position && player.position && p.position === player.position
             },
             {
                 key: 'playstyle',
                 label: player.playstyle,
                 groupLabel: 'Playstyle',
-                emoji: '⚡',
+                emoji: 'ΓÜí',
                 filter: p => p.playstyle && player.playstyle &&
                     p.playstyle !== 'None' && player.playstyle !== 'None' &&
                     p.playstyle === player.playstyle
@@ -876,58 +796,58 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
                 key: 'nationality',
                 label: player.nationality,
                 groupLabel: 'Nationality',
-                emoji: '🌍',
+                emoji: '≡ƒîì',
                 filter: p => p.nationality && player.nationality && p.nationality === player.nationality
             },
             {
                 key: 'league',
                 label: player.league,
                 groupLabel: 'League',
-                emoji: '🏆',
+                emoji: '≡ƒÅå',
                 filter: p => p.league && player.league && p.league === player.league
             },
             {
                 key: 'club',
                 label: player.club,
                 groupLabel: 'Club',
-                emoji: '🛡️',
+                emoji: '≡ƒ¢í∩╕Å',
                 filter: p => p.club && player.club && p.club === player.club
             },
             {
                 key: 'cardType',
                 label: player.cardType,
                 groupLabel: 'Card Type',
-                emoji: '🃏',
+                emoji: '≡ƒâÅ',
                 filter: p => (p.cardType || p.card_type) && (player.cardType || player.card_type) &&
                     (p.cardType || p.card_type) === (player.cardType || player.card_type)
             },
-            // ── Compound groups (top-1 only) ──────────────────────────────────
+            // ΓöÇΓöÇ Compound groups (top-1 only) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
             {
                 key: 'nationality_position',
-                label: player.nationality && player.position ? `${player.position} · ${player.nationality}` : null,
+                label: player.nationality && player.position ? `${player.position} ┬╖ ${player.nationality}` : null,
                 groupLabel: 'Nationality + Position',
-                emoji: '🌍🎯',
+                emoji: '≡ƒîì≡ƒÄ»',
                 maxRank: 1,
                 filter: p => p.nationality && player.nationality && p.nationality === player.nationality &&
                     p.position && player.position && p.position === player.position
             },
             {
                 key: 'league_position',
-                label: player.league && player.position ? `${player.position} · ${player.league}` : null,
+                label: player.league && player.position ? `${player.position} ┬╖ ${player.league}` : null,
                 groupLabel: 'League + Position',
-                emoji: '🏆🎯',
+                emoji: '≡ƒÅå≡ƒÄ»',
                 maxRank: 1,
                 filter: p => p.league && player.league && p.league === player.league &&
                     p.position && player.position && p.position === player.position
             },
         ];
 
-        const rankBadge = r => r === 1 ? '🥇' : r === 2 ? '🥈' : '🥉';
+        const rankBadge = r => r === 1 ? '≡ƒÑç' : r === 2 ? '≡ƒÑê' : '≡ƒÑë';
         const ordinal = r => r === 1 ? '1st' : r === 2 ? '2nd' : '3rd';
 
         const MIN_POOL = 4; // anti-padding: need more than 3 players in a group
 
-        // ── Helper: run all stats for a given pool and push awards ────────────
+        // ΓöÇΓöÇ Helper: run all stats for a given pool and push awards ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
         const evaluateGroup = (group, pool, overrideLabel, posTag) => {
             if (pool.length < MIN_POOL) return;
             for (const stat of statDefs) {
@@ -959,7 +879,7 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
             }
         };
 
-        // ── Run primary groups ────────────────────────────────────────────────
+        // ΓöÇΓöÇ Run primary groups ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
         for (const group of groupDefs) {
             if (!group.label) continue;
             const pool = players.filter(group.filter);
@@ -968,7 +888,7 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
             evaluateGroup(group, pool, null, player.position);
         }
 
-        // ── Secondary / trained position rankings ─────────────────────────────
+        // ΓöÇΓöÇ Secondary / trained position rankings ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
         // Collect all alt positions for this player
         const secPositions = Array.isArray(player.secondaryPosition)
             ? player.secondaryPosition
@@ -982,32 +902,32 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
         for (const altPos of altPositions) {
             // Global: all players who can play this position
             evaluateGroup(
-                { key: `alt_pos_global_${altPos}`, groupLabel: `as ${altPos} (Global)`, emoji: '🎯', maxRank: 3 },
+                { key: `alt_pos_global_${altPos}`, groupLabel: `as ${altPos} (Global)`, emoji: '≡ƒÄ»', maxRank: 3 },
                 players.filter(p => playsPosition(p, altPos)),
-                `${altPos} · All`,
+                `${altPos} ┬╖ All`,
                 altPos
             );
             // Nationality
             if (player.nationality) {
                 evaluateGroup(
-                    { key: `alt_pos_nat_${altPos}`, groupLabel: `as ${altPos} · ${player.nationality}`, emoji: '🌍🎯', maxRank: 1 },
+                    { key: `alt_pos_nat_${altPos}`, groupLabel: `as ${altPos} ┬╖ ${player.nationality}`, emoji: '≡ƒîì≡ƒÄ»', maxRank: 1 },
                     players.filter(p => playsPosition(p, altPos) && p.nationality === player.nationality),
-                    `${altPos} · ${player.nationality}`,
+                    `${altPos} ┬╖ ${player.nationality}`,
                     altPos
                 );
             }
             // League
             if (player.league) {
                 evaluateGroup(
-                    { key: `alt_pos_league_${altPos}`, groupLabel: `as ${altPos} · ${player.league}`, emoji: '🏆🎯', maxRank: 1 },
+                    { key: `alt_pos_league_${altPos}`, groupLabel: `as ${altPos} ┬╖ ${player.league}`, emoji: '≡ƒÅå≡ƒÄ»', maxRank: 1 },
                     players.filter(p => playsPosition(p, altPos) && p.league === player.league),
-                    `${altPos} · ${player.league}`,
+                    `${altPos} ┬╖ ${player.league}`,
                     altPos
                 );
             }
         }
 
-        // ── Sort: group priority → rank ───────────────────────────────────────
+        // ΓöÇΓöÇ Sort: group priority ΓåÆ rank ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
         const groupPriority = {
             position: 0,
             playstyle: 1,
@@ -1096,7 +1016,7 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
                     onClick={onClose}
                     className="absolute top-6 left-6 z-50 flex items-center gap-2 px-4 py-1 rounded-xl bg-white/5 hover:bg-white/10 text-white transition-all active:scale-95 border border-white/10 backdrop-blur-md group"
                 >
-                    <span className="text-xl group-hover:-translate-x-1 transition-transform">←</span>
+                    <span className="text-xl group-hover:-translate-x-1 transition-transform">ΓåÉ</span>
                     <span className="text-[10px] font-black uppercase tracking-widest hidden sm:inline">Back to Squad</span>
                 </button>
 
@@ -1147,7 +1067,7 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
                         </div>
                     </div>
                     {/* end */}
-                    <div className="flex-1 flex flex-col gap-6 relative z-10 md:overflow-y-auto no-scrollbar pr-1 md:pr-2">
+                    <div className="flex-1 flex flex-col gap-6 relative z-10 md:overflow-y-auto md:custom-scrollbar pr-1 md:pr-2">
 
                         <div className="flex flex-col items-center gap-4 w-full">
 
@@ -1160,7 +1080,7 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
                                     <img src={getPlayerImage(formData)} alt={formData.name} className="w-full h-full object-cover object-top" />
                                 ) : (
                                     <div className="w-full h-full flex flex-col items-center justify-center bg-white/5 border-2 border-dashed border-white/10">
-                                        <span className="text-4xl mb-4">📸</span>
+                                        <span className="text-4xl mb-4">≡ƒô╕</span>
                                         <span className="text-[10px] font-black uppercase tracking-widest opacity-30">No Photo</span>
                                     </div>
                                 )}
@@ -1246,7 +1166,7 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
                                 {isEditing && (
                                     <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-black/70 opacity-0 hover:opacity-100 transition-all cursor-pointer backdrop-blur-sm">
                                         <div className="bg-white/10 border border-white/20 p-4 rounded-2xl flex flex-col items-center gap-2 scale-90 hover:scale-100 transition-transform">
-                                            <span className="text-2xl">📤</span>
+                                            <span className="text-2xl">≡ƒôñ</span>
                                             <span className="text-[10px] font-black uppercase tracking-widest text-white">Change Photo</span>
                                         </div>
                                         <input type="file" accept="image/*" onChange={handleImageChange} className="absolute inset-0 opacity-0 cursor-pointer" />
@@ -1280,7 +1200,7 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
                                                 {formData.image2 ? (
                                                     <img src={formData.image2} className="w-full h-full object-cover" alt="" />
                                                 ) : (
-                                                    <span className="text-xl opacity-20">📸</span>
+                                                    <span className="text-xl opacity-20">≡ƒô╕</span>
                                                 )}
                                             </div>
                                             <input id="details-image2-upload" type="file" accept="image/*" onChange={handleImage2Change} className="hidden" />
@@ -1299,7 +1219,7 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
                                         className="w-full py-3 bg-white/5 border border-white/10 border-dashed rounded-xl flex items-center justify-center gap-2 hover:bg-white/10 transition-all cursor-pointer"
                                         tabIndex="0"
                                     >
-                                        <span className="text-sm">📋</span>
+                                        <span className="text-sm">≡ƒôï</span>
                                         <span className="text-[9px] font-black uppercase tracking-widest opacity-40">Paste to Source 1</span>
                                     </div>
                                 </div>
@@ -1337,80 +1257,6 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
                                         </span>
                                     </div>
                                 ))}
-                            </div>
-
-                            {/* Position Suitability Diagram */}
-                            <div className="mt-6 flex flex-col items-center">
-                                <div className="text-[8px] font-black uppercase tracking-[0.4em] text-white/20 mb-3 w-full flex items-center gap-3">
-                                    <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent to-white/10"></div>
-                                    <span>Position Suitability</span>
-                                    <div className="h-[1px] flex-1 bg-gradient-to-l from-transparent to-white/10"></div>
-                                </div>
-
-                                <div
-                                    onContextMenu={handlePositionContextMenu}
-                                    onTouchStart={(e) => handleTouchStart(e, 'position')}
-                                    onTouchEnd={handleTouchEnd}
-                                    onTouchMove={handleTouchMove}
-                                    className="relative w-full max-w-[240px] aspect-[4/5] bg-[#141416] border border-ef-accent/60 shadow-[0_0_15px_rgba(0,255,136,0.15)] rounded-[20px] overflow-hidden cursor-context-menu select-none active:scale-[0.99] transition-all"
-                                    title="Right click or hold to edit positions"
-                                >
-                                    <div className="grid grid-cols-[1fr_1.1fr_1fr] grid-rows-7 w-full h-full">
-                                        {(() => {
-                                            const mainPos = (formData.position || '').trim().toUpperCase();
-                                            const parsePositionsList = (fieldValue) => {
-                                                if (!fieldValue) return [];
-                                                if (Array.isArray(fieldValue)) {
-                                                    return fieldValue.map(s => s.trim().toUpperCase()).filter(Boolean);
-                                                }
-                                                return String(fieldValue).split(/[\s,/;]+/).map(s => s.trim().toUpperCase()).filter(Boolean);
-                                            };
-                                            const secPositions = parsePositionsList(formData.secondaryPosition);
-                                            const addPositions = parsePositionsList(formData.additionalPositions);
-                                            const secondarySet = new Set([...secPositions, ...addPositions]);
-
-                                            const cells = [
-                                                // Left Column
-                                                { label: 'LWF', gridClass: 'col-start-1 row-start-1 row-end-3 border-r border-b' },
-                                                { label: 'LMF', gridClass: 'col-start-1 row-start-3 row-end-6 border-r border-b' },
-                                                { label: 'LB', gridClass: 'col-start-1 row-start-6 row-end-8 border-r' },
-
-                                                // Middle Column
-                                                { label: 'CF', gridClass: 'col-start-2 row-start-1 border-b' },
-                                                { label: 'SS', gridClass: 'col-start-2 row-start-2 border-b' },
-                                                { label: 'AMF', gridClass: 'col-start-2 row-start-3 border-b' },
-                                                { label: 'CMF', gridClass: 'col-start-2 row-start-4 border-b' },
-                                                { label: 'DMF', gridClass: 'col-start-2 row-start-5 border-b' },
-                                                { label: 'CB', gridClass: 'col-start-2 row-start-6 border-b' },
-                                                { label: 'GK', gridClass: 'col-start-2 row-start-7' },
-
-                                                // Right Column
-                                                { label: 'RWF', gridClass: 'col-start-3 row-start-1 row-end-3 border-l border-b' },
-                                                { label: 'RMF', gridClass: 'col-start-3 row-start-3 row-end-6 border-l border-b' },
-                                                { label: 'RB', gridClass: 'col-start-3 row-start-6 row-end-8 border-l' },
-                                            ];
-
-                                            return cells.map((cell) => {
-                                                const isMain = mainPos === cell.label;
-                                                const isSecondary = secondarySet.has(cell.label);
-                                                const isActive = isMain || isSecondary;
-
-                                                const cellStyles = isActive
-                                                    ? "bg-ef-accent text-ef-dark font-black border-[1px] border-black  "
-                                                    : "text-white/20 font-bold";
-
-                                                return (
-                                                    <div
-                                                        key={cell.label}
-                                                        className={`flex items-center justify-center text-[10px] md:text-[11px] uppercase tracking-widest transition-all duration-200 border-white/[0.06] ${cell.gridClass} ${cellStyles}`}
-                                                    >
-                                                        {cell.label}
-                                                    </div>
-                                                );
-                                            });
-                                        })()}
-                                    </div>
-                                </div>
                             </div>
                         </div>
                     </div>
@@ -1502,7 +1348,7 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
                             <form onSubmit={handleSubmit} onPaste={handlePaste} className="h-full flex flex-col">
                                 <div className="flex items-center justify-between mb-6">
                                     <h3 className="text-xl font-black flex items-center gap-2">
-                                        <span className="text-ef-accent">⚡</span> Edit Player Profile
+                                        <span className="text-ef-accent">ΓÜí</span> Edit Player Profile
                                     </h3>
                                     <div className="flex gap-2">
                                         <button type="button" onClick={() => { setFormData({ ...player }); setIsEditing(false); }} className="px-4 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-[10px] font-black uppercase tracking-widest transition-all">Cancel</button>
@@ -1616,7 +1462,7 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
                                                         <div className="relative">
                                                             <button type="button" onClick={() => setIsLeaguePopupOpen(!isLeaguePopupOpen)} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-left font-bold text-white hover:text-ef-accent transition-colors flex items-center justify-between">
                                                                 <span className="text-xs truncate">{formData.league || 'Select League'}</span>
-                                                                <span className="text-[8px] opacity-30">▼</span>
+                                                                <span className="text-[8px] opacity-30">Γû╝</span>
                                                             </button>
                                                             {isLeaguePopupOpen && (
                                                                 <div className="absolute top-full left-0 right-0 mt-2 bg-[#1a1a1e] border border-white/10 rounded-xl shadow-2xl overflow-hidden z-[110] max-h-[200px] overflow-y-auto backdrop-blur-xl">
@@ -1777,7 +1623,7 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
                                                         formData.tags.map(tag => (
                                                             <span key={tag} className="flex items-center gap-2 px-3 py-1.5 bg-ef-accent/10 border border-ef-accent/20 rounded-full text-ef-accent text-[10px] font-black uppercase tracking-widest group hover:bg-ef-accent/20 transition-all">
                                                                 #{tag}
-                                                                <button type="button" onClick={() => handleRemoveTag(tag)} className="text-white/20 hover:text-white transition-colors">✕</button>
+                                                                <button type="button" onClick={() => handleRemoveTag(tag)} className="text-white/20 hover:text-white transition-colors">Γ£ò</button>
                                                             </span>
                                                         ))
                                                     ) : (
@@ -1867,7 +1713,7 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
                                                         <span className="text-base">{rankingOptions.find(opt => opt.id === rankingContext)?.icon}</span>
                                                         <span className="text-[13px] font-medium tracking-tight text-white/80 font-inter">{rankingOptions.find(opt => opt.id === rankingContext)?.label}</span>
                                                     </div>
-                                                    <span className="text-[8px] opacity-30">▼</span>
+                                                    <span className="text-[8px] opacity-30">Γû╝</span>
                                                 </button>
 
                                                 {isRankingDropdownOpen && (
@@ -1945,7 +1791,7 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
                                                 </div>
                                             </div>
 
-                                            {/* ── Awards Section ── */}
+                                            {/* ΓöÇΓöÇ Awards Section ΓöÇΓöÇ */}
                                             {playerAwards.length > 0 && (
                                                 <div className="mt-4 bg-[#0e0e10] border border-white/5 rounded-[1.5rem] p-5 shadow-xl transition-all">
                                                     {/* Header */}
@@ -1954,14 +1800,14 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
                                                         onClick={() => setIsAwardsExpanded(!isAwardsExpanded)}
                                                     >
                                                         <div className="flex items-center gap-2">
-                                                            <span className="text-lg group-hover/awards:scale-110 transition-transform">🏆</span>
+                                                            <span className="text-lg group-hover/awards:scale-110 transition-transform">≡ƒÅå</span>
                                                             <h4 className="text-[13px] font-black uppercase tracking-widest text-white group-hover/awards:text-ef-accent transition-colors">Awards</h4>
                                                             <span className="px-2 py-0.5 rounded bg-ef-accent/15 text-ef-accent text-[9px] font-black tracking-widest">
                                                                 {playerAwards.length}
                                                             </span>
                                                         </div>
                                                         <span className={`text-[10px] text-white/40 group-hover/awards:text-white transition-all transform duration-300 ${isAwardsExpanded ? 'rotate-180' : ''}`}>
-                                                            ▼
+                                                            Γû╝
                                                         </span>
                                                     </div>
 
@@ -2013,7 +1859,7 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
                                             {/* Action Buttons */}
                                             <div className="mt-auto flex flex-row justify-center gap-1.5 pt-4">
                                                 <button onClick={() => setIsEditing(true)} className="w-[100px] h-[32px] rounded-lg bg-white/5 border border-white/10 hover:border-ef-accent/50 hover:bg-white/10 hover:text-ef-accent transition-all font-medium text-[13px] tracking-tight flex items-center justify-center gap-2 font-inter">
-                                                    <span>⚡</span> Edit Data
+                                                    <span>ΓÜí</span> Edit Data
                                                 </button>
                                                 <a
                                                     href={`https://pesdb.net/efootball/?id=${player.pesdb_id || player.playerId}`}
@@ -2021,7 +1867,7 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
                                                     rel="noopener noreferrer"
                                                     className="w-[100px] h-[32px] rounded-lg bg-ef-blue/10 border border-ef-blue/20 hover:border-ef-blue/50 hover:bg-ef-blue/20 text-ef-blue transition-all font-medium text-[13px] tracking-tight flex items-center justify-center gap-2 font-inter"
                                                 >
-                                                    <span>🌐</span> PESDB
+                                                    <span>≡ƒîÉ</span> PESDB
                                                 </a>
                                                 <a
                                                     href={`https://efhub.com/players/${player.pesdb_id || player.playerId}`}
@@ -2029,7 +1875,7 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
                                                     rel="noopener noreferrer"
                                                     className="w-[100px] h-[32px] rounded-lg bg-ef-accent/10 border border-ef-accent/20 hover:border-ef-accent/50 hover:bg-ef-accent/20 text-ef-accent transition-all font-medium text-[13px] tracking-tight flex items-center justify-center gap-2 font-inter"
                                                 >
-                                                    <span>📱</span> efHUB
+                                                    <span>≡ƒô▒</span> efHUB
                                                 </a>
                                             </div>
                                         </div>
@@ -2038,7 +1884,7 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
                                         <div className={`flex-1 flex flex-col transition-opacity duration-150 md:overflow-y-auto no-scrollbar ${modalPage === 1 ? 'opacity-100 relative' : 'opacity-0 pointer-events-none absolute inset-0'} `}>
                                             <div className="flex items-center justify-between mb-4">
                                                 <h3 className="text-sm font-black text-white uppercase tracking-widest flex items-center gap-2">
-                                                    <span className="text-ef-accent">📊</span> Stat Ranking
+                                                    <span className="text-ef-accent">≡ƒôè</span> Stat Ranking
                                                 </h3>
 
                                                 <div className="flex gap-2">
@@ -2050,7 +1896,7 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
                                                         >
                                                             <span className="text-xs">{compContextOptions.find(o => o.id === comparisonContext)?.icon}</span>
                                                             <span className="text-[9px] font-black uppercase tracking-widest text-white hidden md:inline">{compContextOptions.find(o => o.id === comparisonContext)?.label}</span>
-                                                            <span className="text-[8px] opacity-30">▼</span>
+                                                            <span className="text-[8px] opacity-30">Γû╝</span>
                                                         </button>
                                                         {isFilterDropdownOpen && (
                                                             <div className="absolute top-full right-0 mt-1 min-w-[140px] bg-[#121214] border border-white/10 rounded-xl overflow-hidden z-50 shadow-2xl py-1 backdrop-blur-xl">
@@ -2076,7 +1922,7 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
                                                         >
                                                             <span className="text-xs">{compOptions.find(o => o.id === comparisonStat)?.icon}</span>
                                                             <span className="text-[9px] font-black uppercase tracking-widest text-white">{compOptions.find(o => o.id === comparisonStat)?.label}</span>
-                                                            <span className="text-[8px] opacity-30">▼</span>
+                                                            <span className="text-[8px] opacity-30">Γû╝</span>
                                                         </button>
                                                         {isComparisonDropdownOpen && (
                                                             <div className="absolute top-full right-0 mt-1 min-w-[120px] bg-[#121214] border border-white/10 rounded-xl overflow-hidden z-50 shadow-2xl py-1 backdrop-blur-xl">
@@ -2182,7 +2028,7 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
                                         <div className={`flex-1 flex flex-col transition-opacity duration-150 overflow-y-auto no-scrollbar ${modalPage === 2 ? 'opacity-100 relative' : 'opacity-0 pointer-events-none absolute inset-0'} `}>
                                             <div className="flex items-center justify-between mb-4">
                                                 <h3 className="text-xl font-black text-white uppercase tracking-tighter flex items-center gap-2">
-                                                    <span className="text-ef-accent">🪄</span> Player Skills
+                                                    <span className="text-ef-accent">≡ƒ¬ä</span> Player Skills
                                                 </h3>
                                                 <div className="flex items-center gap-2">
                                                     {isEditingSkills && (
@@ -2225,7 +2071,7 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
                                                                 : 'bg-ef-accent/10 border-ef-accent/20 text-ef-accent hover:bg-ef-accent/20'
                                                                 }`}
                                                         >
-                                                            {isBulkEditingSkills ? '✓ Save Bulk' : '📋 Bulk Edit'}
+                                                            {isBulkEditingSkills ? 'Γ£ô Save Bulk' : '≡ƒôï Bulk Edit'}
                                                         </button>
                                                     )}
                                                     <button
@@ -2246,11 +2092,11 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
                                                             : 'bg-white/5 border-white/10 text-white/40 hover:text-white hover:bg-white/10'
                                                             }`}
                                                     >
-                                                        {isEditingSkills ? '✓ Done' : '✏ Edit'}
+                                                        {isEditingSkills ? 'Γ£ô Done' : 'Γ£Å Edit'}
                                                     </button>
 
                                                     <button onClick={() => { setModalPage(0); setIsBulkEditingSkills(false); setIsEditingSkills(false); }} className="text-[13px] font-medium tracking-tight text-white/40 hover:text-white transition-colors font-inter">
-                                                        ✕ Back
+                                                        Γ£ò Back
                                                     </button>
                                                 </div>
                                             </div>
@@ -2273,7 +2119,7 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
 
                                             <div className="grid grid-cols-2 gap-4 flex-1 min-h-0">
 
-                                                {/* ── Left: Core Skills ── */}
+                                                {/* ΓöÇΓöÇ Left: Core Skills ΓöÇΓöÇ */}
                                                 <div className="flex flex-col gap-2 min-h-0">
                                                     <div className="flex items-center gap-2 mb-1">
                                                         <span className="text-[13px] font-medium tracking-tight text-ef-accent font-inter">Core Skills</span>
@@ -2299,9 +2145,9 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
                                                                                 setSkills(next);
                                                                             }}
                                                                             className="text-white/20 hover:text-red-400 text-xs leading-none flex-shrink-0 transition-colors active:scale-90"
-                                                                        >✕</button>
+                                                                        >Γ£ò</button>
                                                                     ) : (
-                                                                        isSpecial && <span className="ml-auto text-[6px] font-black bg-red-500/20 text-red-400 px-1.5 py-0.5 rounded-full border border-red-500/20 flex-shrink-0">🔥</span>
+                                                                        isSpecial && <span className="ml-auto text-[6px] font-black bg-red-500/20 text-red-400 px-1.5 py-0.5 rounded-full border border-red-500/20 flex-shrink-0">≡ƒöÑ</span>
                                                                     )}
                                                                 </div>
                                                             );
@@ -2347,7 +2193,7 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
                                                                                                 }`}>
                                                                                             <span className={`w-1 h-1 rounded-full flex-shrink-0 ${isSp ? 'bg-red-400' : 'bg-ef-accent/40'}`}></span>
                                                                                             {skill}
-                                                                                            {isSp && <span className="ml-auto text-[6px] bg-red-500/20 text-red-400 px-1.5 py-0.5 rounded font-black">🔥</span>}
+                                                                                            {isSp && <span className="ml-auto text-[6px] bg-red-500/20 text-red-400 px-1.5 py-0.5 rounded font-black">≡ƒöÑ</span>}
                                                                                         </button>
                                                                                     );
                                                                                 })
@@ -2363,7 +2209,7 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
                                                     </div>
                                                 </div>
 
-                                                {/* ── Right: Additional Skills ── */}
+                                                {/* ΓöÇΓöÇ Right: Additional Skills ΓöÇΓöÇ */}
                                                 <div className="flex flex-col gap-2 min-h-0">
                                                     <div className="flex items-center gap-2 mb-1">
                                                         <span className="text-[13px] font-medium tracking-tight text-blue-400 font-inter">Additional</span>
@@ -2395,7 +2241,7 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
                                                                                 if (player._id) onUpdate(player._id, { additionalSkills: next.filter(Boolean) }, false);
                                                                             }}
                                                                             className="text-white/20 hover:text-white text-xs leading-none flex-shrink-0 active:scale-90 transition-all"
-                                                                        >✕</button>
+                                                                        >Γ£ò</button>
                                                                     ) : (
                                                                         <span className="text-[13px] text-white/15 font-medium tracking-tight font-inter">+</span>
                                                                     )}
@@ -2485,7 +2331,7 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
                                                     {/* Header */}
                                                     <div className="flex items-center justify-between mb-3">
                                                         <h3 className="text-sm font-black text-white uppercase tracking-widest flex items-center gap-2">
-                                                            <span className="text-ef-accent">📊</span> Saved Builds
+                                                            <span className="text-ef-accent">≡ƒôè</span> Saved Builds
                                                         </h3>
                                                         {player.progressions?.length > 0 && (
                                                             <span className="px-2 py-0.5 bg-ef-accent/20 text-ef-accent rounded text-[8px] font-black">{player.progressions.length} Saved</span>
@@ -2527,7 +2373,7 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
                                                                     >
                                                                         <div className="flex items-center gap-3 pr-8">
                                                                             <div className="w-8 h-8 rounded-xl bg-ef-accent/10 flex items-center justify-center flex-shrink-0">
-                                                                                <span className="text-sm">🏗️</span>
+                                                                                <span className="text-sm">≡ƒÅù∩╕Å</span>
                                                                             </div>
                                                                             <div className="flex flex-col flex-1 min-w-0">
                                                                                 <div className="flex items-center gap-2">
@@ -2607,7 +2453,7 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
                                                     ) : (
                                                         <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-white/[0.02] border border-white/5 rounded-3xl">
                                                             <div className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center mb-3">
-                                                                <span className="text-2xl opacity-20">📊</span>
+                                                                <span className="text-2xl opacity-20">≡ƒôè</span>
                                                             </div>
                                                             <h4 className="text-[13px] font-black text-white/40 tracking-tight">No Saved Progressions</h4>
                                                             <p className="text-[10px] text-white/20 font-medium mt-1">Create your first custom build above</p>
@@ -2621,7 +2467,7 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
                                         <div className={`flex-1 flex flex-col transition-opacity duration-150 md:overflow-y-auto no-scrollbar ${modalPage === 4 ? 'opacity-100 relative' : 'opacity-0 pointer-events-none absolute inset-0'} `}>
                                             <div className="flex items-center justify-between mb-4">
                                                 <h3 className="text-sm font-black text-white uppercase tracking-widest flex items-center gap-2">
-                                                    <span className="text-ef-accent">🃏</span> Other Versions
+                                                    <span className="text-ef-accent">≡ƒâÅ</span> Other Versions
                                                 </h3>
                                                 {versions.length > 0 && (
                                                     <div className="flex items-center gap-2">
@@ -2724,7 +2570,7 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
                                                 </div>
                                             ) : (
                                                 <div className="flex-1 flex flex-col items-center justify-center py-20 opacity-20 text-center">
-                                                    <span className="text-4xl mb-2">🔎</span>
+                                                    <span className="text-4xl mb-2">≡ƒöÄ</span>
                                                     <p className="text-[10px] font-black uppercase tracking-[0.2em]">No other versions in squad</p>
                                                     <p className="text-[8px] font-medium mt-1">Only players already in your team are shown here</p>
                                                 </div>
@@ -2880,84 +2726,6 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
                             </button>
                         </div>
                     </div>
-                </div>
-            )}
-
-            {/* Position Context Menu */}
-            {positionContextMenu && (
-                <div
-                    ref={positionContextMenuRef}
-                    style={{
-                        position: 'fixed',
-                        top: `${positionContextMenu.y}px`,
-                        left: `${positionContextMenu.x}px`,
-                        zIndex: 9999
-                    }}
-                    className="bg-[#121216]/95 backdrop-blur-xl border border-white/10 rounded-2xl p-4 shadow-2xl w-[280px] animate-in fade-in zoom-in-95 duration-100"
-                >
-                    {(() => {
-                        const mainPos = (formData.position || player.position || '').trim().toUpperCase();
-
-                        const parsePositionsList = (fieldValue) => {
-                            if (!fieldValue) return [];
-                            if (Array.isArray(fieldValue)) {
-                                return fieldValue.map(s => s.trim().toUpperCase()).filter(Boolean);
-                            }
-                            return String(fieldValue).split(/[\s,/;]+/).map(s => s.trim().toUpperCase()).filter(Boolean);
-                        };
-
-                        const secPositions = parsePositionsList(formData.secondaryPosition);
-                        const addPositions = parsePositionsList(formData.additionalPositions);
-                        const secondarySet = new Set([...secPositions, ...addPositions]);
-
-                        const allPositions = ['LWF', 'SS', 'CF', 'RWF', 'LMF', 'AMF', 'RMF', 'CMF', 'DMF', 'LB', 'CB', 'RB', 'GK'];
-
-                        return (
-                            <>
-                                <h4 className="text-[11px] font-black uppercase tracking-widest text-ef-accent mb-3 border-b border-white/5 pb-1 flex items-center justify-between">
-                                    <span>Edit Positions</span>
-                                    <span className="text-[9px] text-white/40 normal-case font-normal">Primary: {mainPos}</span>
-                                </h4>
-                                <div className="grid grid-cols-4 gap-1.5 mb-3">
-                                    {allPositions.map(pos => {
-                                        const isMain = pos === mainPos;
-                                        const isSecondary = secondarySet.has(pos);
-
-                                        let pillClass = "";
-                                        if (isMain) {
-                                            pillClass = "bg-ef-blue text-white border-ef-blue font-black cursor-not-allowed opacity-90";
-                                        } else if (isSecondary) {
-                                            pillClass = "bg-ef-accent text-ef-dark border-ef-accent font-black shadow-lg shadow-ef-accent/10 hover:brightness-110 active:scale-95";
-                                        } else {
-                                            pillClass = "bg-white/5 text-white/50 border-white/5 hover:bg-white/10 hover:text-white hover:scale-[1.02] active:scale-95";
-                                        }
-
-                                        return (
-                                            <button
-                                                key={pos}
-                                                type="button"
-                                                disabled={isMain}
-                                                onClick={() => handleTogglePosition(pos)}
-                                                className={`py-1 rounded-lg text-[9px] font-black uppercase tracking-wider text-center border transition-all ${pos === 'GK' ? 'col-span-4' : ''} ${pillClass}`}
-                                                title={isMain ? "Primary Position" : `Toggle ${pos}`}
-                                            >
-                                                {pos}
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-                                <div className="pt-2 border-t border-white/5 flex justify-end">
-                                    <button
-                                        type="button"
-                                        onClick={() => setPositionContextMenu(null)}
-                                        className="w-full py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-white/60 hover:text-white text-[10px] font-black uppercase tracking-widest transition-all"
-                                    >
-                                        Done
-                                    </button>
-                                </div>
-                            </>
-                        );
-                    })()}
                 </div>
             )}
         </div>

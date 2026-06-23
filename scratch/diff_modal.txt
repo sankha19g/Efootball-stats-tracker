@@ -1,0 +1,217 @@
+﻿diff --git a/client/src/components/PlayerDetailsModal.jsx b/client/src/components/PlayerDetailsModal.jsx
+index 500ba07..b6871f5 100644
+--- a/client/src/components/PlayerDetailsModal.jsx
++++ b/client/src/components/PlayerDetailsModal.jsx
+@@ -91,6 +91,10 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
+     const [editRatingValue, setEditRatingValue] = useState(99);
+     const ratingContextMenuRef = useRef(null);
+ 
++    // Position Context Menu State
++    const [positionContextMenu, setPositionContextMenu] = useState(null);
++    const positionContextMenuRef = useRef(null);
++
+     // Touch Long Press Refs
+     const touchTimeoutRef = useRef(null);
+     const touchStartPosRef = useRef({ x: 0, y: 0 });
+@@ -151,6 +155,10 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
+             if (ratingContextMenuRef.current && !ratingContextMenuRef.current.contains(event.target)) {
+                 setRatingContextMenu(null);
+             }
++            // Position Context Menu
++            if (positionContextMenuRef.current && !positionContextMenuRef.current.contains(event.target)) {
++                setPositionContextMenu(null);
++            }
+         };
+ 
+         document.addEventListener('mousedown', handleClickOutside);
+@@ -445,6 +453,76 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
+         });
+     };
+ 
++    const handlePositionContextMenu = (e) => {
++        e.preventDefault();
++
++        const viewportWidth = window.innerWidth;
++        const viewportHeight = window.innerHeight;
++        const menuWidth = 280;
++        const menuHeight = 240;
++
++        let posX = e.clientX;
++        let posY = e.clientY;
++
++        if ((!posX || posX === 0) && (!posY || posY === 0) && e.currentTarget) {
++            const rect = e.currentTarget.getBoundingClientRect();
++            posX = rect.left + rect.width / 2;
++            posY = rect.top + rect.height / 2;
++        }
++
++        if (posX + menuWidth > viewportWidth) {
++            posX = viewportWidth - menuWidth - 10;
++        }
++        if (posY + menuHeight > viewportHeight) {
++            posY = viewportHeight - menuHeight - 10;
++        }
++
++        posX = Math.max(10, posX);
++        posY = Math.max(10, posY);
++
++        setPositionContextMenu({
++            x: posX,
++            y: posY
++        });
++    };
++
++    const handleTogglePosition = (pos) => {
++        const mainPos = (formData.position || player.position || '').trim().toUpperCase();
++        if (pos === mainPos) return;
++
++        const parsePositionsList = (fieldValue) => {
++            if (!fieldValue) return [];
++            if (Array.isArray(fieldValue)) {
++                return fieldValue.map(s => s.trim().toUpperCase()).filter(Boolean);
++            }
++            return String(fieldValue).split(/[\s,/;]+/).map(s => s.trim().toUpperCase()).filter(Boolean);
++        };
++
++        const secPositions = parsePositionsList(formData.secondaryPosition);
++        const addPositions = parsePositionsList(formData.additionalPositions);
++        const secondarySet = new Set([...secPositions, ...addPositions]);
++
++        if (secondarySet.has(pos)) {
++            secondarySet.delete(pos);
++        } else {
++            secondarySet.add(pos);
++        }
++
++        const newSecondaryList = Array.from(secondarySet);
++        const secondaryStr = newSecondaryList.join(', ');
++
++        onUpdate(player._id, {
++            secondaryPosition: secondaryStr,
++            additionalPositions: newSecondaryList
++        }, false);
++
++        setFormData(prev => ({
++            ...prev,
++            secondaryPosition: secondaryStr,
++            additionalPositions: secondaryStr
++        }));
++    };
++
+     const handleTouchStart = (e, type) => {
+         // Clear any existing timer just in case
+         if (touchTimeoutRef.current) {
+@@ -473,6 +551,8 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
+                 handleStatsContextMenu(simulatedEvent);
+             } else if (type === 'rating') {
+                 handleRatingContextMenu(simulatedEvent);
++            } else if (type === 'position') {
++                handlePositionContextMenu(simulatedEvent);
+             }
+             touchTimeoutRef.current = null;
+         }, 600);
+@@ -1067,7 +1147,7 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
+                         </div>
+                     </div>
+                     {/* end */}
+-                    <div className="flex-1 flex flex-col gap-6 relative z-10 md:overflow-y-auto md:custom-scrollbar pr-1 md:pr-2">
++                    <div className="flex-1 flex flex-col gap-6 relative z-10 md:overflow-y-auto no-scrollbar pr-1 md:pr-2">
+ 
+                         <div className="flex flex-col items-center gap-4 w-full">
+ 
+@@ -1257,6 +1337,10 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
+                                         </span>
+                                     </div>
+                                 ))}
++                            </div>
++                                        })()}
++                                    </div>
++                                </div>
+                             </div>
+                         </div>
+                     </div>
+@@ -2728,6 +2812,84 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
+                     </div>
+                 </div>
+             )}
++
++            {/* Position Context Menu */}
++            {positionContextMenu && (
++                <div
++                    ref={positionContextMenuRef}
++                    style={{
++                        position: 'fixed',
++                        top: `${positionContextMenu.y}px`,
++                        left: `${positionContextMenu.x}px`,
++                        zIndex: 9999
++                    }}
++                    className="bg-[#121216]/95 backdrop-blur-xl border border-white/10 rounded-2xl p-4 shadow-2xl w-[280px] animate-in fade-in zoom-in-95 duration-100"
++                >
++                    {(() => {
++                        const mainPos = (formData.position || player.position || '').trim().toUpperCase();
++
++                        const parsePositionsList = (fieldValue) => {
++                            if (!fieldValue) return [];
++                            if (Array.isArray(fieldValue)) {
++                                return fieldValue.map(s => s.trim().toUpperCase()).filter(Boolean);
++                            }
++                            return String(fieldValue).split(/[\s,/;]+/).map(s => s.trim().toUpperCase()).filter(Boolean);
++                        };
++
++                        const secPositions = parsePositionsList(formData.secondaryPosition);
++                        const addPositions = parsePositionsList(formData.additionalPositions);
++                        const secondarySet = new Set([...secPositions, ...addPositions]);
++
++                        const allPositions = ['LWF', 'SS', 'CF', 'RWF', 'LMF', 'AMF', 'RMF', 'CMF', 'DMF', 'LB', 'CB', 'RB', 'GK'];
++
++                        return (
++                            <>
++                                <h4 className="text-[11px] font-black uppercase tracking-widest text-ef-accent mb-3 border-b border-white/5 pb-1 flex items-center justify-between">
++                                    <span>Edit Positions</span>
++                                    <span className="text-[9px] text-white/40 normal-case font-normal">Primary: {mainPos}</span>
++                                </h4>
++                                <div className="grid grid-cols-4 gap-1.5 mb-3">
++                                    {allPositions.map(pos => {
++                                        const isMain = pos === mainPos;
++                                        const isSecondary = secondarySet.has(pos);
++
++                                        let pillClass = "";
++                                        if (isMain) {
++                                            pillClass = "bg-ef-blue text-white border-ef-blue font-black cursor-not-allowed opacity-90";
++                                        } else if (isSecondary) {
++                                            pillClass = "bg-ef-accent text-ef-dark border-ef-accent font-black shadow-lg shadow-ef-accent/10 hover:brightness-110 active:scale-95";
++                                        } else {
++                                            pillClass = "bg-white/5 text-white/50 border-white/5 hover:bg-white/10 hover:text-white hover:scale-[1.02] active:scale-95";
++                                        }
++
++                                        return (
++                                            <button
++                                                key={pos}
++                                                type="button"
++                                                disabled={isMain}
++                                                onClick={() => handleTogglePosition(pos)}
++                                                className={`py-1 rounded-lg text-[9px] font-black uppercase tracking-wider text-center border transition-all ${pos === 'GK' ? 'col-span-4' : ''} ${pillClass}`}
++                                                title={isMain ? "Primary Position" : `Toggle ${pos}`}
++                                            >
++                                                {pos}
++                                            </button>
++                                        );
++                                    })}
++                                </div>
++                                <div className="pt-2 border-t border-white/5 flex justify-end">
++                                    <button
++                                        type="button"
++                                        onClick={() => setPositionContextMenu(null)}
++                                        className="w-full py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-white/60 hover:text-white text-[10px] font-black uppercase tracking-widest transition-all"
++                                    >
++                                        Done
++                                    </button>
++                                </div>
++                            </>
++                        );
++                    })()}
++                </div>
++            )}
+         </div>
+     );
+ };

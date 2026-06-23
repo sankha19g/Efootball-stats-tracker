@@ -214,6 +214,9 @@ const MySquadDB = ({ players, onBack, onImport, onPlayerClick, isSidebarOpen }) 
                         const pSkills = [...(p.skills || []), ...(p.additionalSkills || [])];
                         return !pSkills.some(s => SPECIAL_SKILLS.includes(s));
                     }
+                    case 'Country Name = Club Name': {
+                        return p.nationality && p.club && p.nationality.trim().toLowerCase() === p.club.trim().toLowerCase();
+                    }
                     default: return true;
                 }
             });
@@ -574,7 +577,7 @@ const MySquadDB = ({ players, onBack, onImport, onPlayerClick, isSidebarOpen }) 
                                                 'Missing Club', 'Missing League', 'Missing Club Badge', 'Missing Country Badge',
                                                 'Missing Age', 'Missing Height', 'Missing Tags', 'Missing Foot',
                                                 'No Skills Found', 'No Additional Skills', 'Incomplete Additional Skills',
-                                                'Missing Special Skills'
+                                                'Missing Special Skills', 'Country Name = Club Name'
                                             ].map(opt => (
                                                 <option key={opt} value={opt} className="bg-[#121216]">{opt}</option>
                                             ))}
