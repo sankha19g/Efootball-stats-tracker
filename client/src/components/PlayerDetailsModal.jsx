@@ -1396,13 +1396,13 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
                                                 const isActive = isMain || isSecondary;
 
                                                 const cellStyles = isActive
-                                                    ? "bg-ef-accent text-ef-dark font-black border-[1px] border-black  "
-                                                    : "text-white/20 font-bold";
+                                                    ? "bg-ef-accent text-ef-dark font-black border border-black  "
+                                                    : "text-white/20 font-bold  ";
 
                                                 return (
                                                     <div
                                                         key={cell.label}
-                                                        className={`flex items-center justify-center text-[10px] md:text-[11px] uppercase tracking-widest transition-all duration-200 border-white/[0.06] ${cell.gridClass} ${cellStyles}`}
+                                                        className={`flex items-center justify-center text-[10px] md:text-[11px] uppercase tracking-widest transition-all duration-200 hover:bg-white/10  cursor-pointer border-white/[0.06] ${cell.gridClass} ${cellStyles}`}
                                                     >
                                                         {cell.label}
                                                     </div>

@@ -20,7 +20,7 @@ const QuickStatsView = ({ players, onUpdate, onClose, user, activeSquad, isSideb
     const [filterSpecialChars, setFilterSpecialChars] = useState(false);
     const [sortBy, setSortBy] = useState('date');
     const [showMy11, setShowMy11] = useState(false);
-    const [activePage, setActivePage] = useState(0); // 0: Stats, 2: Photo, 3: Sec Pos, 4: Rename, 5: Date Added, 6: Image Source 2
+    const [activePage, setActivePage] = useState(0); // 0: Stats, 2: Photo, 3: Sec Pos, 4: Rename, 5: Date Added, 6: Image Source 2, 7: Age, 8: Featured
     const [activeFilters, setActiveFilters] = useState({
         position: '',
         club: '',
@@ -184,6 +184,13 @@ const QuickStatsView = ({ players, onUpdate, onClose, user, activeSquad, isSideb
                         title="Update Age"
                     >
                         <span className="text-xl">👶</span>
+                    </button>
+                    <button
+                        onClick={() => { setActivePage(8); setEditingPlayerId(null); }}
+                        className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${activePage === 8 ? 'bg-yellow-500 text-ef-dark shadow-lg shadow-yellow-500/20 scale-110' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
+                        title="Featured Players"
+                    >
+                        <span className="text-xl">⭐</span>
                     </button>
                 </div>
 
@@ -696,6 +703,50 @@ const QuickStatsView = ({ players, onUpdate, onClose, user, activeSquad, isSideb
                                 )}
                             </div>
                         </div>
+
+                        {/* Page 8: Featured Players */}
+                        <div className={`absolute inset-0 flex flex-col transition-all duration-500 transform ${activePage === 8 ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0 pointer-events-none'}`}>
+                            <div className="flex-1 overflow-y-auto custom-scrollbar p-2 md:p-4 space-y-2">
+                                {paginatedPlayers.length === 0 ? (
+                                    <div className="h-60 flex flex-col items-center justify-center opacity-20">
+                                        <span className="text-4xl mb-2">👤</span>
+                                        <p className="text-xs font-black uppercase tracking-widest">No players found</p>
+                                    </div>
+                                ) : (
+                                    paginatedPlayers.map(player => (
+                                        <div key={player._id} className="group bg-white/5 hover:bg-white/10 border border-white/5 rounded-2xl p-[3px] flex items-center justify-between gap-4 transition-all hover:border-white/10">
+                                            {/* Photo & Info */}
+                                            <div className="flex items-center gap-3 w-1/3 min-w-0">
+                                                <div className="w-10 h-10 flex-shrink-0 rounded-lg overflow-hidden border border-white/10 bg-black/40">
+                                                    <img src={getPlayerImage(player)} alt="" className="w-full h-full object-cover object-top" />
+                                                </div>
+                                                <div className="truncate">
+                                                    <h4 className="text-xs font-black text-white truncate uppercase tracking-tight">{player.name}</h4>
+                                                    <div className="flex items-center gap-1.5 mt-0.5">
+                                                        <span className="text-[8px] opacity-40 font-black uppercase tracking-widest leading-none">{player.position}</span>
+                                                        <span className="text-[9px] opacity-20 font-black">•</span>
+                                                        <span className="text-[9px] opacity-20 font-bold uppercase truncate leading-none">{player.club}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Featured Input */}
+                                            <div className="flex-1 max-w-sm">
+                                                <div className="relative group/input">
+                                                    <FeaturedInput
+                                                        value={player.featured || player['Featured Players']}
+                                                        onUpdate={(val) => onUpdate(player._id, { featured: val })}
+                                                    />
+                                                    <div className="absolute right-3 top-1/2 -translate-y-1/2 opacity-20 text-[8px] font-black uppercase tracking-widest group-focus-within/input:opacity-0 transition-opacity pointer-events-none">
+                                                        FEATURED
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </div>
                     </div>
 
                     <div className="flex border-t border-white/5 bg-white/5 px-6 py-3 items-center justify-between">
@@ -1091,6 +1142,33 @@ const Image2Input = ({ value, onUpdate }) => {
             onBlur={handleCommit}
             onKeyDown={(e) => e.key === 'Enter' && e.target.blur()}
             className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2 text-xs font-bold text-ef-accent outline-none focus:border-ef-accent/40 transition-all placeholder:text-white/5"
+        />
+    );
+};
+
+const FeaturedInput = ({ value, onUpdate }) => {
+    const [localValue, setLocalValue] = useState(value || '');
+
+    useEffect(() => {
+        setLocalValue(value || '');
+    }, [value]);
+
+    const handleCommit = () => {
+        const normalized = localValue.trim();
+        if (normalized !== (value || '')) {
+            onUpdate(normalized);
+        }
+    };
+
+    return (
+        <input
+            type="text"
+            placeholder="e.g. Epic 1 Billion Downloads 9 Apr '26"
+            value={localValue}
+            onChange={(e) => setLocalValue(e.target.value)}
+            onBlur={handleCommit}
+            onKeyDown={(e) => e.key === 'Enter' && e.target.blur()}
+            className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2 text-xs font-bold text-yellow-500 outline-none focus:border-yellow-500/40 transition-all placeholder:text-white/5"
         />
     );
 };

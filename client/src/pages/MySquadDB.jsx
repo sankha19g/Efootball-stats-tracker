@@ -1,11 +1,12 @@
 import { useState, useMemo, useEffect } from 'react';
 import { PLAYSTYLES, PLAYER_SKILLS, SPECIAL_SKILLS } from '../constants';
+import { FileDown, FileUp, SlidersHorizontal } from 'lucide-react';
 
 const parseEfDate = (dateStr) => {
     if (!dateStr) return null;
     let d = new Date(dateStr);
     if (!isNaN(d.getTime())) return d;
-    
+
     // Handle "2 Apr '26" format
     const match = String(dateStr).match(/(\d+)\s+([A-Za-z]+)\s+'(\d+)/);
     if (match) {
@@ -47,10 +48,11 @@ const MySquadDB = ({ players, onBack, onImport, onPlayerClick, isSidebarOpen }) 
 
     const [visibleCols, setVisibleCols] = useState(() => {
         const saved = localStorage.getItem('ef-mysquad-cols');
-        return saved ? JSON.parse(saved) : {
+        const defaults = {
             image: true,
             name: true,
             pos: true,
+            secPos: false,
             rating: true,
             playstyle: true,
             club: true,
@@ -62,6 +64,9 @@ const MySquadDB = ({ players, onBack, onImport, onPlayerClick, isSidebarOpen }) 
             weight: false,
             age: false,
             strongFoot: false,
+            games: false,
+            goals: false,
+            assists: false,
             createdAt: true,
             weakUsage: false,
             weakAccuracy: false,
@@ -72,6 +77,15 @@ const MySquadDB = ({ players, onBack, onImport, onPlayerClick, isSidebarOpen }) 
             skills: false,
             open: true
         };
+        if (saved) {
+            try {
+                const parsed = JSON.parse(saved);
+                return { ...defaults, ...parsed };
+            } catch (e) {
+                return defaults;
+            }
+        }
+        return defaults;
     });
 
     const colLabels = [
@@ -80,6 +94,7 @@ const MySquadDB = ({ players, onBack, onImport, onPlayerClick, isSidebarOpen }) 
         { id: 'name', label: 'Player Name' },
         { id: 'id', label: 'Player ID' },
         { id: 'pos', label: 'Position' },
+        { id: 'secPos', label: 'Secondary Position' },
         { id: 'rating', label: 'Rating' },
         { id: 'height', label: 'Height' },
         { id: 'weight', label: 'Weight' },
@@ -90,6 +105,9 @@ const MySquadDB = ({ players, onBack, onImport, onPlayerClick, isSidebarOpen }) 
         { id: 'league', label: 'League' },
         { id: 'nationality', label: 'Nationality' },
         { id: 'card', label: 'Card Type' },
+        { id: 'games', label: 'Games' },
+        { id: 'goals', label: 'Goals' },
+        { id: 'assists', label: 'Assists' },
         { id: 'createdAt', label: 'Uploaded' },
         { id: 'dateAdded', label: 'Date Added' },
         { id: 'weakUsage', label: 'Weak Foot Usage' },
@@ -114,7 +132,7 @@ const MySquadDB = ({ players, onBack, onImport, onPlayerClick, isSidebarOpen }) 
         // 1. Search Filter
         if (search.trim()) {
             const query = search.toLowerCase();
-            result = result.filter(p => 
+            result = result.filter(p =>
                 p.name?.toLowerCase().includes(query) ||
                 p.club?.toLowerCase().includes(query) ||
                 p.league?.toLowerCase().includes(query) ||
@@ -127,8 +145,8 @@ const MySquadDB = ({ players, onBack, onImport, onPlayerClick, isSidebarOpen }) 
         // 2. Comprehensive Filters
         if (filters.posFilter !== 'all') {
             if (filters.includeSecondary) {
-                result = result.filter(p => 
-                    p.position === filters.posFilter || 
+                result = result.filter(p =>
+                    p.position === filters.posFilter ||
                     (p.secondaryPosition && p.secondaryPosition.toUpperCase().includes(filters.posFilter.toUpperCase()))
                 );
             } else {
@@ -171,14 +189,14 @@ const MySquadDB = ({ players, onBack, onImport, onPlayerClick, isSidebarOpen }) 
         if (filters.foot && filters.foot !== 'all') {
             result = result.filter(p => {
                 const footVal = p.strongFoot || p.Foot || p.foot || p['Preferred Foot'] || p['Strong Foot'] || p.strong_foot || p.PreferredFoot || '';
-                const playerFoot = (typeof footVal === 'object' 
-                    ? (footVal.name || footVal.label || footVal.value || footVal.foot || '') 
+                const playerFoot = (typeof footVal === 'object'
+                    ? (footVal.name || footVal.label || footVal.value || footVal.foot || '')
                     : String(footVal)).toLowerCase();
-                
+
                 const target = filters.foot.toLowerCase();
-                return playerFoot.includes(target) || 
-                       (target === 'right' && playerFoot === 'r') || 
-                       (target === 'left' && playerFoot === 'l');
+                return playerFoot.includes(target) ||
+                    (target === 'right' && playerFoot === 'r') ||
+                    (target === 'left' && playerFoot === 'l');
             });
         }
 
@@ -194,7 +212,7 @@ const MySquadDB = ({ players, onBack, onImport, onPlayerClick, isSidebarOpen }) 
 
         if (filters.missing !== 'all') {
             result = result.filter(p => {
-                switch(filters.missing) {
+                switch (filters.missing) {
                     case 'Missing Picture': return !p.image;
                     case 'Missing Player ID': return !p.playerId && !p.pesdb_id;
                     case 'Missing Playstyle': return !p.playstyle || p.playstyle === 'None';
@@ -226,7 +244,7 @@ const MySquadDB = ({ players, onBack, onImport, onPlayerClick, isSidebarOpen }) 
         result.sort((a, b) => {
             let valA, valB;
 
-            switch(filters.sortBy) {
+            switch (filters.sortBy) {
                 case 'rating':
                     valA = Number(a.rating) || 0;
                     valB = Number(b.rating) || 0;
@@ -236,6 +254,10 @@ const MySquadDB = ({ players, onBack, onImport, onPlayerClick, isSidebarOpen }) 
                 case 'dateAdded_asc':
                     valA = parseEfDate(a.DateAdded || a['Date Added'] || a.createdAt || 0)?.getTime() || 0;
                     valB = parseEfDate(b.DateAdded || b['Date Added'] || b.createdAt || 0)?.getTime() || 0;
+                    break;
+                case 'games':
+                    valA = Number(a.matches || a.games) || 0;
+                    valB = Number(b.matches || b.games) || 0;
                     break;
                 case 'goals':
                     valA = Number(a.goals) || 0;
@@ -260,12 +282,12 @@ const MySquadDB = ({ players, onBack, onImport, onPlayerClick, isSidebarOpen }) 
 
             const isDateAsc = filters.sortBy === 'dateAdded_asc';
             const isDateDesc = filters.sortBy === 'dateAdded_desc';
-            
+
             let order;
             if (isDateAsc) order = 1;
             else if (isDateDesc) order = -1;
             else order = filters.sortOrder === 'asc' ? 1 : -1;
-            
+
             if (valA < valB) return -1 * order;
             if (valA > valB) return 1 * order;
             return 0;
@@ -286,6 +308,7 @@ const MySquadDB = ({ players, onBack, onImport, onPlayerClick, isSidebarOpen }) 
             if (visibleCols.name) entry.Name = p.name || '';
             if (visibleCols.id) entry.ID = p.playerId || p.pesdb_id || '';
             if (visibleCols.pos) entry.Position = p.position || '';
+            if (visibleCols.secPos) entry.SecondaryPosition = Array.isArray(p.secondaryPosition) ? p.secondaryPosition.filter(Boolean).join(', ') : (p.secondaryPosition || '');
             if (visibleCols.rating) entry.Rating = p.rating || '';
             if (visibleCols.height) entry.Height = p.height || '';
             if (visibleCols.weight) entry.Weight = p.weight || '';
@@ -296,6 +319,9 @@ const MySquadDB = ({ players, onBack, onImport, onPlayerClick, isSidebarOpen }) 
             if (visibleCols.league) entry.League = p.league || '';
             if (visibleCols.nationality) entry.Nationality = p.nationality || '';
             if (visibleCols.card) entry.CardType = p.cardType || '';
+            if (visibleCols.games) entry.Games = p.matches || 0;
+            if (visibleCols.goals) entry.Goals = p.goals || 0;
+            if (visibleCols.assists) entry.Assists = p.assists || 0;
             if (visibleCols.weakUsage) entry.WFUsage = p.weakFootUsage || '';
             if (visibleCols.weakAccuracy) entry.WFAccuracy = p.weakFootAccuracy || '';
             if (visibleCols.form) entry.Condition = p.conditioning || '';
@@ -315,7 +341,7 @@ const MySquadDB = ({ players, onBack, onImport, onPlayerClick, isSidebarOpen }) 
         } else if (format === 'excel') {
             // CSV is best for simple Excel export without heavy libraries
             const headers = Object.keys(exportData[0] || {}).join(',');
-            const rows = exportData.map(row => 
+            const rows = exportData.map(row =>
                 Object.values(row).map(val => `"${String(val).replace(/"/g, '""')}"`).join(',')
             ).join('\n');
             const csv = `${headers}\n${rows}`;
@@ -352,7 +378,7 @@ const MySquadDB = ({ players, onBack, onImport, onPlayerClick, isSidebarOpen }) 
 
                 <div className="flex flex-1 max-w-3xl w-full gap-2 items-center h-14 relative group/search">
                     {/* Filter Button */}
-                    <button 
+                    <button
                         onClick={() => {
                             setShowFilters(!showFilters);
                             setShowSettings(false);
@@ -361,7 +387,7 @@ const MySquadDB = ({ players, onBack, onImport, onPlayerClick, isSidebarOpen }) 
                         className={`w-14 h-full rounded-2xl flex items-center justify-center border transition-all ${showFilters ? 'bg-ef-blue border-ef-blue text-white' : 'bg-white/5 border-white/10 text-white/40 hover:text-white hover:bg-white/10'}`}
                         title="Sort & Filter"
                     >
-                        <span className="text-xl">📊</span>
+                        <span className="text-xl"><SlidersHorizontal /></span>
                     </button>
 
                     <div className="flex flex-1 h-full bg-white/5 border border-white/10 rounded-2xl overflow-hidden focus-within:border-ef-accent/50 transition-all shadow-inner">
@@ -379,9 +405,9 @@ const MySquadDB = ({ players, onBack, onImport, onPlayerClick, isSidebarOpen }) 
                     {/* Filter Panel */}
                     {showFilters && (
                         <div className="absolute top-full left-0 mt-3 w-[min(90vw,700px)] bg-[#121216] border border-white/10 rounded-2xl shadow-2xl p-6 z-[140] animate-slide-up cursor-default max-h-[80vh] overflow-y-auto custom-scrollbar">
-                             <div className="flex items-center justify-between mb-6 px-1">
+                            <div className="flex items-center justify-between mb-6 px-1">
                                 <h3 className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40">Squad Explorer Filters</h3>
-                                <button 
+                                <button
                                     onClick={() => setFilters({
                                         sortBy: 'rating',
                                         sortOrder: 'desc',
@@ -401,14 +427,14 @@ const MySquadDB = ({ players, onBack, onImport, onPlayerClick, isSidebarOpen }) 
                                 >
                                     Clear All Filters
                                 </button>
-                             </div>
+                            </div>
 
-                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                 {/* Left Side: Primary Filters */}
                                 <div className="space-y-6">
                                     <div>
                                         <label className="block text-[10px] font-black uppercase tracking-widest opacity-40 mb-3">Position</label>
-                                        <select 
+                                        <select
                                             value={filters.posFilter}
                                             onChange={(e) => setFilters(prev => ({ ...prev, posFilter: e.target.value }))}
                                             className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-xs font-bold text-white outline-none focus:border-ef-accent/50 transition-all cursor-pointer"
@@ -420,8 +446,8 @@ const MySquadDB = ({ players, onBack, onImport, onPlayerClick, isSidebarOpen }) 
                                         {filters.posFilter !== 'all' && (
                                             <div className="mt-3 flex items-center gap-2">
                                                 <label className="relative inline-flex items-center cursor-pointer">
-                                                    <input 
-                                                        type="checkbox" 
+                                                    <input
+                                                        type="checkbox"
                                                         className="sr-only peer"
                                                         checked={filters.includeSecondary}
                                                         onChange={(e) => setFilters(prev => ({ ...prev, includeSecondary: e.target.checked }))}
@@ -437,7 +463,7 @@ const MySquadDB = ({ players, onBack, onImport, onPlayerClick, isSidebarOpen }) 
 
                                     <div>
                                         <label className="block text-[10px] font-black uppercase tracking-widest opacity-40 mb-3">Card Type</label>
-                                        <select 
+                                        <select
                                             value={filters.cardType}
                                             onChange={(e) => setFilters(prev => ({ ...prev, cardType: e.target.value }))}
                                             className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-xs font-bold text-white outline-none focus:border-ef-accent/50 transition-all cursor-pointer"
@@ -452,7 +478,7 @@ const MySquadDB = ({ players, onBack, onImport, onPlayerClick, isSidebarOpen }) 
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
                                             <label className="block text-[10px] font-black uppercase tracking-widest opacity-40 mb-2">Club</label>
-                                            <input 
+                                            <input
                                                 type="text"
                                                 placeholder="e.g. Barcelona"
                                                 value={filters.club}
@@ -462,7 +488,7 @@ const MySquadDB = ({ players, onBack, onImport, onPlayerClick, isSidebarOpen }) 
                                         </div>
                                         <div>
                                             <label className="block text-[10px] font-black uppercase tracking-widest opacity-40 mb-2">League</label>
-                                            <input 
+                                            <input
                                                 type="text"
                                                 placeholder="e.g. La Liga"
                                                 value={filters.league}
@@ -475,7 +501,7 @@ const MySquadDB = ({ players, onBack, onImport, onPlayerClick, isSidebarOpen }) 
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
                                             <label className="block text-[10px] font-black uppercase tracking-widest opacity-40 mb-2">Nationality</label>
-                                            <input 
+                                            <input
                                                 type="text"
                                                 placeholder="e.g. Brazil"
                                                 value={filters.nationality}
@@ -485,7 +511,7 @@ const MySquadDB = ({ players, onBack, onImport, onPlayerClick, isSidebarOpen }) 
                                         </div>
                                         <div>
                                             <label className="block text-[10px] font-black uppercase tracking-widest opacity-40 mb-2">Rating</label>
-                                            <input 
+                                            <input
                                                 type="number"
                                                 placeholder="Exact..."
                                                 value={filters.rating}
@@ -500,7 +526,7 @@ const MySquadDB = ({ players, onBack, onImport, onPlayerClick, isSidebarOpen }) 
                                 <div className="space-y-6">
                                     <div>
                                         <label className="block text-[10px] font-black uppercase tracking-widest opacity-40 mb-3">Sort Results</label>
-                                        <select 
+                                        <select
                                             value={filters.sortBy}
                                             onChange={(e) => setFilters(prev => ({ ...prev, sortBy: e.target.value }))}
                                             className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-xs font-bold text-white outline-none focus:border-ef-accent/50 transition-all cursor-pointer"
@@ -508,6 +534,7 @@ const MySquadDB = ({ players, onBack, onImport, onPlayerClick, isSidebarOpen }) 
                                             <option value="rating" className="bg-[#121216]">Overall Rating</option>
                                             <option value="dateAdded_desc" className="bg-[#121216]">Date Added (Newest)</option>
                                             <option value="dateAdded_asc" className="bg-[#121216]">Date Added (Oldest)</option>
+                                            <option value="games" className="bg-[#121216]">Most Games Played</option>
                                             <option value="goals" className="bg-[#121216]">Top Scorer</option>
                                             <option value="assists" className="bg-[#121216]">Most Assists</option>
                                             <option value="name" className="bg-[#121216]">Player Name</option>
@@ -517,7 +544,7 @@ const MySquadDB = ({ players, onBack, onImport, onPlayerClick, isSidebarOpen }) 
 
                                     <div>
                                         <label className="block text-[10px] font-black uppercase tracking-widest opacity-40 mb-2">Playstyle</label>
-                                        <select 
+                                        <select
                                             value={filters.playstyle}
                                             onChange={(e) => setFilters(prev => ({ ...prev, playstyle: e.target.value }))}
                                             className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-xs font-bold text-white outline-none focus:border-ef-accent/50 transition-all cursor-pointer"
@@ -531,7 +558,7 @@ const MySquadDB = ({ players, onBack, onImport, onPlayerClick, isSidebarOpen }) 
 
                                     <div>
                                         <label className="block text-[10px] font-black uppercase tracking-widest opacity-40 mb-2">Preferred Foot</label>
-                                        <select 
+                                        <select
                                             value={filters.foot}
                                             onChange={(e) => setFilters(prev => ({ ...prev, foot: e.target.value }))}
                                             className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-xs font-bold text-white outline-none focus:border-ef-accent/50 transition-all cursor-pointer"
@@ -544,7 +571,7 @@ const MySquadDB = ({ players, onBack, onImport, onPlayerClick, isSidebarOpen }) 
 
                                     <div>
                                         <label className="block text-[10px] font-black uppercase tracking-widest opacity-40 mb-2">Skill Filter</label>
-                                        <select 
+                                        <select
                                             value={filters.skill}
                                             onChange={(e) => setFilters(prev => ({ ...prev, skill: e.target.value }))}
                                             className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-xs font-bold text-white outline-none focus:border-ef-accent/50 transition-all cursor-pointer"
@@ -566,7 +593,7 @@ const MySquadDB = ({ players, onBack, onImport, onPlayerClick, isSidebarOpen }) 
 
                                     <div>
                                         <label className="block text-[10px] font-black uppercase tracking-widest opacity-40 mb-2">Missing Details</label>
-                                        <select 
+                                        <select
                                             value={filters.missing}
                                             onChange={(e) => setFilters(prev => ({ ...prev, missing: e.target.value }))}
                                             className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-xs font-bold text-white outline-none focus:border-ef-accent/50 transition-all cursor-pointer"
@@ -593,10 +620,10 @@ const MySquadDB = ({ players, onBack, onImport, onPlayerClick, isSidebarOpen }) 
                                         </button>
                                     </div>
                                 </div>
-                             </div>
+                            </div>
 
-                             <div className="mt-8 pt-6 border-t border-white/5">
-                                <button 
+                            <div className="mt-8 pt-6 border-t border-white/5">
+                                <button
                                     onClick={() => setShowFilters(false)}
                                     className="w-full py-4 bg-ef-blue hover:bg-ef-blue/80 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all text-white shadow-xl shadow-ef-blue/20"
                                 >
@@ -605,21 +632,21 @@ const MySquadDB = ({ players, onBack, onImport, onPlayerClick, isSidebarOpen }) 
                             </div>
                         </div>
                     )}
-                    
+
                     {/* Import Button */}
-                    <button 
+                    <button
                         onClick={() => document.getElementById('squad-import-input').click()}
                         className="px-6 h-full rounded-2xl flex items-center justify-center border bg-white/5 border-white/10 text-white/40 hover:text-white hover:bg-white/10 transition-all gap-2"
                         title="Import JSON Squad"
                     >
-                        <span className="text-lg">📥</span>
+                        <span className="text-lg"><FileDown /> </span>
                         <span className="text-[10px] font-black uppercase tracking-widest hidden sm:inline">Import</span>
                     </button>
-                    <input 
-                        type="file" 
-                        id="squad-import-input" 
-                        accept=".json" 
-                        className="hidden" 
+                    <input
+                        type="file"
+                        id="squad-import-input"
+                        accept=".json"
+                        className="hidden"
                         onChange={(e) => {
                             const file = e.target.files[0];
                             if (file) {
@@ -639,16 +666,16 @@ const MySquadDB = ({ players, onBack, onImport, onPlayerClick, isSidebarOpen }) 
                     />
 
                     {/* Export Button */}
-                    <button 
+                    <button
                         onClick={() => setShowExport(!showExport)}
                         className={`px-6 h-full rounded-2xl flex items-center justify-center border transition-all gap-2 ${showExport ? 'bg-ef-blue border-ef-blue text-white' : 'bg-white/5 border-white/10 text-white/40 hover:text-white hover:bg-white/10'}`}
                     >
-                        <span className="text-lg">📤</span>
+                        <span className="text-lg"><FileUp /></span>
                         <span className="text-[10px] font-black uppercase tracking-widest hidden sm:inline">Export</span>
                     </button>
 
                     {/* Settings Toggle Button */}
-                    <button 
+                    <button
                         onClick={() => {
                             setShowSettings(!showSettings);
                             setShowExport(false);
@@ -662,23 +689,23 @@ const MySquadDB = ({ players, onBack, onImport, onPlayerClick, isSidebarOpen }) 
                     {/* Export Popup */}
                     {showExport && (
                         <div className="absolute top-full right-[68px] mt-3 w-56 bg-[#121216] border border-white/10 rounded-2xl shadow-2xl p-4 z-[140] animate-slide-up cursor-default">
-                             <h3 className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40 mb-4 px-1 text-center">Export Format</h3>
-                             <div className="grid grid-cols-1 gap-2">
-                                <button 
+                            <h3 className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40 mb-4 px-1 text-center">Export Format</h3>
+                            <div className="grid grid-cols-1 gap-2">
+                                <button
                                     onClick={() => handleExport('json')}
                                     className="flex items-center gap-3 p-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 transition-all group"
                                 >
                                     <div className="w-8 h-8 rounded-lg bg-yellow-500/20 text-yellow-500 flex items-center justify-center text-xs font-black">JS</div>
                                     <div className="text-[11px] font-bold uppercase tracking-wider text-white/80 group-hover:text-white">JSON File</div>
                                 </button>
-                                <button 
+                                <button
                                     onClick={() => handleExport('excel')}
                                     className="flex items-center gap-3 p-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 transition-all group"
                                 >
                                     <div className="w-8 h-8 rounded-lg bg-green-500/20 text-green-500 flex items-center justify-center text-xs font-black">XL</div>
                                     <div className="text-[11px] font-bold uppercase tracking-wider text-white/80 group-hover:text-white">Excel (CSV)</div>
                                 </button>
-                             </div>
+                            </div>
                         </div>
                     )}
 
@@ -687,7 +714,7 @@ const MySquadDB = ({ players, onBack, onImport, onPlayerClick, isSidebarOpen }) 
                         <div className="absolute top-full right-0 mt-3 w-72 bg-[#121216]/95 border border-white/10 rounded-2xl shadow-2xl p-4 z-[140] animate-slide-up cursor-default backdrop-blur-xl">
                             <div className="flex items-center justify-between mb-4 px-1">
                                 <h3 className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40">Visible Columns</h3>
-                                <button 
+                                <button
                                     onClick={() => {
                                         const allOn = {};
                                         colLabels.forEach(l => allOn[l.id] = true);
@@ -698,7 +725,7 @@ const MySquadDB = ({ players, onBack, onImport, onPlayerClick, isSidebarOpen }) 
                                     Show All
                                 </button>
                             </div>
-                            
+
                             <div className="grid grid-cols-1 gap-0.5 max-h-[50vh] overflow-y-auto custom-scrollbar pr-1 mb-2">
                                 {colLabels.map(col => (
                                     <label key={col.id} className="flex items-center justify-between p-2 rounded-xl hover:bg-white/5 cursor-pointer transition-colors group">
@@ -706,8 +733,8 @@ const MySquadDB = ({ players, onBack, onImport, onPlayerClick, isSidebarOpen }) 
                                             {col.label}
                                         </span>
                                         <div className="relative">
-                                            <input 
-                                                type="checkbox" 
+                                            <input
+                                                type="checkbox"
                                                 className="sr-only peer"
                                                 checked={visibleCols[col.id]}
                                                 onChange={() => toggleCol(col.id)}
@@ -729,8 +756,8 @@ const MySquadDB = ({ players, onBack, onImport, onPlayerClick, isSidebarOpen }) 
                                         <span className="text-[8px] font-bold opacity-20 uppercase">No photos + zero padding</span>
                                     </div>
                                     <div className="relative">
-                                        <input 
-                                            type="checkbox" 
+                                        <input
+                                            type="checkbox"
                                             className="sr-only peer"
                                             checked={conciseMode}
                                             onChange={() => setConciseMode(!conciseMode)}
@@ -741,7 +768,7 @@ const MySquadDB = ({ players, onBack, onImport, onPlayerClick, isSidebarOpen }) 
                             </div>
 
                             <div className="mt-4 pt-4 border-t border-white/5">
-                                <button 
+                                <button
                                     onClick={() => setShowSettings(false)}
                                     className="w-full py-2 bg-white/5 hover:bg-white/10 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
                                 >
@@ -765,6 +792,7 @@ const MySquadDB = ({ players, onBack, onImport, onPlayerClick, isSidebarOpen }) 
                                     <th className={`px-4 ${conciseMode ? 'py-1' : 'py-3'} text-left text-[10px] font-black uppercase tracking-wider opacity-40`}>Player</th>
                                     {visibleCols.id && <th className={`px-4 ${conciseMode ? 'py-1' : 'py-3'} text-left text-[10px] font-black uppercase tracking-wider opacity-40`}>ID</th>}
                                     {visibleCols.pos && <th className={`px-4 ${conciseMode ? 'py-1' : 'py-3'} text-left text-[10px] font-black uppercase tracking-wider opacity-40`}>Pos</th>}
+                                    {visibleCols.secPos && <th className={`px-4 ${conciseMode ? 'py-1' : 'py-3'} text-left text-[10px] font-black uppercase tracking-wider opacity-40`}>Sec Pos</th>}
                                     {visibleCols.rating && <th className={`px-4 ${conciseMode ? 'py-1' : 'py-3'} text-left text-[10px] font-black uppercase tracking-wider opacity-40`}>Rating</th>}
                                     {visibleCols.height && <th className={`px-4 ${conciseMode ? 'py-1' : 'py-3'} text-left text-[10px] font-black uppercase tracking-wider opacity-40`}>Height</th>}
                                     {visibleCols.weight && <th className={`px-4 ${conciseMode ? 'py-1' : 'py-3'} text-left text-[10px] font-black uppercase tracking-wider opacity-40`}>Weight</th>}
@@ -775,6 +803,9 @@ const MySquadDB = ({ players, onBack, onImport, onPlayerClick, isSidebarOpen }) 
                                     {visibleCols.league && <th className={`px-4 ${conciseMode ? 'py-1' : 'py-3'} text-left text-[10px] font-black uppercase tracking-wider opacity-40 hidden md:table-cell`}>League</th>}
                                     {visibleCols.nationality && <th className={`px-4 ${conciseMode ? 'py-1' : 'py-3'} text-left text-[10px] font-black uppercase tracking-wider opacity-40`}>Nationality</th>}
                                     {visibleCols.card && <th className={`px-4 ${conciseMode ? 'py-1' : 'py-3'} text-left text-[10px] font-black uppercase tracking-wider opacity-40 hidden sm:table-cell`}>Card</th>}
+                                    {visibleCols.games && <th className={`px-4 ${conciseMode ? 'py-1' : 'py-3'} text-left text-[10px] font-black uppercase tracking-wider opacity-40`}>Games</th>}
+                                    {visibleCols.goals && <th className={`px-4 ${conciseMode ? 'py-1' : 'py-3'} text-left text-[10px] font-black uppercase tracking-wider opacity-40`}>Goals</th>}
+                                    {visibleCols.assists && <th className={`px-4 ${conciseMode ? 'py-1' : 'py-3'} text-left text-[10px] font-black uppercase tracking-wider opacity-40`}>Assists</th>}
                                     {visibleCols.weakUsage && <th className={`px-4 ${conciseMode ? 'py-1' : 'py-3'} text-left text-[10px] font-black uppercase tracking-wider opacity-40`}>Weak Foot Usage</th>}
                                     {visibleCols.weakAccuracy && <th className={`px-4 ${conciseMode ? 'py-1' : 'py-3'} text-left text-[10px] font-black uppercase tracking-wider opacity-40`}>Weak Foot Accuracy</th>}
                                     {visibleCols.form && <th className={`px-4 ${conciseMode ? 'py-1' : 'py-3'} text-left text-[10px] font-black uppercase tracking-wider opacity-40`}>Form</th>}
@@ -795,9 +826,9 @@ const MySquadDB = ({ players, onBack, onImport, onPlayerClick, isSidebarOpen }) 
                                         {visibleCols.image && !conciseMode && (
                                             <td className="px-4 py-3 whitespace-nowrap">
                                                 <div className="w-10 h-10 rounded-lg bg-white/5 overflow-hidden border border-white/10 shrink-0 shadow-lg group-hover:border-ef-accent/30 transition-all">
-                                                    <img 
-                                                        src={player.image || 'https://efootball-world.com/img/player_placeholder.png'} 
-                                                        alt="" 
+                                                    <img
+                                                        src={player.image || 'https://efootball-world.com/img/player_placeholder.png'}
+                                                        alt=""
                                                         className="w-full h-full object-cover object-top"
                                                         loading="lazy"
                                                     />
@@ -825,6 +856,13 @@ const MySquadDB = ({ players, onBack, onImport, onPlayerClick, isSidebarOpen }) 
                                                 <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-white/10 text-white uppercase border border-white/5">
                                                     {player.position}
                                                 </span>
+                                            </td>
+                                        )}
+                                        {visibleCols.secPos && (
+                                            <td className={`px-4 ${conciseMode ? 'py-0.5' : 'py-3'} whitespace-nowrap text-[10px] font-bold opacity-60 uppercase`}>
+                                                {Array.isArray(player.secondaryPosition)
+                                                    ? player.secondaryPosition.filter(Boolean).join(', ')
+                                                    : (player.secondaryPosition || '---')}
                                             </td>
                                         )}
                                         {visibleCols.rating && (
@@ -896,6 +934,21 @@ const MySquadDB = ({ players, onBack, onImport, onPlayerClick, isSidebarOpen }) 
                                                 </span>
                                             </td>
                                         )}
+                                        {visibleCols.games && (
+                                            <td className={`px-4 ${conciseMode ? 'py-0.5' : 'py-3'} whitespace-nowrap text-[10px] font-bold opacity-60`}>
+                                                {player.matches ?? player.games ?? '---'}
+                                            </td>
+                                        )}
+                                        {visibleCols.goals && (
+                                            <td className={`px-4 ${conciseMode ? 'py-0.5' : 'py-3'} whitespace-nowrap text-[10px] font-bold opacity-60`}>
+                                                {player.goals ?? '---'}
+                                            </td>
+                                        )}
+                                        {visibleCols.assists && (
+                                            <td className={`px-4 ${conciseMode ? 'py-0.5' : 'py-3'} whitespace-nowrap text-[10px] font-bold opacity-60`}>
+                                                {player.assists ?? '---'}
+                                            </td>
+                                        )}
                                         {visibleCols.weakUsage && (
                                             <td className={`px-4 ${conciseMode ? 'py-0.5' : 'py-3'} whitespace-nowrap text-[10px] font-bold opacity-60`}>
                                                 {player.weakFootUsage || player['Weak Foot Usage'] || '---'}
@@ -956,7 +1009,7 @@ const MySquadDB = ({ players, onBack, onImport, onPlayerClick, isSidebarOpen }) 
                                         )}
                                         {visibleCols.open && (
                                             <td className={`px-4 ${conciseMode ? 'py-0.5' : 'py-3'} whitespace-nowrap text-center`}>
-                                                <button 
+                                                <button
                                                     onClick={(e) => { e.stopPropagation(); onPlayerClick(player); }}
                                                     className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-ef-blue/10 border border-ef-blue/20 text-ef-blue text-[9px] font-black uppercase tracking-widest hover:bg-ef-blue hover:text-white transition-all shadow-lg hover:shadow-ef-blue/40 active:scale-90 group/open"
                                                 >

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { lookupPlaystyles, updatePlayerPlaystyle } from '../services/playerService';
 import { STAT_OPTIONS } from '../constants';
+import { RectangleVertical, Settings, Tag, Construction  } from 'lucide-react';
 
 const SettingsModal = ({ onClose, settings, setSettings, user, players, setPlayers, generateSource2Url }) => {
     const sizeMap = ['mini', 'xs', 'sm', 'md', 'lg'];
@@ -171,10 +172,10 @@ const SettingsModal = ({ onClose, settings, setSettings, user, players, setPlaye
     };
 
     const tabs = [
-        { id: 'card', label: 'Card Aesthetics', icon: '🖼️' },
-        { id: 'general', label: 'General / Perf', icon: '⚙️' },
-        { id: 'branding', label: 'Branding', icon: '🏷️' },
-        { id: 'maintenance', label: 'Maintenance', icon: '🛠️' }
+        { id: 'card', label: 'Card Aesthetics', icon: <RectangleVertical /> },
+        { id: 'general', label: 'General / Perf', icon: <Settings /> },
+        { id: 'branding', label: 'Branding', icon: <Tag /> },
+        { id: 'maintenance', label: 'Maintenance', icon: <Construction /> }
     ];
 
     return (
