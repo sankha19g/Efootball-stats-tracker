@@ -401,6 +401,7 @@ function App() {
     age: '',
     height: '',
     strongFoot: '',
+    featuredPlayers: '',
     logos: { club: '', league: '', country: '' },
     tags: []
   });
@@ -917,6 +918,7 @@ function App() {
     if (bulkEditData.age) updates.age = parseInt(bulkEditData.age);
     if (bulkEditData.height) updates.height = parseInt(bulkEditData.height);
     if (bulkEditData.strongFoot) updates.strongFoot = bulkEditData.strongFoot;
+    if (bulkEditData.featuredPlayers) updates['Featured Players'] = bulkEditData.featuredPlayers;
 
     // Handle nested logo updates with dot notation to avoid overwriting entire object
     if (bulkEditData.logos?.club) {
@@ -987,6 +989,7 @@ function App() {
         age: '',
         height: '',
         strongFoot: '',
+        featuredPlayers: '',
         tags: [],
         logos: { club: '', league: '', country: '' }
       });
@@ -1517,6 +1520,8 @@ function App() {
         result = result.filter(p => !p.playstyle || p.playstyle === 'None');
       } else if (filterMissing === 'Missing Card Type') {
         result = result.filter(p => !p.cardType || p.cardType === 'Normal');
+      } else if (filterMissing === 'Missing Featured Pack') {
+        result = result.filter(p => !p['Featured Players'] || p['Featured Players'].trim() === '' || p['Featured Players'].trim() === '-' || p['Featured Players'].trim().toLowerCase() === 'standard');
       } else if (filterMissing === 'Missing Club') {
         result = result.filter(p => !p.club);
       } else if (filterMissing === 'Missing League') {
@@ -2008,6 +2013,11 @@ function App() {
                       <option key={nat} value={nat} />
                     ))}
                   </datalist>
+                  <datalist id="bulk-pack-list">
+                    {[...new Set(players.map(p => p['Featured Players'] || p.FeaturedPlayers))].filter(Boolean).sort().map(pack => (
+                      <option key={pack} value={pack} />
+                    ))}
+                  </datalist>
 
                   <div className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
@@ -2154,6 +2164,18 @@ function App() {
                           <option value="Left" className="text-black">Left Foot</option>
                         </select>
                       </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-black uppercase tracking-widest opacity-30 mb-2">Change Featured Pack</label>
+                      <input
+                        type="text"
+                        placeholder="Search or enter featured pack..."
+                        value={bulkEditData.featuredPlayers}
+                        onChange={(e) => setBulkEditData(prev => ({ ...prev, featuredPlayers: e.target.value }))}
+                        className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm font-bold text-white outline-none focus:border-ef-blue/40 transition-all placeholder:text-white/10"
+                        list="bulk-pack-list"
+                      />
                     </div>
 
                     {showBulkClubResults && (
@@ -2798,6 +2820,7 @@ function App() {
                         <option value="Missing Player ID" className="text-black">Missing Player ID</option>
                         <option value="Missing Playstyle" className="text-black">Missing Playstyle</option>
                         <option value="Missing Card Type" className="text-black">Missing Card Type</option>
+                        <option value="Missing Featured Pack" className="text-black">Missing Featured Pack</option>
                         <option value="Missing Club" className="text-black">Missing Club</option>
                         <option value="Missing League" className="text-black">Missing League</option>
                         <option value="Missing Club Badge" className="text-black">Missing Club Badge</option>
