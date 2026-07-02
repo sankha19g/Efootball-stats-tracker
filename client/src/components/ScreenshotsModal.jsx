@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { getScreenshots, addScreenshot, deleteScreenshot } from '../services/miscService';
 
-const ScreenshotsModal = ({ user, onClose, showAlert, showConfirm }) => {
+const ScreenshotsModal = ({ user, onClose, showAlert, showConfirm, isFullPage }) => {
     const [screenshots, setScreenshots] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -71,11 +71,11 @@ const ScreenshotsModal = ({ user, onClose, showAlert, showConfirm }) => {
 
     if (!user) return null;
 
-    return (
-        <div className="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center z-[100] p-4 animate-fade-in">
-            <div className="bg-ef-card w-full max-w-5xl max-h-[90vh] rounded-3xl border border-white/10 flex flex-col overflow-hidden shadow-2xl relative">
-                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-indigo-600"></div>
+    const content = (
+        <div className={`bg-ef-card w-full max-w-5xl rounded-3xl border border-white/10 flex flex-col overflow-hidden shadow-2xl relative ${isFullPage ? 'mx-auto' : 'max-h-[90vh]'}`}>
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-indigo-600"></div>
 
+            {!isFullPage && (
                 <button
                     onClick={onClose}
                     className="absolute top-4 left-4 md:left-auto md:right-4 z-50 p-2 md:p-2.5 rounded-xl bg-black/40 md:bg-white/5 hover:bg-black/60 md:hover:bg-white/10 text-white transition-all active:scale-95 border border-white/10"
@@ -83,6 +83,7 @@ const ScreenshotsModal = ({ user, onClose, showAlert, showConfirm }) => {
                     <span className="hidden md:block">✕</span>
                     <span className="md:hidden text-xl font-bold">←</span>
                 </button>
+            )}
 
                 <div className="p-6 border-b border-white/5 flex justify-between items-center bg-white/5">
                     <div>
@@ -137,7 +138,16 @@ const ScreenshotsModal = ({ user, onClose, showAlert, showConfirm }) => {
                         </div>
                     )}
                 </div>
-            </div>
+        </div>
+    );
+
+    if (isFullPage) {
+        return content;
+    }
+
+    return (
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center z-[100] p-4 animate-fade-in">
+            {content}
         </div>
     );
 };

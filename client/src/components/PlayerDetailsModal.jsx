@@ -1,7 +1,10 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { PLAYSTYLES, TOP_LEAGUES, SPECIAL_SKILLS, PLAYER_SKILLS, ALL_SKILLS } from '../constants';
 import { searchLeagues, searchTeams, searchCountries, getFlagUrl } from '../services/footballApi';
 import SavedProgressionsModal from './SavedProgressionsModal';
+import { saveAutoMergeRules } from '../services/playerService';
+import { BadgeEditModal, BadgeAddRuleModal } from './BadgeModals';
 
 const parseEfDate = (dateStr) => {
     if (!dateStr) return null;
@@ -20,7 +23,7 @@ const parseEfDate = (dateStr) => {
     return null;
 };
 
-const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectPlayer, onAddToCompare, initialEditMode = false, settings, showAlert, showConfirm }) => {
+const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectPlayer, onAddToCompare, initialEditMode = false, settings, showAlert, showConfirm, onUpdateBadge, userId }) => {
     const [isEditing, setIsEditing] = useState(initialEditMode);
     const [showProgressions, setShowProgressions] = useState(false);
     const [progressionOpenCreate, setProgressionOpenCreate] = useState(false);
@@ -95,6 +98,63 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
     const [positionContextMenu, setPositionContextMenu] = useState(null);
     const positionContextMenuRef = useRef(null);
 
+    // Badge Context Menu State
+    const [badgeContextMenu, setBadgeContextMenu] = useState(null); // { x, y, badgeName, badgeLogo, badgeLeague, badgeType }
+    const badgeContextMenuRef = useRef(null);
+    const [editingBadge, setEditingBadge] = useState(null);
+    const [addingRuleBadge, setAddingRuleBadge] = useState(null);
+
+    const handleBadgeContextMenu = (e, badgeName, badgeLogo, badgeLeague, badgeType) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setBadgeContextMenu({
+            x: e.clientX,
+            y: e.clientY,
+            badgeName,
+            badgeLogo,
+            badgeLeague,
+            badgeType
+        });
+    };
+
+    const suggestions = useMemo(() => {
+        const unique = (arr) => [...new Set(arr.filter(Boolean))].sort((a, b) => a.localeCompare(b));
+        return {
+            club: unique(players.map(p => p.club)),
+            league: unique(players.map(p => p.league)),
+            national: unique(players.map(p => p.nationality)),
+        };
+    }, [players]);
+
+    const handleAddRule = async (newRule) => {
+        let currentRules = [];
+        try {
+            const saved = localStorage.getItem('ef-auto-merge-rules');
+            if (saved) currentRules = JSON.parse(saved);
+        } catch (err) {}
+
+        if (!Array.isArray(currentRules)) {
+            currentRules = [{ type: 'club', from: '', to: '' }];
+        }
+
+        const isEmptyDefault = currentRules.length === 1 && !currentRules[0].from.trim() && !currentRules[0].to.trim();
+        const cleanedRules = isEmptyDefault ? [] : currentRules;
+
+        const exists = cleanedRules.some(r => r.type === newRule.type && r.from.toLowerCase() === newRule.from.toLowerCase() && r.to.toLowerCase() === newRule.to.toLowerCase());
+        if (exists) return;
+
+        const updatedRules = [newRule, ...cleanedRules];
+
+        try {
+            localStorage.setItem('ef-auto-merge-rules', JSON.stringify(updatedRules));
+            if (userId) {
+                await saveAutoMergeRules(userId, updatedRules);
+            }
+        } catch (err) {
+            console.error('Failed to save auto merge rule from PlayerDetailsModal:', err);
+        }
+    };
+
     // Touch Long Press Refs
     const touchTimeoutRef = useRef(null);
     const touchStartPosRef = useRef({ x: 0, y: 0 });
@@ -158,6 +218,10 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
             // Position Context Menu
             if (positionContextMenuRef.current && !positionContextMenuRef.current.contains(event.target)) {
                 setPositionContextMenu(null);
+            }
+            // Badge Context Menu
+            if (badgeContextMenuRef.current && !badgeContextMenuRef.current.contains(event.target)) {
+                setBadgeContextMenu(null);
             }
         };
 
@@ -1101,7 +1165,7 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
                 </button>
 
                 {/* Left Side: Card Visual & Quick Info */}
-                <div className={`w-full md:w-1/3 px-4 pt-4 md:p-8 pt-20 md:pt-28 flex flex-col gap-4 md:gap-6 ${getCardStyles(formData.cardType).bg} md:border-r border-white/5 relative overflow-hidden h-fit md:h-full shrink-0 group/left font-sans`}>
+                <div className={`w-full md:w-1/3 px-4 md:p-8 pt-20 md:pt-28 flex flex-col gap-4 md:gap-6 ${getCardStyles(formData.cardType).bg} md:border-r border-white/5 relative overflow-hidden h-fit md:h-full shrink-0 group/left font-sans`}>
 
                     {/* Dynamic Background Glow & Decorative Elements */}
                     <div className="absolute inset-0 pointer-events-none">
@@ -1201,14 +1265,20 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
                                             )}
 
                                             {/* Badges for eFootball style */}
-                                            <div className="flex flex-col items-center gap-2.5 mt-4">
+                                            <div className="flex flex-col items-center gap-2.5 mt-4 pointer-events-auto">
                                                 {settings?.showDetailsNationBadge !== false && (player.logos?.country || player.nationality_flag_url) && (
-                                                    <div className="w-10 h-6 md:w-16 md:h-10 overflow-hidden border-2 border-white/20 shadow-2xl">
+                                                    <div
+                                                        onContextMenu={(e) => handleBadgeContextMenu(e, formData.nationality, player.logos?.country || player.nationality_flag_url, '', 'national')}
+                                                        className="w-10 h-6 md:w-16 md:h-10 overflow-hidden border-2 border-white/20 shadow-2xl cursor-context-menu"
+                                                    >
                                                         <img src={player.logos?.country || player.nationality_flag_url} alt="" className="w-full h-full object-cover" />
                                                     </div>
                                                 )}
                                                 {settings?.showDetailsClubBadge !== false && (formData.logos?.club || player.club_badge_url) && (
-                                                    <div className="w-8 h-8 md:w-12 md:h-12">
+                                                    <div
+                                                        onContextMenu={(e) => handleBadgeContextMenu(e, formData.club, formData.logos?.club || player.club_badge_url, formData.league || player.league || '', 'club')}
+                                                        className="w-8 h-8 md:w-12 md:h-12 cursor-context-menu"
+                                                    >
                                                         <img src={formData.logos?.club || player.club_badge_url} alt="" className="w-full h-full object-contain filter drop-shadow-2xl" />
                                                     </div>
                                                 )}
@@ -1231,10 +1301,20 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
                                             {(settings?.showDetailsClubBadge !== false || settings?.showDetailsNationBadge !== false) && (
                                                 <div className="flex flex-col items-center gap-2 border-t border-white/10 pt-2 w-full px-2">
                                                     {settings?.showDetailsClubBadge !== false && (formData.logos?.club || player.club_badge_url) && (
-                                                        <img src={formData.logos?.club || player.club_badge_url} alt="" className="w-7 h-7 object-contain drop-shadow-lg" />
+                                                        <img
+                                                            onContextMenu={(e) => handleBadgeContextMenu(e, formData.club, formData.logos?.club || player.club_badge_url, formData.league || player.league || '', 'club')}
+                                                            src={formData.logos?.club || player.club_badge_url}
+                                                            alt=""
+                                                            className="w-7 h-7 object-contain drop-shadow-lg cursor-context-menu"
+                                                        />
                                                     )}
                                                     {settings?.showDetailsNationBadge !== false && (player.logos?.country || player.nationality_flag_url) && (
-                                                        <img src={player.logos?.country || player.nationality_flag_url} alt="" className="w-7 h-5 object-cover rounded shadow-lg" />
+                                                        <img
+                                                            onContextMenu={(e) => handleBadgeContextMenu(e, formData.nationality, player.logos?.country || player.nationality_flag_url, '', 'national')}
+                                                            src={player.logos?.country || player.nationality_flag_url}
+                                                            alt=""
+                                                            className="w-7 h-5 object-cover rounded shadow-lg cursor-context-menu"
+                                                        />
                                                     )}
                                                 </div>
                                             )}
@@ -1462,27 +1542,43 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
                                         { label: 'Foot', value: formData.strongFoot || '-', highlight: true },
                                         { label: 'Height', value: formData.height ? `${formData.height}cm` : '-' },
                                         { label: 'Weight', value: formData.weight ? `${formData.weight}kg` : '-' },
-                                        { label: 'Club', value: formData.club, icon: formData.logos?.club },
-                                        { label: 'Nation', value: formData.nationality, icon: formData.logos?.country, isFlag: true },
-                                        { label: 'League', value: formData.league, icon: formData.logos?.league },
+                                        { label: 'Club', value: formData.club, icon: formData.logos?.club, isClub: true },
+                                        { label: 'Nation', value: formData.nationality, icon: formData.logos?.country, isFlag: true, isNation: true },
+                                        { label: 'League', value: formData.league, icon: formData.logos?.league, isLeague: true },
                                         { label: 'Type', value: formData.cardType, isType: true }
-                                    ].map((item, i) => (
-                                        <div key={i} className="flex items-center h-[26px] gap-2 px-[10px] bg-white/[0.03] border border-white/10 rounded-md hover:bg-white/[0.08] transition-all">
-                                            <span className="text-[13px] font-medium tracking-tight text-white/40 font-inter">{item.label}</span>
-                                            <div className="flex items-center gap-1.5">
-                                                {item.icon && <img src={item.icon} className={`${item.isFlag ? 'w-4 h-2.5 object-cover rounded-sm' : 'w-3.5 h-3.5 object-contain'} opacity-80`} alt="" />}
-                                                <span className={`text-[13px] font-medium tracking-tight font-inter ${item.highlight ? 'text-ef-accent' :
-                                                    item.isType ? (
-                                                        formData.cardType === 'Legendary' ? 'text-yellow-400' :
-                                                            formData.cardType === 'Epic' ? 'text-green-400' :
-                                                                formData.cardType === 'Featured' ? 'text-purple-400' :
-                                                                    formData.cardType === 'POTW' ? 'text-cyan-400' : 'text-blue-400'
-                                                    ) : 'text-white/80'}`}>
-                                                    {item.value || 'N/A'}
-                                                </span>
+                                    ].map((item, i) => {
+                                        const isBadgeItem = item.isClub || item.isNation || item.isLeague;
+                                        const handleCtxMenu = (e) => {
+                                            if (!isBadgeItem) return;
+                                            const badgeType = item.isClub ? 'club' : item.isNation ? 'national' : 'league';
+                                            const badgeName = item.value;
+                                            if (!badgeName || badgeName === '-') return;
+                                            const badgeLogo = item.icon || '';
+                                            const badgeLeague = item.isClub ? (formData.league || player.league || '') : '';
+                                            handleBadgeContextMenu(e, badgeName, badgeLogo, badgeLeague, badgeType);
+                                        };
+                                        return (
+                                            <div
+                                                key={i}
+                                                onContextMenu={handleCtxMenu}
+                                                className={`flex items-center h-[26px] gap-2 px-[10px] bg-white/[0.03] border border-white/10 rounded-md hover:bg-white/[0.08] transition-all ${isBadgeItem ? 'cursor-context-menu select-none' : ''}`}
+                                            >
+                                                <span className="text-[13px] font-medium tracking-tight text-white/40 font-inter">{item.label}</span>
+                                                <div className="flex items-center gap-1.5">
+                                                    {item.icon && <img src={item.icon} className={`${item.isFlag ? 'w-4 h-2.5 object-cover rounded-sm' : 'w-3.5 h-3.5 object-contain'} opacity-80`} alt="" />}
+                                                    <span className={`text-[13px] font-medium tracking-tight font-inter ${item.highlight ? 'text-ef-accent' :
+                                                        item.isType ? (
+                                                            formData.cardType === 'Legendary' ? 'text-yellow-400' :
+                                                                formData.cardType === 'Epic' ? 'text-green-400' :
+                                                                    formData.cardType === 'Featured' ? 'text-purple-400' :
+                                                                        formData.cardType === 'POTW' ? 'text-cyan-400' : 'text-blue-400'
+                                                        ) : 'text-white/80'}`}>
+                                                        {item.value || 'N/A'}
+                                                    </span>
+                                                </div>
                                             </div>
-                                        </div>
-                                    ))}
+                                        );
+                                    })}
                                 </div>
 
                                 {/* Tags Pill Container */}
@@ -2959,6 +3055,69 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
                         );
                     })()}
                 </div>
+            )}
+
+            {/* Badge Context Menu */}
+            {badgeContextMenu && createPortal(
+                <div
+                    ref={badgeContextMenuRef}
+                    className="fixed z-[9999] bg-[#121324]/95 border border-white/10 rounded-2xl p-2 w-56 shadow-2xl animate-scale-in text-white backdrop-blur-xl"
+                    style={{
+                        top: `${badgeContextMenu.y}px`,
+                        left: `${badgeContextMenu.x}px`,
+                    }}
+                >
+                    <button
+                        onClick={() => {
+                            setEditingBadge({
+                                name: badgeContextMenu.badgeName,
+                                logo: badgeContextMenu.badgeLogo,
+                                league: badgeContextMenu.badgeLeague,
+                                type: badgeContextMenu.badgeType
+                            });
+                            setBadgeContextMenu(null);
+                        }}
+                        className="w-full text-left px-4 py-3 rounded-xl hover:bg-white/5 transition-all text-xs font-black uppercase tracking-widest flex items-center gap-3 text-white/70 hover:text-white"
+                    >
+                        <span>✏️</span> Edit Badge
+                    </button>
+                    <button
+                        onClick={() => {
+                            setAddingRuleBadge({
+                                name: badgeContextMenu.badgeName,
+                                type: badgeContextMenu.badgeType
+                            });
+                            setBadgeContextMenu(null);
+                        }}
+                        className="w-full text-left px-4 py-3 rounded-xl hover:bg-white/5 transition-all text-xs font-black uppercase tracking-widest flex items-center gap-3 text-white/70 hover:text-white border-t border-white/5 mt-1 pt-3"
+                    >
+                        <span>🤖</span> Add to Merge Rules
+                    </button>
+                </div>,
+                document.body
+            )}
+
+            {/* Edit Badge Modal Portal */}
+            {editingBadge && createPortal(
+                <BadgeEditModal
+                    badge={editingBadge}
+                    type={editingBadge.type}
+                    onClose={() => setEditingBadge(null)}
+                    onUpdate={onUpdateBadge}
+                />,
+                document.body
+            )}
+
+            {/* Add Merge Rule Modal Portal */}
+            {addingRuleBadge && createPortal(
+                <BadgeAddRuleModal
+                    badge={addingRuleBadge}
+                    initialType={addingRuleBadge.type}
+                    suggestions={suggestions}
+                    onClose={() => setAddingRuleBadge(null)}
+                    onAddRule={handleAddRule}
+                />,
+                document.body
             )}
         </div>
     );

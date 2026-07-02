@@ -5,7 +5,6 @@ import {
     Zap,
     PlusSquare,
     ClipboardList,
-    PenTool,
     BarChart3,
     BookOpen,
     Camera,
@@ -24,17 +23,12 @@ const SidebarNav = ({
     setIsOpen,
     view,
     setView,
-    setShowAddPlayer,
     setShowDatabase,
-    setShowScreenshots,
-    setShowLinks,
     user,
     setShowLogin,
     handleLogout,
     showAlert,
-    setShowProfileStats,
-    setShowSocial,
-    setShowBrochure
+    setShowSocial
 }) => {
 
     const isSubView = view !== 'list';
@@ -75,15 +69,12 @@ const SidebarNav = ({
             onClick: () => { setView('squad-db'); },
             view: 'squad-db'
         },
-        {
-            label: 'Manual entry',
-            icon: PenTool,
-            onClick: () => { setShowAddPlayer(true); setIsOpen(false); }
-        },
+
         {
             label: 'My profile statistics',
             icon: BarChart3,
-            onClick: () => { setShowProfileStats(true); setIsOpen(false); }
+            onClick: () => { setView('profile-stats'); },
+            view: 'profile-stats'
         },
         {
             label: 'Activity log',
@@ -94,17 +85,20 @@ const SidebarNav = ({
         {
             label: 'Brochure',
             icon: BookOpen,
-            onClick: () => { setShowBrochure(true); setIsOpen(false); }
+            onClick: () => { setView('brochure'); },
+            view: 'brochure'
         },
         {
             label: 'Screenshots',
             icon: Camera,
-            onClick: () => { setShowScreenshots(true); setIsOpen(false); }
+            onClick: () => { setView('screenshots'); },
+            view: 'screenshots'
         },
         {
             label: 'Quick links',
             icon: Link2,
-            onClick: () => { setShowLinks(true); setIsOpen(false); }
+            onClick: () => { setView('quick-links'); },
+            view: 'quick-links'
         },
         {
             label: 'Badges',

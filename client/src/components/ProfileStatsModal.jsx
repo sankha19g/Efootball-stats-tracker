@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 
-const ProfileStatsModal = ({ players, onClose }) => {
+const ProfileStatsModal = ({ players, onClose, isFullPage }) => {
     const [activeTab, setActiveTab] = useState('cardType');
     const [searchClub, setSearchClub] = useState('');
     const [searchNationality, setSearchNationality] = useState('');
@@ -80,39 +80,48 @@ const ProfileStatsModal = ({ players, onClose }) => {
         return { total, cardTypeStats, positionStats, playstyleStats };
     }, [players, searchClub, searchNationality, filterLeague]);
 
-    if (!stats) return (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[2000] flex items-center justify-center p-4">
-            <div className="bg-[#0a0a0c] border border-white/10 rounded-[2.5rem] w-full max-w-md overflow-hidden shadow-2xl p-8 text-center">
+    if (!stats) {
+        const noStatsContent = (
+            <div className={`bg-[#0a0a0c] border border-white/10 rounded-[2.5rem] w-full max-w-md overflow-hidden shadow-2xl p-8 text-center ${isFullPage ? 'mx-auto' : ''}`}>
                 <h3 className="text-xl font-black text-white uppercase italic mb-4">No Stats Available</h3>
                 <p className="text-white/40 text-sm mb-6">Add some players to your squad first!</p>
-                <button
-                    onClick={onClose}
-                    className="w-full py-4 bg-ef-accent text-black font-black uppercase tracking-widest rounded-2xl"
-                >
-                    Close
-                </button>
+                {!isFullPage && (
+                    <button
+                        onClick={onClose}
+                        className="w-full py-4 bg-ef-accent text-black font-black uppercase tracking-widest rounded-2xl"
+                    >
+                        Close
+                    </button>
+                )}
             </div>
-        </div>
-    );
+        );
+        if (isFullPage) return noStatsContent;
+        return (
+            <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[2000] flex items-center justify-center p-4">
+                {noStatsContent}
+            </div>
+        );
+    }
 
-    return (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[2000] flex items-center justify-center p-4 animate-in fade-in duration-300">
-            <div className="bg-[#0a0a0c] border border-white/10 rounded-[2.5rem] w-full max-w-lg overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300 flex flex-col max-h-[90vh]">
-                {/* Header */}
-                <div className="p-8 pb-4 flex justify-between items-start">
-                    <div>
-                        <h2 className="text-3xl font-black text-white italic tracking-tighter uppercase">
-                            Profile <span className="text-ef-accent">Stats</span>
-                        </h2>
-                        <p className="text-[10px] text-white/30 uppercase font-black tracking-[0.3em] mt-1">Squad Analytical Overview</p>
-                    </div>
+    const content = (
+        <div className={`bg-[#0a0a0c] border border-white/10 rounded-[2.5rem] w-full max-w-lg overflow-hidden shadow-2xl flex flex-col ${isFullPage ? 'mx-auto' : 'max-h-[90vh]'}`}>
+            {/* Header */}
+            <div className="p-8 pb-4 flex justify-between items-start">
+                <div>
+                    <h2 className="text-3xl font-black text-white italic tracking-tighter uppercase">
+                        Profile <span className="text-ef-accent">Stats</span>
+                    </h2>
+                    <p className="text-[10px] text-white/30 uppercase font-black tracking-[0.3em] mt-1">Squad Analytical Overview</p>
+                </div>
+                {!isFullPage && (
                     <button
                         onClick={onClose}
                         className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center hover:bg-white/10 transition-all text-white/40 hover:text-white"
                     >
                         ✕
                     </button>
-                </div>
+                )}
+            </div>
 
                 {/* Filters */}
                 <div className="px-8 pb-4 grid grid-cols-3 gap-2">
@@ -292,15 +301,26 @@ const ProfileStatsModal = ({ players, onClose }) => {
                     )}
                 </div>
 
-                <div className="p-8 pt-0">
-                    <button
-                        onClick={onClose}
-                        className="w-full py-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl text-[10px] font-black text-white/40 hover:text-white uppercase tracking-[0.3em] transition-all"
-                    >
-                        Close Analysis
-                    </button>
-                </div>
+                {!isFullPage && (
+                    <div className="p-8 pt-0">
+                        <button
+                            onClick={onClose}
+                            className="w-full py-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl text-[10px] font-black text-white/40 hover:text-white uppercase tracking-[0.3em] transition-all"
+                        >
+                            Close Analysis
+                        </button>
+                    </div>
+                )}
             </div>
+    );
+
+    if (isFullPage) {
+        return content;
+    }
+
+    return (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[2000] flex items-center justify-center p-4 animate-in fade-in duration-300">
+            {content}
         </div>
     );
 };

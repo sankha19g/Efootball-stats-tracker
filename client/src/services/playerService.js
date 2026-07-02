@@ -20,6 +20,35 @@ import {
 const PLAYERS_COLLECTION = 'players';
 const ACTIVITY_LOGS_COLLECTION = 'activity_logs';
 const GLOBAL_DB_COLLECTION = 'global_database';
+const SETTINGS_COLLECTION = 'settings';
+
+// ─── Auto Merge Rules ─────────────────────────────────────────────────────────
+
+export const saveAutoMergeRules = async (userId, rules) => {
+    if (!userId) return;
+    try {
+        const docRef = doc(db, `users/${userId}/${SETTINGS_COLLECTION}`, 'auto_merge_rules');
+        await setDoc(docRef, { rules, updatedAt: new Date().toISOString() });
+    } catch (err) {
+        console.error('Error saving auto merge rules:', err);
+        throw err;
+    }
+};
+
+export const getAutoMergeRules = async (userId) => {
+    if (!userId) return null;
+    try {
+        const docRef = doc(db, `users/${userId}/${SETTINGS_COLLECTION}`, 'auto_merge_rules');
+        const snap = await getDoc(docRef);
+        if (snap.exists()) {
+            return snap.data().rules || [];
+        }
+        return null; // No rules saved yet
+    } catch (err) {
+        console.error('Error fetching auto merge rules:', err);
+        return null;
+    }
+};
 
 const getDeviceType = () => {
     const ua = navigator.userAgent;

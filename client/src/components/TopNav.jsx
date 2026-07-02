@@ -41,7 +41,7 @@ const TopNav = ({
                         onClick={() => {
                             if (isOpen) {
                                 setIsOpen(false);
-                            } else if (isSubView && !['leaderboard', 'squad-builder', 'quick-stats', 'squad-db', 'badges', 'activity-log', 'settings'].includes(view)) {
+                            } else if (isSubView && !['leaderboard', 'squad-builder', 'quick-stats', 'squad-db', 'badges', 'activity-log', 'settings', 'profile-stats', 'brochure', 'screenshots', 'quick-links'].includes(view)) {
                                 setView('list');
                             } else {
                                 setIsOpen(true);
@@ -51,7 +51,7 @@ const TopNav = ({
                     >
                         {isOpen ? (
                             <X className="w-5 h-5 text-white" />
-                        ) : (isSubView && !['leaderboard', 'squad-builder', 'quick-stats', 'squad-db', 'badges', 'activity-log', 'settings'].includes(view)) ? (
+                        ) : (isSubView && !['leaderboard', 'squad-builder', 'quick-stats', 'squad-db', 'badges', 'activity-log', 'settings', 'profile-stats', 'brochure', 'screenshots', 'quick-links'].includes(view)) ? (
                             <ArrowLeft className="w-5 h-5 text-white" />
                         ) : (
                             <div className="flex flex-col gap-1.5 w-5">

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { getLinks, addLink, deleteLink } from '../services/miscService';
 
-const LinksModal = ({ user, onClose, onAddApp, showAlert, showConfirm }) => {
+const LinksModal = ({ user, onClose, onAddApp, showAlert, showConfirm, isFullPage }) => {
     const [links, setLinks] = useState([]);
     const [newLink, setNewLink] = useState({ name: '', url: '', icon: null });
     const [loading, setLoading] = useState(true);
@@ -77,11 +77,11 @@ const LinksModal = ({ user, onClose, onAddApp, showAlert, showConfirm }) => {
 
     if (!user) return null;
 
-    return (
-        <div className="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center z-[100] p-4 animate-fade-in">
-            <div className="bg-ef-card w-full max-w-2xl rounded-3xl border border-white/10 flex flex-col overflow-hidden shadow-2xl relative">
-                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-ef-accent to-green-500"></div>
+    const content = (
+        <div className={`bg-ef-card w-full max-w-2xl rounded-3xl border border-white/10 flex flex-col overflow-hidden shadow-2xl relative ${isFullPage ? 'mx-auto' : ''}`}>
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-ef-accent to-green-500"></div>
 
+            {!isFullPage && (
                 <button
                     onClick={onClose}
                     className="absolute top-4 left-4 md:left-auto md:right-4 z-50 p-2 md:p-2.5 rounded-xl bg-black/40 md:bg-white/5 hover:bg-black/60 md:hover:bg-white/10 text-white transition-all active:scale-95 border border-white/10"
@@ -89,6 +89,7 @@ const LinksModal = ({ user, onClose, onAddApp, showAlert, showConfirm }) => {
                     <span className="hidden md:block">✕</span>
                     <span className="md:hidden text-xl font-bold">←</span>
                 </button>
+            )}
 
                 <div className="p-6 border-b border-white/5 flex justify-between items-center bg-white/5">
                     <div>
@@ -225,7 +226,16 @@ const LinksModal = ({ user, onClose, onAddApp, showAlert, showConfirm }) => {
                         )}
                     </div>
                 </div>
-            </div>
+        </div>
+    );
+
+    if (isFullPage) {
+        return content;
+    }
+
+    return (
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center z-[100] p-4 animate-fade-in">
+            {content}
         </div>
     );
 };

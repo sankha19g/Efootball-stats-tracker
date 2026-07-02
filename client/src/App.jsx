@@ -24,7 +24,6 @@ import { searchTeams, searchLeagues, normalizeString } from './services/football
 import { PLAYSTYLES, ALL_SKILLS, PLAYER_SKILLS, SPECIAL_SKILLS } from './constants';
 
 // Lazy Load Heavy Components
-const PlayerForm = lazy(() => import('./components/PlayerForm'));
 const Leaderboard = lazy(() => import('./pages/Leaderboard'));
 const PlayerDetailsModal = lazy(() => import('./components/PlayerDetailsModal'));
 const ScreenshotsModal = lazy(() => import('./components/ScreenshotsModal'));
@@ -39,6 +38,7 @@ const SquadBuilder = lazy(() => import('./pages/SquadBuilder'));
 const ProfileStatsModal = lazy(() => import('./components/ProfileStatsModal'));
 const RemainderModal = lazy(() => import('./components/RemainderModal'));
 const BadgesView = lazy(() => import('./pages/BadgesView'));
+const AutoMergeView = lazy(() => import('./pages/AutoMergeView'));
 const SocialDrawer = lazy(() => import('./components/SocialDrawer'));
 const BrochureModal = lazy(() => import('./components/BrochureModal'));
 const MySquadDB = lazy(() => import('./pages/MySquadDB'));
@@ -95,14 +95,9 @@ function App() {
   const [importPreviewData, setImportPreviewData] = useState(null);
 
   // Modal Visibility State
-  const [showAddPlayer, setShowAddPlayer] = useState(false);
-  const [showScreenshots, setShowScreenshots] = useState(false);
-  const [showLinks, setShowLinks] = useState(false);
   const [showDatabase, setShowDatabase] = useState(false);
-  const [showProfileStats, setShowProfileStats] = useState(false);
   const [showRemainder, setShowRemainder] = useState(false);
   const [showSocial, setShowSocial] = useState(false);
-  const [showBrochure, setShowBrochure] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [compareIds, setCompareIds] = useState([null, null]);
 
@@ -419,15 +414,23 @@ function App() {
   const localClubBadges = useMemo(() => {
     const clubsDict = {};
     players.forEach(p => {
-      if (p.club && !clubsDict[p.club]) {
+      if (!p.club) return;
+      const logo = p.logos?.club || p.club_badge_url || '';
+      const leagueLogo = p.logos?.league || '';
+      if (!clubsDict[p.club]) {
         clubsDict[p.club] = {
           idTeam: 'local-' + p.club,
           strTeam: p.club,
-          strBadge: p.logos?.club || p.club_badge_url || '',
+          strBadge: logo,
           strLeague: p.league || '',
-          strLeagueBadge: p.logos?.league || '',
+          strLeagueBadge: leagueLogo,
           isLocal: true
         };
+      } else {
+        // Upgrade to a better logo / league if current entry is missing one
+        if (!clubsDict[p.club].strBadge && logo) clubsDict[p.club].strBadge = logo;
+        if (!clubsDict[p.club].strLeagueBadge && leagueLogo) clubsDict[p.club].strLeagueBadge = leagueLogo;
+        if (!clubsDict[p.club].strLeague && p.league) clubsDict[p.club].strLeague = p.league;
       }
     });
     return Object.values(clubsDict);
@@ -437,17 +440,69 @@ function App() {
   const localNationBadges = useMemo(() => {
     const natsDict = {};
     players.forEach(p => {
-      if (p.nationality && !natsDict[p.nationality]) {
+      if (!p.nationality) return;
+      const flag = p.logos?.country || p.nationality_flag_url || '';
+      if (!natsDict[p.nationality]) {
         natsDict[p.nationality] = {
           idTeam: 'local-' + p.nationality,
           name: p.nationality,
-          flag: p.logos?.country || p.nationality_flag_url || '',
+          flag: flag,
           isLocal: true
         };
+      } else if (!natsDict[p.nationality].flag && flag) {
+        natsDict[p.nationality].flag = flag;
       }
     });
     return Object.values(natsDict);
   }, [players]);
+
+  // Badge resolution maps: club/nation/league name → best known logo URL
+  const clubLogoMap = useMemo(() => {
+    const map = {};
+    players.forEach(p => {
+      const logo = p.logos?.club || p.club_badge_url || '';
+      if (p.club && logo && !map[p.club]) map[p.club] = logo;
+    });
+    return map;
+  }, [players]);
+
+  const nationLogoMap = useMemo(() => {
+    const map = {};
+    players.forEach(p => {
+      const flag = p.logos?.country || p.nationality_flag_url || '';
+      if (p.nationality && flag && !map[p.nationality]) map[p.nationality] = flag;
+    });
+    return map;
+  }, [players]);
+
+  const leagueLogoMap = useMemo(() => {
+    const map = {};
+    players.forEach(p => {
+      const logo = p.logos?.league || '';
+      if (p.league && logo && !map[p.league]) map[p.league] = logo;
+    });
+    return map;
+  }, [players]);
+
+  const enrichedPlayers = useMemo(() => {
+    return players.map(p => {
+      const resolvedClubLogo = p.logos?.club || p.club_badge_url || (p.club ? clubLogoMap[p.club] : '') || '';
+      const resolvedNationFlag = p.logos?.country || p.nationality_flag_url || (p.nationality ? nationLogoMap[p.nationality] : '') || '';
+      const resolvedLeagueLogo = p.logos?.league || (p.league ? leagueLogoMap[p.league] : '') || '';
+      return {
+        ...p,
+        logos: {
+          ...p.logos,
+          club: resolvedClubLogo,
+          country: resolvedNationFlag,
+          league: resolvedLeagueLogo,
+        },
+        club_badge_url: resolvedClubLogo || p.club_badge_url || '',
+        nationality_flag_url: resolvedNationFlag || p.nationality_flag_url || '',
+      };
+    });
+  }, [players, clubLogoMap, nationLogoMap, leagueLogoMap]);
+
 
   // Leaderboard Specific Filters
   const [lbFilters, setLbFilters] = useState({
@@ -1292,6 +1347,56 @@ function App() {
     }
   };
 
+  // Execute auto-merge rules in batch, return per-rule summary
+  const handleAutoMergeBatch = async (rules, currentPlayers) => {
+    if (!user) return [];
+    const summary = [];
+    let workingPlayers = [...currentPlayers];
+
+    for (const rule of rules) {
+      const { type, from, to } = rule;
+      const fromLower = from.trim().toLowerCase();
+      const toValue = to.trim();
+      if (!fromLower || !toValue) continue;
+
+      const matching = workingPlayers.filter(p => {
+        if (type === 'club') return (p.club || '').toLowerCase() === fromLower;
+        if (type === 'league') return (p.league || '').toLowerCase() === fromLower;
+        if (type === 'national') return (p.nationality || '').toLowerCase() === fromLower;
+        return false;
+      });
+
+      summary.push({ from: from.trim(), to: toValue, type, affected: matching.length });
+
+      if (matching.length === 0) continue;
+
+      const ids = matching.map(p => p._id);
+      const updates = {};
+      if (type === 'club') updates.club = toValue;
+      else if (type === 'league') updates.league = toValue;
+      else if (type === 'national') updates.nationality = toValue;
+
+      try {
+        await updatePlayersBulk(user.uid, ids, updates);
+        // Update both local state and working copy for subsequent rules
+        const applyUpdate = p => {
+          if (!ids.includes(p._id)) return p;
+          const upd = { ...p };
+          if (type === 'club') upd.club = toValue;
+          else if (type === 'league') upd.league = toValue;
+          else if (type === 'national') upd.nationality = toValue;
+          return upd;
+        };
+        setPlayers(prev => prev.map(applyUpdate));
+        workingPlayers = workingPlayers.map(applyUpdate);
+      } catch (err) {
+        console.error('Auto-merge rule failed:', rule, err);
+      }
+    }
+
+    return summary;
+  };
+
   // Search State
   const [searchQuery, setSearchQuery] = useState(() => localStorage.getItem('ef-app-search') || '');
 
@@ -1321,7 +1426,7 @@ function App() {
 
   // Filter & Sort Logic
   const getProcessedPlayers = () => {
-    let result = [...players];
+    let result = [...enrichedPlayers];
 
     // Search Filter
     if (searchQuery) {
@@ -1753,6 +1858,24 @@ function App() {
   const [selectedPlayer, setSelectedPlayer] = useState(null);
   const [startInEditMode, setStartInEditMode] = useState(false);
 
+  const enrichedSelectedPlayer = useMemo(() => {
+    if (!selectedPlayer) return null;
+    const resolvedClubLogo = selectedPlayer.logos?.club || selectedPlayer.club_badge_url || (selectedPlayer.club ? clubLogoMap[selectedPlayer.club] : '') || '';
+    const resolvedNationFlag = selectedPlayer.logos?.country || selectedPlayer.nationality_flag_url || (selectedPlayer.nationality ? nationLogoMap[selectedPlayer.nationality] : '') || '';
+    const resolvedLeagueLogo = selectedPlayer.logos?.league || (selectedPlayer.league ? leagueLogoMap[selectedPlayer.league] : '') || '';
+    return {
+      ...selectedPlayer,
+      logos: {
+        ...selectedPlayer.logos,
+        club: resolvedClubLogo,
+        country: resolvedNationFlag,
+        league: resolvedLeagueLogo,
+      },
+      club_badge_url: resolvedClubLogo || selectedPlayer.club_badge_url || '',
+      nationality_flag_url: resolvedNationFlag || selectedPlayer.nationality_flag_url || '',
+    };
+  }, [selectedPlayer, clubLogoMap, nationLogoMap, leagueLogoMap]);
+
 
   const LoadingFallback = () => (
     <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
@@ -1790,17 +1913,12 @@ function App() {
           setIsOpen={setIsSidebarOpen}
           view={view}
           setView={(v) => startTransition(() => setView(v))}
-          setShowAddPlayer={(v) => startTransition(() => setShowAddPlayer(v))}
           setShowDatabase={setShowDatabase}
-          setShowScreenshots={setShowScreenshots}
-          setShowLinks={setShowLinks}
           user={user}
           setShowLogin={setShowLogin}
           handleLogout={handleLogout}
           showAlert={showAlert}
-          setShowProfileStats={setShowProfileStats}
           setShowSocial={setShowSocial}
-          setShowBrochure={setShowBrochure}
         />
 
 
@@ -1809,7 +1927,7 @@ function App() {
           className={`
           transition-all duration-500 ease-in-out
           ${isSidebarOpen ? 'md:ml-[200px] md:w-[calc(100%-200px)] ml-0 w-full' : 'ml-0 w-full'}
-          min-h-screen ${view === 'settings' ? 'pt-44 md:pt-24 p-0' : (view === 'compare' || view === 'random-chooser') ? 'pt-32 md:pt-20 p-3 md:p-8' : 'pt-48 md:pt-28 p-3 md:p-8'}
+          min-h-screen ${view === 'settings' ? 'pt-44 md:pt-24 p-0' : (view === 'compare' || view === 'random-chooser' || view === 'screenshots' || view === 'quick-links' || view === 'profile-stats' || view === 'brochure') ? 'pt-32 md:pt-20 p-3 md:p-8' : 'pt-48 md:pt-28 p-3 md:p-8'}
         `}
         >
           {view === 'settings' && (
@@ -1817,7 +1935,7 @@ function App() {
               settings={settings}
               setSettings={setSettings}
               user={user}
-              players={players}
+              players={enrichedPlayers}
               setPlayers={setPlayers}
               onClose={() => startTransition(() => setView('list'))}
               generateSource2Url={generateSource2Url}
@@ -1826,7 +1944,7 @@ function App() {
 
           {view === 'squad-db' && (
             <MySquadDB
-              players={players}
+              players={enrichedPlayers}
               onBack={() => startTransition(() => setView('list'))}
               onImport={handleImportSquadJSON}
               onPlayerClick={(p) => startTransition(() => setSelectedPlayer(p))}
@@ -1836,7 +1954,7 @@ function App() {
 
           {view === 'quick-stats' && (
             <QuickStatsView
-              players={players}
+              players={enrichedPlayers}
               user={user}
               activeSquad={activeSquad}
               onUpdate={(id, updates) => handleUpdatePlayer(id, updates, false)}
@@ -2702,46 +2820,10 @@ function App() {
           }
 
 
-
-          {showAddPlayer && (
-            <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 animate-fade-in backdrop-blur-sm">
-              <div className="w-full max-w-2xl max-h-[95vh] relative animate-slide-up flex flex-col bg-ef-card rounded-3xl border border-white/10 shadow-2xl overflow-hidden">
-                {/* Persistent Header with Close Button */}
-                <div className="flex items-center justify-between p-4 px-6 border-b border-white/5 bg-black/20">
-                  <h3 className="text-xl font-black flex items-center gap-3">
-                    <span className="text-ef-accent text-2xl">✍️</span>
-                    <span className="bg-gradient-to-r from-white to-white/60 bg-clip-text text-transparent uppercase tracking-tighter italic">Player Recruitment</span>
-                  </h3>
-                  <button
-                    onClick={() => setShowAddPlayer(false)}
-                    className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 text-white transition-all flex items-center justify-center border border-white/10"
-                    title="Close"
-                  >
-                    ✕
-                  </button>
-                </div>
-
-                {/* Scrollable Form Content */}
-                <div className="flex-1 overflow-y-auto custom-scrollbar p-1">
-                  <PlayerForm
-                    onAdd={(data) => {
-                      handleAddPlayer(data);
-                      setShowAddPlayer(false);
-                    }}
-                    onClose={() => setShowAddPlayer(false)}
-                    showAlert={showAlert}
-                    showConfirm={showConfirm}
-                    hideExternalClose={true} // We'll handle close in the header
-                  />
-                </div>
-              </div>
-            </div>
-          )}
-
-          {selectedPlayer && (
+          {enrichedSelectedPlayer && (
             <PlayerDetailsModal
-              player={selectedPlayer}
-              players={players}
+              player={enrichedSelectedPlayer}
+              players={enrichedPlayers}
               onClose={() => {
                 setSelectedPlayer(null);
                 setStartInEditMode(false);
@@ -2753,15 +2835,9 @@ function App() {
               settings={settings}
               showAlert={showAlert}
               showConfirm={showConfirm}
+              onUpdateBadge={handleUpdateBadge}
+              userId={user?.uid}
             />
-          )}
-
-          {showScreenshots && (
-            <ScreenshotsModal user={user} onClose={() => setShowScreenshots(false)} showAlert={showAlert} showConfirm={showConfirm} />
-          )}
-
-          {showLinks && (
-            <LinksModal user={user} onClose={() => setShowLinks(false)} onAddApp={handleAddApp} showAlert={showAlert} showConfirm={showConfirm} />
           )}
 
           {showLogin && (
@@ -2775,13 +2851,6 @@ function App() {
             <AppsDrawer apps={apps} onDeleteApp={handleDeleteApp} onReorderApps={handleReorderApps} showAlert={showAlert} showConfirm={showConfirm} />
           )}
 
-          {showProfileStats && (
-            <ProfileStatsModal
-              players={players}
-              onClose={() => setShowProfileStats(false)}
-            />
-          )}
-
           {/* Main Dialog */}
           <CustomDialog
             isOpen={dialog.isOpen}
@@ -2793,15 +2862,6 @@ function App() {
             confirmText={dialog.confirmText}
             cancelText={dialog.cancelText}
           />
-
-          {showBrochure && (
-            <BrochureModal
-              players={players}
-              onClose={() => setShowBrochure(false)}
-              user={user}
-              activeSquad={activeSquad}
-            />
-          )}
 
           {importPreviewData && (
             <ImportSummaryModal
@@ -2839,7 +2899,7 @@ function App() {
                             >
                               <PlayerCard
                                 player={player}
-                                players={players}
+                                players={enrichedPlayers}
                                 isSelectionMode={isSelectionMode}
                                 isSelected={selectedIds.has(player._id)}
                                 onToggleSelect={handleToggleSelect}
@@ -3330,7 +3390,7 @@ function App() {
                       )}
                     </div>
                     <Leaderboard
-                      players={players.filter(p => {
+                      players={enrichedPlayers.filter(p => {
                         let matchesPos = lbFilters.positions.length === 0 || lbFilters.positions.includes(p.position);
 
                         if (!matchesPos && lbFilters.includeSecondary && lbFilters.positions.length > 0) {
@@ -3362,7 +3422,7 @@ function App() {
 
                 {view === 'squad-builder' && (
                   <SquadBuilder
-                    players={players}
+                    players={enrichedPlayers}
                     squads={squads}
                     activeSquadId={settings.activeSquadId}
                     onSetActive={handleSetActiveSquad}
@@ -3380,16 +3440,27 @@ function App() {
 
                 {view === 'badges' && (
                   <BadgesView
-                    players={players}
+                    players={enrichedPlayers}
                     onUpdateBadge={handleUpdateBadge}
                     onAddBadge={handleAddPlayer}
                     onMergeBadge={handleMergeBadges}
+                    onAutoMerge={() => setView('badges-auto-merge')}
+                    userId={user?.uid}
+                  />
+                )}
+
+                {view === 'badges-auto-merge' && (
+                  <AutoMergeView
+                    players={enrichedPlayers}
+                    onBack={() => setView('badges')}
+                    onExecuteMerge={handleAutoMergeBatch}
+                    userId={user?.uid}
                   />
                 )}
 
                 {view === 'compare' && (
                   <ComparePlayers
-                    players={players}
+                    players={enrichedPlayers}
                     onPlayerClick={setSelectedPlayer}
                     settings={settings}
                     initialSelectedIds={compareIds}
@@ -3399,9 +3470,48 @@ function App() {
 
                 {view === 'random-chooser' && (
                   <RandomChooser
-                    players={players}
+                    players={enrichedPlayers}
                     settings={settings}
                     onPlayerClick={setSelectedPlayer}
+                  />
+                )}
+
+                {view === 'screenshots' && (
+                  <ScreenshotsModal
+                    user={user}
+                    onClose={() => setView('list')}
+                    showAlert={showAlert}
+                    showConfirm={showConfirm}
+                    isFullPage={true}
+                  />
+                )}
+
+                {view === 'quick-links' && (
+                  <LinksModal
+                    user={user}
+                    onClose={() => setView('list')}
+                    onAddApp={handleAddApp}
+                    showAlert={showAlert}
+                    showConfirm={showConfirm}
+                    isFullPage={true}
+                  />
+                )}
+
+                {view === 'profile-stats' && (
+                  <ProfileStatsModal
+                    players={enrichedPlayers}
+                    onClose={() => setView('list')}
+                    isFullPage={true}
+                  />
+                )}
+
+                {view === 'brochure' && (
+                  <BrochureModal
+                    players={enrichedPlayers}
+                    onClose={() => setView('list')}
+                    user={user}
+                    activeSquad={activeSquad}
+                    isFullPage={true}
                   />
                 )}
               </>
@@ -3412,7 +3522,7 @@ function App() {
               onAddPlayers={handleBulkAddPlayers}
               onBack={() => setShowDatabase(false)}
               settings={settings}
-              ownersPlayers={players}
+              ownersPlayers={enrichedPlayers}
               showAlert={showAlert}
               showConfirm={showConfirm}
             />

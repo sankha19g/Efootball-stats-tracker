@@ -1,91 +1,8 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
+import { saveAutoMergeRules, getAutoMergeRules } from '../services/playerService';
+import { BadgeEditModal, BadgeAddRuleModal } from '../components/BadgeModals';
 
-const BadgeEditModal = ({ badge, type, onClose, onUpdate }) => {
-    const [name, setName] = useState(badge.name);
-    const [logo, setLogo] = useState(badge.logo);
-    const [league, setLeague] = useState(badge.league || '');
-
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        onUpdate(badge.name, name, logo, type, league);
-        onClose();
-    };
-
-    return (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[300] flex items-center justify-center p-4 animate-fade-in text-white">
-            <div className="w-full max-w-md bg-ef-card rounded-[2.5rem] border border-white/10 shadow-2xl overflow-hidden animate-slide-up">
-                <div className="p-8 border-b border-white/5 flex items-center justify-between bg-black/20">
-                    <h3 className="text-xl font-black uppercase tracking-tighter italic text-white flex items-center gap-3">
-                        <span className="text-ef-accent">✏️</span> Edit {type === 'club' ? 'Club' : type === 'league' ? 'League' : 'Nation'}
-                    </h3>
-                    <button onClick={onClose} className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-white/40 hover:text-white transition-all">✕</button>
-                </div>
-
-                <form onSubmit={handleSubmit} className="p-8 space-y-6">
-                    <div className="flex justify-center mb-4">
-                        <div className="relative w-24 h-24 bg-black/40 rounded-3xl border border-white/10 flex items-center justify-center p-4 shadow-inner">
-                            {logo ? (
-                                <img src={logo} alt="Preview" className="w-full h-full object-contain drop-shadow-lg" />
-                            ) : (
-                                <span className="text-white/10 text-4xl">{type === 'club' ? '🛡️' : type === 'national' ? '🌍' : '🏆'}</span>
-                            )}
-                        </div>
-                    </div>
-
-                    <div>
-                        <label className="block text-[10px] font-black uppercase tracking-widest text-white/40 mb-2 ml-1">Name</label>
-                        <input
-                            type="text"
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                            className="w-full bg-black/40 border border-white/10 rounded-2xl px-5 py-4 text-sm font-bold text-white outline-none focus:border-ef-accent/50 transition-all shadow-inner"
-                            required
-                        />
-                    </div>
-
-                    {type === 'club' && (
-                        <div>
-                            <label className="block text-[10px] font-black uppercase tracking-widest text-white/40 mb-2 ml-1">League</label>
-                            <input
-                                type="text"
-                                value={league}
-                                onChange={(e) => setLeague(e.target.value)}
-                                className="w-full bg-black/40 border border-white/10 rounded-2xl px-5 py-4 text-sm font-bold text-white outline-none focus:border-ef-accent/50 transition-all shadow-inner"
-                                required
-                            />
-                        </div>
-                    )}
-
-                    <div>
-                        <label className="block text-[10px] font-black uppercase tracking-widest text-white/40 mb-2 ml-1">Logo URL</label>
-                        <input
-                            type="text"
-                            value={logo}
-                            onChange={(e) => setLogo(e.target.value)}
-                            className="w-full bg-black/40 border border-white/10 rounded-2xl px-5 py-4 text-sm font-bold text-white outline-none focus:border-ef-accent/50 transition-all shadow-inner"
-                        />
-                    </div>
-
-                    <div className="pt-4 flex gap-4">
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            className="flex-1 py-4 px-6 rounded-2xl bg-white/5 border border-white/10 text-white font-black uppercase tracking-widest text-[10px] transition-all hover:bg-white/10"
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            type="submit"
-                            className="flex-1 py-4 px-6 rounded-2xl bg-ef-accent text-ef-dark font-black uppercase tracking-widest text-[10px] transition-all shadow-lg shadow-ef-accent/20 hover:scale-[1.02] active:scale-95"
-                        >
-                            Save Changes
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    );
-};
 
 
 const BadgeMergeModal = ({ selectedBadges, type, onClose, onMerge }) => {
@@ -330,7 +247,9 @@ const BadgeAddModal = ({ type, onClose, onAdd }) => {
     );
 };
 
-const BadgesView = ({ players, onUpdateBadge, onAddBadge, onMergeBadge }) => {
+// Shared modals are imported from BadgeModals
+
+const BadgesView = ({ players, onUpdateBadge, onAddBadge, onMergeBadge, onAutoMerge, userId }) => {
     const [mode, setMode] = useState('club'); // 'club', 'national', or 'league'
     const [selectedLeague, setSelectedLeague] = useState('All');
     const [search, setSearch] = useState('');
@@ -341,6 +260,84 @@ const BadgesView = ({ players, onUpdateBadge, onAddBadge, onMergeBadge }) => {
     const [isMergeMode, setIsMergeMode] = useState(false);
     const [selectedMergeBadges, setSelectedMergeBadges] = useState([]);
 
+    const [contextMenu, setContextMenu] = useState(null); // { x: number, y: number, badge: Badge }
+    const [addingRuleBadge, setAddingRuleBadge] = useState(null);
+
+    useEffect(() => {
+        const handleClose = () => setContextMenu(null);
+        window.addEventListener('click', handleClose);
+        window.addEventListener('contextmenu', handleClose);
+        return () => {
+            window.removeEventListener('click', handleClose);
+            window.removeEventListener('contextmenu', handleClose);
+        };
+    }, []);
+
+    const handleContextMenu = (e, badge) => {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        // Bounding check to avoid menu going offscreen
+        const menuWidth = 224; // w-56
+        const menuHeight = 110;
+        let x = e.clientX;
+        let y = e.clientY;
+        
+        if (x + menuWidth > window.innerWidth) {
+            x = window.innerWidth - menuWidth - 10;
+        }
+        if (y + menuHeight > window.innerHeight) {
+            y = window.innerHeight - menuHeight - 10;
+        }
+        
+        setContextMenu({ x, y, badge });
+    };
+
+    const handleAddRule = useCallback(async (newRule) => {
+        let currentRules = [];
+        if (userId) {
+            currentRules = await getAutoMergeRules(userId) || [];
+        }
+        if (currentRules.length === 0) {
+            try {
+                const saved = localStorage.getItem('ef-auto-merge-rules');
+                if (saved) currentRules = JSON.parse(saved);
+            } catch { /* ignore */ }
+        }
+        if (currentRules.length === 0) {
+            currentRules = [{ type: 'club', from: '', to: '' }];
+        }
+
+        // Clean up empty rule row if it exists
+        const isEmptyDefault = currentRules.length === 1 && !currentRules[0].from.trim() && !currentRules[0].to.trim();
+        const cleanedRules = isEmptyDefault ? [] : currentRules;
+
+        // Check if rule already exists to avoid duplicates
+        const exists = cleanedRules.some(r => r.type === newRule.type && r.from.toLowerCase() === newRule.from.toLowerCase() && r.to.toLowerCase() === newRule.to.toLowerCase());
+        if (exists) return;
+
+        const updatedRules = [newRule, ...cleanedRules];
+
+        // Save
+        try {
+            localStorage.setItem('ef-auto-merge-rules', JSON.stringify(updatedRules));
+            if (userId) {
+                await saveAutoMergeRules(userId, updatedRules);
+            }
+        } catch (err) {
+            console.error('Failed to save auto merge rule from BadgesView:', err);
+        }
+    }, [userId]);
+
+    // Build unique sorted suggestion lists from player data
+    const suggestions = useMemo(() => {
+        const unique = (arr) => [...new Set(arr.filter(Boolean))].sort((a, b) => a.localeCompare(b));
+        return {
+            club: unique(players.map(p => p.club)),
+            league: unique(players.map(p => p.league)),
+            national: unique(players.map(p => p.nationality)),
+        };
+    }, [players]);
 
     const clubBadges = useMemo(() => {
         const clubs = new Map();
@@ -501,6 +498,14 @@ const BadgesView = ({ players, onUpdateBadge, onAddBadge, onMergeBadge }) => {
                     </div>
 
                     <div className="flex flex-col sm:flex-row items-stretch gap-4 w-full lg:w-auto">
+                        {/* Auto Merge Button */}
+                        <button
+                            onClick={onAutoMerge}
+                            className="hidden lg:flex items-center gap-3 px-6 py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] transition-all bg-white/5 border border-white/10 text-ef-accent/70 hover:bg-ef-accent/10 hover:text-ef-accent hover:border-ef-accent/30"
+                        >
+                            <span>🤖 Auto Merge</span>
+                        </button>
+
                         {/* Edit Toggle (Desktop) */}
                         {/* Merge Mode Toggle Button */}
                         <button
@@ -667,6 +672,7 @@ const BadgesView = ({ players, onUpdateBadge, onAddBadge, onMergeBadge }) => {
                                 if (isMergeMode === true) toggleBadgeSelection(badge);
                                 else if (isEditMode) setEditingBadge(badge);
                             }}
+                            onContextMenu={(e) => handleContextMenu(e, badge)}
                             className={`group relative animate-slide-up ${isEditMode || isMergeMode === true ? 'cursor-pointer' : ''}`}
                             style={{ animationDelay: `${idx * 0.05}s` }}
                         >
@@ -738,7 +744,7 @@ const BadgesView = ({ players, onUpdateBadge, onAddBadge, onMergeBadge }) => {
             )}
 
             {/* Merge Modal */}
-            {isMergeMode === 'finalizing' && (
+            {isMergeMode === 'finalizing' && createPortal(
                 <BadgeMergeModal
                     selectedBadges={selectedMergeBadges}
                     type={mode}
@@ -748,28 +754,74 @@ const BadgesView = ({ players, onUpdateBadge, onAddBadge, onMergeBadge }) => {
                         setIsMergeMode(false);
                         setSelectedMergeBadges([]);
                     }}
-                />
+                />,
+                document.body
             )}
 
 
 
             {/* Edit Modal */}
-            {editingBadge && (
+            {editingBadge && createPortal(
                 <BadgeEditModal
                     badge={editingBadge}
                     type={mode}
                     onClose={() => setEditingBadge(null)}
                     onUpdate={onUpdateBadge}
-                />
+                />,
+                document.body
             )}
 
             {/* Add Modal */}
-            {isAddModalOpen && (
+            {isAddModalOpen && createPortal(
                 <BadgeAddModal
                     type={mode}
                     onClose={() => setIsAddModalOpen(false)}
                     onAdd={onAddBadge}
-                />
+                />,
+                document.body
+            )}
+
+            {/* Context Menu */}
+            {contextMenu && createPortal(
+                <div
+                    className="fixed z-[400] bg-[#121324]/95 border border-white/10 rounded-2xl p-2 w-56 shadow-2xl animate-scale-in text-white backdrop-blur-xl"
+                    style={{
+                        top: contextMenu.y,
+                        left: contextMenu.x,
+                    }}
+                >
+                    <button
+                        onClick={() => {
+                            setEditingBadge(contextMenu.badge);
+                            setContextMenu(null);
+                        }}
+                        className="w-full text-left px-4 py-3 rounded-xl hover:bg-white/5 transition-all text-xs font-black uppercase tracking-widest flex items-center gap-3 text-white/70 hover:text-white"
+                    >
+                        <span>✏️</span> Edit Badge
+                    </button>
+                    <button
+                        onClick={() => {
+                            setAddingRuleBadge(contextMenu.badge);
+                            setContextMenu(null);
+                        }}
+                        className="w-full text-left px-4 py-3 rounded-xl hover:bg-white/5 transition-all text-xs font-black uppercase tracking-widest flex items-center gap-3 text-white/70 hover:text-white border-t border-white/5 mt-1 pt-3"
+                    >
+                        <span>🤖</span> Add to Merge Rules
+                    </button>
+                </div>,
+                document.body
+            )}
+
+            {/* Add Rule Modal */}
+            {addingRuleBadge && createPortal(
+                <BadgeAddRuleModal
+                    badge={addingRuleBadge}
+                    initialType={mode}
+                    suggestions={suggestions}
+                    onClose={() => setAddingRuleBadge(null)}
+                    onAddRule={handleAddRule}
+                />,
+                document.body
             )}
         </div>
     );

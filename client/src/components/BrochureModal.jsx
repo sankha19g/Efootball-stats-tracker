@@ -1,7 +1,6 @@
-const BrochureModal = ({ players, onClose, user, activeSquad }) => {
-    return (
-        <div className="fixed inset-0 bg-black/95 backdrop-blur-2xl z-[1100] flex items-center justify-center p-4 md:p-8 animate-fade-in overflow-y-auto">
-            <div className="bg-[#0b0b0d] border border-white/10 rounded-[2.5rem] w-full max-w-5xl md:h-[90vh] flex flex-col shadow-[0_0_100px_rgba(0,0,0,0.8)] overflow-hidden relative group">
+const BrochureModal = ({ players, onClose, user, activeSquad, isFullPage }) => {
+    const content = (
+        <div className={`bg-[#0b0b0d] border border-white/10 rounded-[2.5rem] w-full max-w-5xl flex flex-col shadow-[0_0_100px_rgba(0,0,0,0.8)] overflow-hidden relative group ${isFullPage ? 'mx-auto' : 'md:h-[90vh]'}`}>
 
                 {/* Visual Flair Background */}
                 <div className="absolute top-0 right-0 w-1/2 h-1/2 bg-blue-500/5 blur-[120px] pointer-events-none group-hover:bg-blue-500/10 transition-colors duration-1000"></div>
@@ -19,10 +18,12 @@ const BrochureModal = ({ players, onClose, user, activeSquad }) => {
                             THE <span className="bg-gradient-to-r from-ef-accent to-ef-blue bg-clip-text text-transparent">LEGACY</span>
                         </h2>
                     </div>
-                    <button
-                        onClick={onClose}
-                        className="absolute top-8 right-8 w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center hover:bg-white/10 hover:text-ef-accent transition-all border border-white/10 text-xl"
-                    >✕</button>
+                    {!isFullPage && (
+                        <button
+                            onClick={onClose}
+                            className="absolute top-8 right-8 w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center hover:bg-white/10 hover:text-ef-accent transition-all border border-white/10 text-xl"
+                        >✕</button>
+                    )}
                 </div>
 
                 {/* Empty Slate Area */}
@@ -39,7 +40,16 @@ const BrochureModal = ({ players, onClose, user, activeSquad }) => {
                     </div>
                     <span className="text-[9px] font-black uppercase tracking-[0.4em] text-white/10">Official Certification of Squad Excellence</span>
                 </div>
-            </div>
+        </div>
+    );
+
+    if (isFullPage) {
+        return content;
+    }
+
+    return (
+        <div className="fixed inset-0 bg-black/95 backdrop-blur-2xl z-[1100] flex items-center justify-center p-4 md:p-8 animate-fade-in overflow-y-auto">
+            {content}
         </div>
     );
 };
