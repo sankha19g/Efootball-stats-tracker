@@ -336,6 +336,9 @@ function App() {
   const [filterPlaystyles, setFilterPlaystyles] = useState([]);
   const [filterSkill, setFilterSkill] = useState('All');
   const [filterFoot, setFilterFoot] = useState('All');
+  const [filterForm, setFilterForm] = useState('All');
+  const [filterWFUsage, setFilterWFUsage] = useState('All');
+  const [filterWFAccuracy, setFilterWFAccuracy] = useState('All');
   const [includeSecondary, setIncludeSecondary] = useState(false);
 
   // Custom Dialog State
@@ -455,6 +458,33 @@ function App() {
       }
     });
     return Object.values(natsDict);
+  }, [players]);
+
+  const uniqueForms = useMemo(() => {
+    const set = new Set();
+    players.forEach(p => {
+      const val = p.conditioning || p.Form || p['Player Form'] || p.Condition;
+      if (val) set.add(val.trim());
+    });
+    return [...set].sort();
+  }, [players]);
+
+  const uniqueWFUsage = useMemo(() => {
+    const set = new Set();
+    players.forEach(p => {
+      const val = p['Weak Foot Usage'] || p.weakFootUsage || p.WFUsage;
+      if (val) set.add(val.trim());
+    });
+    return [...set].sort();
+  }, [players]);
+
+  const uniqueWFAccuracy = useMemo(() => {
+    const set = new Set();
+    players.forEach(p => {
+      const val = p['Weak Foot Accuracy'] || p.weakFootAccuracy || p.WFAccuracy;
+      if (val) set.add(val.trim());
+    });
+    return [...set].sort();
   }, [players]);
 
   // Badge resolution maps: club/nation/league name → best known logo URL
@@ -1424,6 +1454,10 @@ function App() {
     filterRating,
     filterPlaystyles,
     filterSkill,
+    filterFoot,
+    filterForm,
+    filterWFUsage,
+    filterWFAccuracy,
     sortBy
   ]);
 
@@ -1507,6 +1541,30 @@ function App() {
         return playerFoot.includes(targetFoot) ||
           (targetFoot === 'right' && playerFoot === 'r') ||
           (targetFoot === 'left' && playerFoot === 'l');
+      });
+    }
+
+    // Form Filter
+    if (filterForm !== 'All') {
+      result = result.filter(p => {
+        const formVal = p.conditioning || p.Form || p['Player Form'] || p.Condition || '';
+        return String(formVal).trim().toLowerCase() === filterForm.trim().toLowerCase();
+      });
+    }
+
+    // Weak Foot Usage Filter
+    if (filterWFUsage !== 'All') {
+      result = result.filter(p => {
+        const usageVal = p['Weak Foot Usage'] || p.weakFootUsage || p.WFUsage || '';
+        return String(usageVal).trim().toLowerCase() === filterWFUsage.trim().toLowerCase();
+      });
+    }
+
+    // Weak Foot Accuracy Filter
+    if (filterWFAccuracy !== 'All') {
+      result = result.filter(p => {
+        const accVal = p['Weak Foot Accuracy'] || p.weakFootAccuracy || p.WFAccuracy || '';
+        return String(accVal).trim().toLowerCase() === filterWFAccuracy.trim().toLowerCase();
       });
     }
 
@@ -2425,6 +2483,9 @@ function App() {
                           setFilterPlaystyles([]);
                           setFilterSkill('All');
                           setFilterFoot('All');
+                          setFilterForm('All');
+                          setFilterWFUsage('All');
+                          setFilterWFAccuracy('All');
                           setFilterMissing('All');
                           setIncludeSecondary(false);
                         }}
@@ -2627,6 +2688,32 @@ function App() {
                             max="150"
                           />
                         </div>
+                        <div>
+                          <label className="block text-[10px] font-black uppercase tracking-widest opacity-30 mb-2">Form</label>
+                          <select
+                            value={filterForm}
+                            onChange={(e) => setFilterForm(e.target.value)}
+                            className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-2.5 text-xs font-bold text-white outline-none focus:border-ef-accent/40 transition-all font-outfit"
+                          >
+                            <option value="All" className="text-black">All Forms</option>
+                            {uniqueForms.map(f => (
+                              <option key={f} value={f} className="text-black">{f}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-black uppercase tracking-widest opacity-30 mb-2">Weak Foot Usage</label>
+                          <select
+                            value={filterWFUsage}
+                            onChange={(e) => setFilterWFUsage(e.target.value)}
+                            className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-2.5 text-xs font-bold text-white outline-none focus:border-ef-accent/40 transition-all font-outfit"
+                          >
+                            <option value="All" className="text-black">All Usages</option>
+                            {uniqueWFUsage.map(u => (
+                              <option key={u} value={u} className="text-black">{u}</option>
+                            ))}
+                          </select>
+                        </div>
                       </div>
                       <div className="space-y-4">
                         <div>
@@ -2741,6 +2828,19 @@ function App() {
                             <option value="All" className="text-black">All Feet</option>
                             <option value="Right" className="text-black">Right Foot</option>
                             <option value="Left" className="text-black">Left Foot</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-black uppercase tracking-widest opacity-30 mb-2">Weak Foot Accuracy</label>
+                          <select
+                            value={filterWFAccuracy}
+                            onChange={(e) => setFilterWFAccuracy(e.target.value)}
+                            className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-2.5 text-xs font-bold text-white outline-none focus:border-ef-accent/40 transition-all font-outfit"
+                          >
+                            <option value="All" className="text-black">All Accuracies</option>
+                            {uniqueWFAccuracy.map(a => (
+                              <option key={a} value={a} className="text-black">{a}</option>
+                            ))}
                           </select>
                         </div>
                       </div>
