@@ -2,6 +2,7 @@ import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { saveAutoMergeRules, getAutoMergeRules } from '../services/playerService';
 import { BadgeEditModal, BadgeAddRuleModal } from '../components/BadgeModals';
+import { ListFilterPlus } from "lucide-react";
 
 
 
@@ -256,15 +257,24 @@ const BadgesView = ({ players, onUpdateBadge, onAddBadge, onMergeBadge, onAutoMe
     const [isEditMode, setIsEditMode] = useState(false);
     const [editingBadge, setEditingBadge] = useState(null);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-    const [showNoLogo, setShowNoLogo] = useState(true);
+    const [logoFilter, setLogoFilter] = useState('all'); // 'all', 'withLogo', 'noLogo'
+    const [sortBy, setSortBy] = useState('name'); // 'name', 'players'
     const [isMergeMode, setIsMergeMode] = useState(false);
     const [selectedMergeBadges, setSelectedMergeBadges] = useState([]);
+    const [selectedBadgePlayers, setSelectedBadgePlayers] = useState(null); // { badge, players }
 
     const [contextMenu, setContextMenu] = useState(null); // { x: number, y: number, badge: Badge }
     const [addingRuleBadge, setAddingRuleBadge] = useState(null);
+    const [showFilterMenu, setShowFilterMenu] = useState(false);
+    const filterMenuRef = useRef(null);
 
     useEffect(() => {
-        const handleClose = () => setContextMenu(null);
+        const handleClose = (e) => {
+            setContextMenu(null);
+            if (filterMenuRef.current && !filterMenuRef.current.contains(e.target)) {
+                setShowFilterMenu(false);
+            }
+        };
         window.addEventListener('click', handleClose);
         window.addEventListener('contextmenu', handleClose);
         return () => {
@@ -276,20 +286,20 @@ const BadgesView = ({ players, onUpdateBadge, onAddBadge, onMergeBadge, onAutoMe
     const handleContextMenu = (e, badge) => {
         e.preventDefault();
         e.stopPropagation();
-        
+
         // Bounding check to avoid menu going offscreen
         const menuWidth = 224; // w-56
         const menuHeight = 110;
         let x = e.clientX;
         let y = e.clientY;
-        
+
         if (x + menuWidth > window.innerWidth) {
             x = window.innerWidth - menuWidth - 10;
         }
         if (y + menuHeight > window.innerHeight) {
             y = window.innerHeight - menuHeight - 10;
         }
-        
+
         setContextMenu({ x, y, badge });
     };
 
@@ -430,9 +440,11 @@ const BadgesView = ({ players, onUpdateBadge, onAddBadge, onMergeBadge, onAutoMe
         else if (mode === 'national') activeList = nationalBadges;
         else activeList = leagueBadges;
 
-        // Apply No Logo Filter
-        if (!showNoLogo) {
+        // Apply Logo Presence Filter
+        if (logoFilter === 'withLogo') {
             activeList = activeList.filter(b => b.logo);
+        } else if (logoFilter === 'noLogo') {
+            activeList = activeList.filter(b => !b.logo);
         }
 
         // Apply League Filter (Clubs only)
@@ -441,13 +453,59 @@ const BadgesView = ({ players, onUpdateBadge, onAddBadge, onMergeBadge, onAutoMe
         }
 
         // Apply Search
-        if (!search) return activeList;
-        const query = search.toLowerCase();
-        return activeList.filter(b =>
-            b.name.toLowerCase().includes(query) ||
-            (b.subtext && b.subtext.toLowerCase().includes(query))
-        );
-    }, [mode, clubBadges, nationalBadges, leagueBadges, search, selectedLeague, showNoLogo]);
+        if (search) {
+            const query = search.toLowerCase();
+            activeList = activeList.filter(b =>
+                b.name.toLowerCase().includes(query) ||
+                (b.subtext && b.subtext.toLowerCase().includes(query))
+            );
+        }
+
+        // Apply Sorting
+        return [...activeList].sort((a, b) => {
+            if (sortBy === 'players') {
+                if (b.count !== a.count) {
+                    return b.count - a.count;
+                }
+            }
+            return a.name.localeCompare(b.name);
+        });
+    }, [mode, clubBadges, nationalBadges, leagueBadges, search, selectedLeague, logoFilter, sortBy]);
+
+    const activeFilterPills = useMemo(() => {
+        const pills = [];
+        if (search.trim()) {
+            pills.push({
+                id: 'search',
+                label: 'Search',
+                value: `"${search}"`,
+                clear: () => setSearch('')
+            });
+        }
+        if (selectedLeague !== 'All') {
+            pills.push({
+                id: 'league',
+                label: 'League',
+                value: selectedLeague,
+                clear: () => setSelectedLeague('All')
+            });
+        }
+        if (logoFilter !== 'all') {
+            pills.push({
+                id: 'logoFilter',
+                label: 'Logos',
+                value: logoFilter === 'withLogo' ? 'Hide Empty' : 'Empty Only',
+                clear: () => setLogoFilter('all')
+            });
+        }
+        return pills;
+    }, [search, selectedLeague, logoFilter]);
+
+    const handleClearAllFilters = () => {
+        setSearch('');
+        setSelectedLeague('All');
+        setLogoFilter('all');
+    };
 
     const handleModeSwitch = (newMode) => {
         setMode(newMode);
@@ -471,65 +529,45 @@ const BadgesView = ({ players, onUpdateBadge, onAddBadge, onMergeBadge, onAutoMe
     return (
         <div className="max-w-6xl mx-auto animate-fade-in relative">
             {/* Header section */}
-            <div className="flex flex-col gap-8 mb-10 bg-ef-card/50 backdrop-blur-xl p-8 rounded-[2.5rem] border border-white/10 shadow-2xl relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-ef-accent/5 rounded-full blur-[100px] -mr-32 -mt-32 animate-pulse"></div>
+            <div className="flex flex-col gap-6 mb-6 bg-ef-card/50 backdrop-blur-xl p-6 rounded-[2rem] border border-white/10 shadow-2xl relative z-30">
+                {/* Decorative background blur with overflow containment */}
+                <div className="absolute inset-0 rounded-[2rem] overflow-hidden pointer-events-none">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-ef-accent/5 rounded-full blur-[100px] -mr-32 -mt-32 animate-pulse"></div>
+                </div>
 
-                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-                    <div className="flex items-start justify-between lg:justify-start gap-4">
-                        <div>
-                            <div className="flex items-center gap-3 mb-2">
-                                <span className="text-2xl">
-                                    {mode === 'club' ? '🛡️' : mode === 'national' ? '🌍' : '🏆'}
-                                </span>
-                                <h2 className="text-3xl font-black bg-gradient-to-r from-white via-white to-white/40 bg-clip-text text-transparent uppercase italic tracking-tighter">
-                                    Badges
-                                </h2>
-                            </div>
-                            <p className="text-[10px] uppercase font-black tracking-[0.3em] text-ef-accent">Collection Gallery — {filteredBadges.length} Items Found</p>
-                        </div>
-
-                        {/* Edit Mode Toggle Button */}
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
+                    {/* Mode Switcher Slider */}
+                    <div className="flex bg-black/40 p-1.5 rounded-2xl border border-white/5 relative h-12 w-full lg:max-w-[400px]">
                         <button
-                            onClick={() => setIsEditMode(!isEditMode)}
-                            className={`lg:hidden w-12 h-12 rounded-2xl flex items-center justify-center transition-all ${isEditMode ? 'bg-ef-accent text-ef-dark shadow-lg shadow-ef-accent/20' : 'bg-white/5 border border-white/10 text-white/40'}`}
+                            onClick={() => handleModeSwitch('club')}
+                            className={`flex-1 relative z-10 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 ${mode === 'club' ? 'text-ef-dark' : 'text-white/30 hover:text-white'}`}
                         >
-                            {isEditMode ? '✕' : '✏️'}
+                            Club
                         </button>
+                        <button
+                            onClick={() => handleModeSwitch('national')}
+                            className={`flex-1 relative z-10 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 ${mode === 'national' ? 'text-ef-dark' : 'text-white/30 hover:text-white'}`}
+                        >
+                            National
+                        </button>
+                        <button
+                            onClick={() => handleModeSwitch('league')}
+                            className={`flex-1 relative z-10 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 ${mode === 'league' ? 'text-ef-dark' : 'text-white/30 hover:text-white'}`}
+                        >
+                            League
+                        </button>
+
+                        {/* Sliding Background */}
+                        <div
+                            className="absolute inset-y-1.5 transition-all duration-500 cubic-bezier(0.4, 0, 0.2, 1) bg-ef-accent rounded-xl shadow-lg shadow-ef-accent/20"
+                            style={{
+                                left: mode === 'club' ? '6px' : mode === 'national' ? 'calc(33.33% + 4px)' : 'calc(66.66% + 2px)',
+                                width: 'calc(33.33% - 8px)'
+                            }}
+                        ></div>
                     </div>
 
                     <div className="flex flex-col sm:flex-row items-stretch gap-4 w-full lg:w-auto">
-                        {/* Auto Merge Button */}
-                        <button
-                            onClick={onAutoMerge}
-                            className="hidden lg:flex items-center gap-3 px-6 py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] transition-all bg-white/5 border border-white/10 text-ef-accent/70 hover:bg-ef-accent/10 hover:text-ef-accent hover:border-ef-accent/30"
-                        >
-                            <span>🤖 Auto Merge</span>
-                        </button>
-
-                        {/* Edit Toggle (Desktop) */}
-                        {/* Merge Mode Toggle Button */}
-                        <button
-                            onClick={() => {
-                                setIsMergeMode(!isMergeMode);
-                                setIsEditMode(false);
-                                setSelectedMergeBadges([]);
-                            }}
-                            className={`hidden lg:flex items-center gap-3 px-6 py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] transition-all ${isMergeMode ? 'bg-ef-accent text-ef-dark shadow-lg' : 'bg-white/5 border border-white/10 text-white/40 hover:bg-white/10 hover:text-white'}`}
-                        >
-                            <span>{isMergeMode ? '✕ Cancel Merge' : '🔗 Merge Badges'}</span>
-                        </button>
-
-                        <button
-                            onClick={() => {
-                                setIsEditMode(!isEditMode);
-                                setIsMergeMode(false);
-                            }}
-                            className={`hidden lg:flex items-center gap-3 px-6 py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] transition-all ${isEditMode ? 'bg-ef-accent text-ef-dark shadow-lg' : 'bg-white/5 border border-white/10 text-white/40 hover:bg-white/10 hover:text-white'}`}
-                        >
-                            <span>{isEditMode ? '✕ Cancel Edit' : '✏️ Edit Badges'}</span>
-                        </button>
-
-
                         <div className="flex items-center gap-2">
                             {/* Add Badge Button */}
                             <button
@@ -540,26 +578,133 @@ const BadgesView = ({ players, onUpdateBadge, onAddBadge, onMergeBadge, onAutoMe
                                 <span className="text-xl font-black">+</span>
                             </button>
 
-                            {/* League Filter (Club Mode Only) */}
-                            {mode === 'club' && (
-                                <div className="relative group shrink-0">
-                                    <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
-                                        <span className="text-white/20 group-hover:text-ef-accent transition-colors">🏆</span>
+                            {/* Filter Button */}
+                            <div className="relative shrink-0" ref={filterMenuRef}>
+                                <button
+                                    onClick={() => setShowFilterMenu(!showFilterMenu)}
+                                    className={`flex items-center justify-center w-12 h-12 rounded-2xl border transition-all ${showFilterMenu ? 'bg-ef-accent text-ef-dark border-transparent shadow-lg shadow-ef-accent/20' : 'bg-white/5 border border-white/10 text-white/40 hover:text-white hover:bg-white/10'}`}
+                                    title="Filters"
+                                >
+                                    <span className="text-lg"><ListFilterPlus /></span>
+                                </button>
+
+                                {/* Filters Dropdown */}
+                                {showFilterMenu && (
+                                    <div className="absolute top-full right-0 mt-3 w-72 bg-[#121216]/95 border border-white/10 rounded-2xl shadow-2xl p-4 z-[140] animate-slide-up cursor-default backdrop-blur-xl text-white">
+                                        <div className="flex items-center justify-between mb-4 border-b border-white/5 pb-2">
+                                            <h3 className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40">Filter Options</h3>
+                                            <button
+                                                onClick={() => {
+                                                    setSelectedLeague('All');
+                                                    setLogoFilter('all');
+                                                    setSortBy('name');
+                                                }}
+                                                className="text-[8px] font-black uppercase text-ef-accent hover:opacity-60 transition-opacity"
+                                            >
+                                                Reset
+                                            </button>
+                                        </div>
+
+                                        <div className="space-y-4">
+                                            {/* League Filter (Club Mode Only) */}
+                                            {mode === 'club' && (
+                                                <div className="space-y-2">
+                                                    <label className="block text-[9px] font-black uppercase tracking-widest text-white/40">League</label>
+                                                    <div className="relative group w-full shrink-0">
+                                                        <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+                                                            <span className="text-white/20 group-hover:text-ef-accent transition-colors text-xs">🏆</span>
+                                                        </div>
+                                                        <select
+                                                            value={selectedLeague}
+                                                            onChange={(e) => setSelectedLeague(e.target.value)}
+                                                            className="w-full bg-black/40 border border-white/10 rounded-xl pl-12 pr-4 py-3 text-xs font-black uppercase tracking-widest text-white outline-none focus:border-ef-accent/50 appearance-none cursor-pointer transition-all hover:bg-black/60 shadow-inner"
+                                                        >
+                                                            {leaguesList.map(league => (
+                                                                <option key={league} value={league} className="bg-ef-card text-white uppercase tracking-widest text-[10px] py-2">{league === 'All' ? 'All Leagues' : league}</option>
+                                                            ))}
+                                                        </select>
+                                                        <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
+                                                            <span className="text-[8px] text-white/25 group-hover:text-ef-accent transition-colors">▼</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* Sort Options */}
+                                            <div className="space-y-2">
+                                                <label className="block text-[9px] font-black uppercase tracking-widest text-white/40">Sort By</label>
+                                                <div className="relative group w-full shrink-0">
+                                                    <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+                                                        <span className="text-white/20 group-hover:text-ef-accent transition-colors text-xs">🎛️</span>
+                                                    </div>
+                                                    <select
+                                                        value={sortBy}
+                                                        onChange={(e) => setSortBy(e.target.value)}
+                                                        className="w-full bg-black/40 border border-white/10 rounded-xl pl-12 pr-4 py-3 text-xs font-black uppercase tracking-widest text-white outline-none focus:border-ef-accent/50 appearance-none cursor-pointer transition-all hover:bg-black/60 shadow-inner"
+                                                    >
+                                                        <option value="name" className="bg-ef-card text-white uppercase tracking-widest text-[10px] py-2">Alphabetical Order</option>
+                                                        <option value="players" className="bg-ef-card text-white uppercase tracking-widest text-[10px] py-2">Total Players</option>
+                                                    </select>
+                                                    <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
+                                                        <span className="text-[8px] text-white/25 group-hover:text-ef-accent transition-colors">▼</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Missing Logos Filter */}
+                                            <div className="space-y-2">
+                                                <label className="block text-[9px] font-black uppercase tracking-widest text-white/40">Missing Logos</label>
+                                                <div className="flex flex-col gap-2.5 bg-black/20 px-4 py-3 rounded-xl border border-white/5">
+                                                    <label className="flex items-center gap-3 cursor-pointer group">
+                                                        <div className="relative w-4 h-4 shrink-0">
+                                                            <input
+                                                                type="radio"
+                                                                name="logoFilter"
+                                                                checked={logoFilter === 'all'}
+                                                                onChange={() => setLogoFilter('all')}
+                                                                className="hidden"
+                                                            />
+                                                            <div className={`absolute inset-0 rounded-full border-2 transition-all ${logoFilter === 'all' ? 'border-ef-accent' : 'border-white/20 group-hover:border-white/40'}`}></div>
+                                                            <div className={`absolute inset-1 rounded-full bg-ef-accent transition-all transform ${logoFilter === 'all' ? 'scale-100 opacity-100' : 'scale-0 opacity-0'}`}></div>
+                                                        </div>
+                                                        <span className={`text-[9px] font-black uppercase tracking-widest transition-colors ${logoFilter === 'all' ? 'text-white' : 'text-white/40 group-hover:text-white'}`}>Show All</span>
+                                                    </label>
+
+                                                    <label className="flex items-center gap-3 cursor-pointer group">
+                                                        <div className="relative w-4 h-4 shrink-0">
+                                                            <input
+                                                                type="radio"
+                                                                name="logoFilter"
+                                                                checked={logoFilter === 'withLogo'}
+                                                                onChange={() => setLogoFilter('withLogo')}
+                                                                className="hidden"
+                                                            />
+                                                            <div className={`absolute inset-0 rounded-full border-2 transition-all ${logoFilter === 'withLogo' ? 'border-ef-accent' : 'border-white/20 group-hover:border-white/40'}`}></div>
+                                                            <div className={`absolute inset-1 rounded-full bg-ef-accent transition-all transform ${logoFilter === 'withLogo' ? 'scale-100 opacity-100' : 'scale-0 opacity-0'}`}></div>
+                                                        </div>
+                                                        <span className={`text-[9px] font-black uppercase tracking-widest transition-colors ${logoFilter === 'withLogo' ? 'text-white' : 'text-white/40 group-hover:text-white'}`}>Hide Empty</span>
+                                                    </label>
+
+                                                    <label className="flex items-center gap-3 cursor-pointer group">
+                                                        <div className="relative w-4 h-4 shrink-0">
+                                                            <input
+                                                                type="radio"
+                                                                name="logoFilter"
+                                                                checked={logoFilter === 'noLogo'}
+                                                                onChange={() => setLogoFilter('noLogo')}
+                                                                className="hidden"
+                                                            />
+                                                            <div className={`absolute inset-0 rounded-full border-2 transition-all ${logoFilter === 'noLogo' ? 'border-ef-accent' : 'border-white/20 group-hover:border-white/40'}`}></div>
+                                                            <div className={`absolute inset-1 rounded-full bg-ef-accent transition-all transform ${logoFilter === 'noLogo' ? 'scale-100 opacity-100' : 'scale-0 opacity-0'}`}></div>
+                                                        </div>
+                                                        <span className={`text-[9px] font-black uppercase tracking-widest transition-colors ${logoFilter === 'noLogo' ? 'text-white' : 'text-white/40 group-hover:text-white'}`}>Empty Only</span>
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <select
-                                        value={selectedLeague}
-                                        onChange={(e) => setSelectedLeague(e.target.value)}
-                                        className="w-40 sm:w-56 bg-black/40 border border-white/10 rounded-2xl pl-12 pr-4 py-4 text-xs font-black uppercase tracking-widest text-white outline-none focus:border-ef-accent/50 appearance-none cursor-pointer transition-all hover:bg-black/60 shadow-inner"
-                                    >
-                                        {leaguesList.map(league => (
-                                            <option key={league} value={league} className="bg-ef-card text-white uppercase tracking-widest text-[10px] py-4">{league === 'All' ? 'All Leagues' : league}</option>
-                                        ))}
-                                    </select>
-                                    <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
-                                        <span className="text-[8px] text-white/20 group-hover:text-ef-accent transition-colors">▼</span>
-                                    </div>
-                                </div>
-                            )}
+                                )}
+                            </div>
                         </div>
 
                         {/* Search Input */}
@@ -591,75 +736,76 @@ const BadgesView = ({ players, onUpdateBadge, onAddBadge, onMergeBadge, onAutoMe
                     </div>
                 )}
 
-
-                <div className="flex flex-col md:flex-row items-center justify-between gap-8">
-                    {/* Mode Switcher Slider */}
-                    <div className="flex bg-black/40 p-1.5 rounded-2xl border border-white/5 relative h-12 w-full max-w-[500px]">
+                <div className="flex flex-col md:flex-row items-center justify-start gap-6 border-t border-white/5 pt-6">
+                    {/* Action buttons */}
+                    <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
                         <button
-                            onClick={() => handleModeSwitch('club')}
-                            className={`flex-1 relative z-10 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 ${mode === 'club' ? 'text-ef-dark' : 'text-white/30 hover:text-white'}`}
+                            onClick={onAutoMerge}
+                            className="flex items-center gap-3 px-6 py-3.5 rounded-2xl font-black uppercase tracking-widest text-[10px] transition-all bg-white/5 border border-white/10 text-ef-accent/70 hover:bg-ef-accent/10 hover:text-ef-accent hover:border-ef-accent/30"
                         >
-                            Club
-                        </button>
-                        <button
-                            onClick={() => handleModeSwitch('national')}
-                            className={`flex-1 relative z-10 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 ${mode === 'national' ? 'text-ef-dark' : 'text-white/30 hover:text-white'}`}
-                        >
-                            National
-                        </button>
-                        <button
-                            onClick={() => handleModeSwitch('league')}
-                            className={`flex-1 relative z-10 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 ${mode === 'league' ? 'text-ef-dark' : 'text-white/30 hover:text-white'}`}
-                        >
-                            League
+                            <span>🤖 Auto Merge</span>
                         </button>
 
-                        {/* Sliding Background */}
-                        <div
-                            className={`absolute inset-y-1.5 transition-all duration-500 cubic-bezier(0.4, 0, 0.2, 1) bg-ef-accent rounded-xl shadow-lg shadow-ef-accent/20`}
-                            style={{
-                                left: mode === 'club' ? '6px' : mode === 'national' ? 'calc(33.33% + 4px)' : 'calc(66.66% + 2px)',
-                                width: 'calc(33.33% - 8px)'
+                        <button
+                            onClick={() => {
+                                setIsMergeMode(!isMergeMode);
+                                setIsEditMode(false);
+                                setSelectedMergeBadges([]);
                             }}
-                        ></div>
-                    </div>
+                            className={`flex items-center gap-3 px-6 py-3.5 rounded-2xl font-black uppercase tracking-widest text-[10px] transition-all ${isMergeMode ? 'bg-ef-accent text-ef-dark shadow-lg shadow-ef-accent/20' : 'bg-white/5 border border-white/10 text-white/40 hover:bg-white/10 hover:text-white'}`}
+                        >
+                            <span>{isMergeMode ? '✕ Cancel Merge' : '🔗 Merge Badges'}</span>
+                        </button>
 
-                    {/* No Logo Filter Radios */}
-                    <div className="flex items-center gap-6 bg-black/20 px-6 py-3 rounded-2xl border border-white/5">
-                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/30">Missing Logos:</span>
-                        <div className="flex items-center gap-4">
-                            <label className="flex items-center gap-2 cursor-pointer group">
-                                <div className="relative w-4 h-4">
-                                    <input
-                                        type="radio"
-                                        name="logoFilter"
-                                        checked={showNoLogo}
-                                        onChange={() => setShowNoLogo(true)}
-                                        className="hidden"
-                                    />
-                                    <div className={`absolute inset-0 rounded-full border-2 transition-all ${showNoLogo ? 'border-ef-accent' : 'border-white/20 group-hover:border-white/40'}`}></div>
-                                    <div className={`absolute inset-1 rounded-full bg-ef-accent transition-all transform ${showNoLogo ? 'scale-100 opacity-100' : 'scale-0 opacity-0'}`}></div>
-                                </div>
-                                <span className={`text-[10px] font-black uppercase tracking-widest transition-colors ${showNoLogo ? 'text-white' : 'text-white/20 group-hover:text-white/40'}`}>Show All</span>
-                            </label>
-
-                            <label className="flex items-center gap-2 cursor-pointer group">
-                                <div className="relative w-4 h-4">
-                                    <input
-                                        type="radio"
-                                        name="logoFilter"
-                                        checked={!showNoLogo}
-                                        onChange={() => setShowNoLogo(false)}
-                                        className="hidden"
-                                    />
-                                    <div className={`absolute inset-0 rounded-full border-2 transition-all ${!showNoLogo ? 'border-ef-accent' : 'border-white/20 group-hover:border-white/40'}`}></div>
-                                    <div className={`absolute inset-1 rounded-full bg-ef-accent transition-all transform ${!showNoLogo ? 'scale-100 opacity-100' : 'scale-0 opacity-0'}`}></div>
-                                </div>
-                                <span className={`text-[10px] font-black uppercase tracking-widest transition-colors ${!showNoLogo ? 'text-white' : 'text-white/20 group-hover:text-white/40'}`}>Hide Empty</span>
-                            </label>
-                        </div>
+                        <button
+                            onClick={() => {
+                                setIsEditMode(!isEditMode);
+                                setIsMergeMode(false);
+                            }}
+                            className={`flex items-center gap-3 px-6 py-3.5 rounded-2xl font-black uppercase tracking-widest text-[10px] transition-all ${isEditMode ? 'bg-ef-accent text-ef-dark shadow-lg shadow-ef-accent/20' : 'bg-white/5 border border-white/10 text-white/40 hover:bg-white/10 hover:text-white'}`}
+                        >
+                            <span>{isEditMode ? '✕ Cancel Edit' : '✏️ Edit Badges'}</span>
+                        </button>
                     </div>
                 </div>
+            </div>
+
+            {/* Active Filters Bar */}
+            {activeFilterPills.length > 0 && (
+                <div className="mb-6 px-6 py-3.5 bg-ef-card/30 border border-white/10 rounded-[1.5rem] flex flex-wrap gap-2 items-center animate-fade-in relative z-20">
+                    <div className="flex flex-wrap gap-2 items-center">
+                        {activeFilterPills.map(pill => (
+                            <div
+                                key={pill.id}
+                                className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[11px] font-bold tracking-tight text-white/50 hover:border-white/20 transition-all"
+                            >
+                                <span>{pill.label}</span>
+                                <span className="opacity-30">|</span>
+                                <span className="text-white">{pill.value}</span>
+                                <button
+                                    onClick={pill.clear}
+                                    className="ml-1 hover:text-ef-accent text-white/40 transition-colors font-black text-xs leading-none"
+                                    title={`Clear ${pill.label} filter`}
+                                >
+                                    ×
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                    <button
+                        onClick={handleClearAllFilters}
+                        className="text-[9px] font-black uppercase text-ef-accent hover:opacity-80 transition-opacity ml-auto"
+                    >
+                        Clear All
+                    </button>
+                </div>
+            )}
+
+            {/* Collection Gallery count */}
+            <div className="flex items-center justify-between mb-8 px-4">
+                <p className="text-[10px] uppercase font-black tracking-[0.3em] text-ef-accent/60">
+                    Collection Gallery — {filteredBadges.length} Items Found
+                </p>
             </div>
 
             {/* Grid display */}
@@ -671,9 +817,19 @@ const BadgesView = ({ players, onUpdateBadge, onAddBadge, onMergeBadge, onAutoMe
                             onClick={() => {
                                 if (isMergeMode === true) toggleBadgeSelection(badge);
                                 else if (isEditMode) setEditingBadge(badge);
+                                else {
+                                    const badgePlayers = players
+                                        .filter(p => {
+                                            if (mode === 'club') return p.club === badge.name;
+                                            if (mode === 'national') return p.nationality === badge.name;
+                                            return p.league === badge.name;
+                                        })
+                                        .sort((a, b) => a.name.localeCompare(b.name));
+                                    setSelectedBadgePlayers({ badge, players: badgePlayers });
+                                }
                             }}
                             onContextMenu={(e) => handleContextMenu(e, badge)}
-                            className={`group relative animate-slide-up ${isEditMode || isMergeMode === true ? 'cursor-pointer' : ''}`}
+                            className="group relative animate-slide-up cursor-pointer"
                             style={{ animationDelay: `${idx * 0.05}s` }}
                         >
                             <div className={`bg-ef-card border rounded-[2rem] p-6 flex flex-col items-center gap-4 transition-all duration-500 overflow-hidden ${isEditMode ? 'border-ef-accent/50 bg-white/5 animate-pulse-slow' : isMergeMode === true && selectedMergeBadges.find(b => b.name === badge.name) ? 'border-ef-accent bg-ef-accent/5 ring-1 ring-ef-accent' : 'border-white/10 hover:border-ef-accent/40 hover:bg-white/5 hover:-translate-y-2 hover:shadow-[0_20px_40px_rgba(0,0,0,0.4)]'}`}>
@@ -784,30 +940,35 @@ const BadgesView = ({ players, onUpdateBadge, onAddBadge, onMergeBadge, onAutoMe
             {/* Context Menu */}
             {contextMenu && createPortal(
                 <div
-                    className="fixed z-[400] bg-[#121324]/95 border border-white/10 rounded-2xl p-2 w-56 shadow-2xl animate-scale-in text-white backdrop-blur-xl"
+                    className="fixed z-[400] bg-[#121216]/95 backdrop-blur-xl border border-white/10 rounded-xl p-4 shadow-2xl w-60 animate-in fade-in zoom-in-95 duration-100 text-white"
                     style={{
                         top: contextMenu.y,
                         left: contextMenu.x,
                     }}
                 >
-                    <button
-                        onClick={() => {
-                            setEditingBadge(contextMenu.badge);
-                            setContextMenu(null);
-                        }}
-                        className="w-full text-left px-4 py-3 rounded-xl hover:bg-white/5 transition-all text-xs font-black uppercase tracking-widest flex items-center gap-3 text-white/70 hover:text-white"
-                    >
-                        <span>✏️</span> Edit Badge
-                    </button>
-                    <button
-                        onClick={() => {
-                            setAddingRuleBadge(contextMenu.badge);
-                            setContextMenu(null);
-                        }}
-                        className="w-full text-left px-4 py-3 rounded-xl hover:bg-white/5 transition-all text-xs font-black uppercase tracking-widest flex items-center gap-3 text-white/70 hover:text-white border-t border-white/5 mt-1 pt-3"
-                    >
-                        <span>🤖</span> Add to Merge Rules
-                    </button>
+                    <h4 className="text-[11px] font-black uppercase tracking-widest text-ef-accent mb-3 border-b border-white/5 pb-1">
+                        Badge Options
+                    </h4>
+                    <div className="space-y-1">
+                        <button
+                            onClick={() => {
+                                setEditingBadge(contextMenu.badge);
+                                setContextMenu(null);
+                            }}
+                            className="w-full text-left px-3 py-2 rounded-lg hover:bg-white/5 transition-all text-[10px] font-black uppercase tracking-widest flex items-center gap-2.5 text-white/70 hover:text-white"
+                        >
+                            <span>✏️</span> Edit Badge
+                        </button>
+                        <button
+                            onClick={() => {
+                                setAddingRuleBadge(contextMenu.badge);
+                                setContextMenu(null);
+                            }}
+                            className="w-full text-left px-3 py-2 rounded-lg hover:bg-white/5 transition-all text-[10px] font-black uppercase tracking-widest flex items-center gap-2.5 text-white/70 hover:text-white"
+                        >
+                            <span>🤖</span> Add to Merge Rules
+                        </button>
+                    </div>
                 </div>,
                 document.body
             )}
@@ -821,6 +982,62 @@ const BadgesView = ({ players, onUpdateBadge, onAddBadge, onMergeBadge, onAutoMe
                     onClose={() => setAddingRuleBadge(null)}
                     onAddRule={handleAddRule}
                 />,
+                document.body
+            )}
+
+            {/* Players List Popup Modal */}
+            {selectedBadgePlayers && createPortal(
+                <div 
+                    className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[500] flex items-center justify-center p-4 animate-fade-in"
+                    onClick={() => setSelectedBadgePlayers(null)}
+                >
+                    <div 
+                        className="bg-[#121216]/95 border border-white/10 rounded-2xl p-5 w-full max-w-xs shadow-2xl max-h-[70vh] flex flex-col animate-scale-in backdrop-blur-xl text-white cursor-default"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {/* Header */}
+                        <div className="flex items-center justify-between gap-4 border-b border-white/5 pb-3 mb-2 shrink-0">
+                            <div className="flex items-center gap-2.5 min-w-0">
+                                {selectedBadgePlayers.badge.logo ? (
+                                    <img src={selectedBadgePlayers.badge.logo} alt="" className="w-8 h-8 object-contain shrink-0" />
+                                ) : (
+                                    <span className="text-xl shrink-0">{mode === 'club' ? '🛡️' : mode === 'national' ? '🌍' : '🏆'}</span>
+                                )}
+                                <h4 className="text-xs font-black uppercase tracking-wider text-white truncate">
+                                    {selectedBadgePlayers.badge.name}
+                                </h4>
+                            </div>
+                            
+                            {/* Small box with total players */}
+                            <div className="bg-ef-accent/15 border border-ef-accent/30 px-2 py-0.5 rounded text-ef-accent font-black text-[9px] uppercase tracking-wider shrink-0">
+                                {selectedBadgePlayers.players.length}
+                            </div>
+                        </div>
+
+                        {/* Players List: simple, no gap/space, no border, small text */}
+                        <div className="flex-1 overflow-y-auto pr-1 custom-scrollbar min-h-0">
+                            <div className="text-[10px] text-white/60 font-medium">
+                                {selectedBadgePlayers.players.length > 0 ? (
+                                    selectedBadgePlayers.players.map((p, idx) => (
+                                        <div key={p.id || idx} className="py-[1px] hover:text-white transition-colors truncate">
+                                            {p.name}
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div className="py-4 text-center text-white/20 italic">No players found</div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Close button */}
+                        <button 
+                            onClick={() => setSelectedBadgePlayers(null)}
+                            className="mt-3.5 w-full py-2 bg-white/5 border border-white/10 hover:bg-white/10 text-white/60 hover:text-white rounded-xl text-[9px] font-black uppercase tracking-widest transition-all shrink-0"
+                        >
+                            Close
+                        </button>
+                    </div>
+                </div>,
                 document.body
             )}
         </div>

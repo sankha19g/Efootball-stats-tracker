@@ -83,7 +83,10 @@ const LeaderboardCard = ({ title, players, valueKey, colorClass, suffix = '', is
                         </div>
 
                         <span className="font-mono text-sm opacity-20 group-hover/item:opacity-100 transition-opacity w-6 shrink-0 text-center">
-                            {idx + 1 < 10 ? `0${idx + 1}` : idx + 1}
+                            {player.rank !== undefined
+                                ? (player.rank < 10 ? `0${player.rank}` : player.rank)
+                                : (idx + 1 < 10 ? `0${idx + 1}` : idx + 1)
+                            }
                         </span>
                         <div className="flex flex-col flex-1 min-w-0">
                             <span className="font-bold text-white truncate text-[10px] sm:text-sm leading-tight group-hover/item:text-ef-accent transition-colors">{player.name}</span>
@@ -185,11 +188,11 @@ const MiniPlayerCard = ({ player, activePositions, includeSecondary, settings })
     );
 };
 
-const FullListModal = ({ id, title, players, valueKey, colorClass, suffix, isRatio, onClose, onPlayerClick, activePositions, includeSecondary, settings, useExpMultiplier }) => {
-    const [search, setSearch] = useState('');
+const FullListModal = ({ id, title, players, valueKey, colorClass, suffix, isRatio, onClose, onPlayerClick, activePositions, includeSecondary, settings, useExpMultiplier, initialSearch = '' }) => {
+    const [search, setSearch] = useState(initialSearch);
 
     const filteredPlayers = players
-        .map((p, index) => ({ ...p, rank: index + 1 }))
+        .map((p, index) => ({ ...p, rank: p.rank || index + 1 }))
         .filter(p => {
             const normalizedQuery = normalizeString(search);
             return normalizeString(p.name).includes(normalizedQuery) ||
@@ -313,24 +316,34 @@ const FullListModal = ({ id, title, players, valueKey, colorClass, suffix, isRat
     );
 };
 
-const Leaderboard = ({ players, onPlayerClick, activePositions, includeSecondary, settings }) => {
+const Leaderboard = ({ players, onPlayerClick, activePositions, includeSecondary, settings, searchQuery = '' }) => {
     const [expandedCategory, setExpandedCategory] = useState(null);
     const [useExpMultiplier, setUseExpMultiplier] = useState(false);
 
-    // Sorting Utilities
-    const getSorted = (calcFn) => [...players].sort((a, b) => calcFn(b) - calcFn(a));
+    // Sorting Utilities & Rank Assignment
     const activePlayers = players.filter(p => (p.matches || 0) > 0);
-    const getSortedRatio = (calcFn) => [...activePlayers].sort((a, b) => calcFn(b) - calcFn(a));
+
+    const getRanked = (calcFn) => {
+        return [...players]
+            .sort((a, b) => calcFn(b) - calcFn(a))
+            .map((p, idx) => ({ ...p, rank: idx + 1 }));
+    };
+
+    const getRankedRatio = (calcFn) => {
+        return [...activePlayers]
+            .sort((a, b) => calcFn(b) - calcFn(a))
+            .map((p, idx) => ({ ...p, rank: idx + 1 }));
+    };
 
     const categories = [
-        { id: 'goals', title: 'Top Scorers', players: getSorted(p => p.goals || 0), valueKey: 'goals', colorClass: 'text-ef-accent' },
-        { id: 'assists', title: 'Top Assists', players: getSorted(p => p.assists || 0), valueKey: 'assists', colorClass: 'text-ef-blue' },
-        { id: 'matches', title: 'Most Games', players: getSorted(p => p.matches || 0), valueKey: 'matches', colorClass: 'text-white', suffix: 'MTCH' },
-        { id: 'ga', title: 'Most G+A', players: getSorted(p => (p.goals || 0) + (p.assists || 0)), valueKey: 'totalGA', colorClass: 'text-pink-500' },
+        { id: 'goals', title: 'Top Scorers', players: getRanked(p => p.goals || 0), valueKey: 'goals', colorClass: 'text-ef-accent' },
+        { id: 'assists', title: 'Top Assists', players: getRanked(p => p.assists || 0), valueKey: 'assists', colorClass: 'text-ef-blue' },
+        { id: 'matches', title: 'Most Games', players: getRanked(p => p.matches || 0), valueKey: 'matches', colorClass: 'text-white', suffix: 'MTCH' },
+        { id: 'ga', title: 'Most G+A', players: getRanked(p => (p.goals || 0) + (p.assists || 0)), valueKey: 'totalGA', colorClass: 'text-pink-500' },
         {
             id: 'complete',
             title: 'Complete Player',
-            players: getSorted(p => {
+            players: getRanked(p => {
                 const g = p.goals || 0;
                 const a = p.assists || 0;
                 if (g === 0 || a === 0) return 0;
@@ -343,7 +356,7 @@ const Leaderboard = ({ players, onPlayerClick, activePositions, includeSecondary
         {
             id: 'gpg',
             title: 'Goals / GM',
-            players: getSortedRatio(p => {
+            players: getRankedRatio(p => {
                 const base = (p.goals || 0) / p.matches;
                 if (!useExpMultiplier) return base;
                 return base * Math.max(0, Math.log10(p.matches || 1));
@@ -357,7 +370,7 @@ const Leaderboard = ({ players, onPlayerClick, activePositions, includeSecondary
         {
             id: 'apg',
             title: 'Assists / GM',
-            players: getSortedRatio(p => {
+            players: getRankedRatio(p => {
                 const base = (p.assists || 0) / p.matches;
                 if (!useExpMultiplier) return base;
                 return base * Math.max(0, Math.log10(p.matches || 1));
@@ -371,7 +384,7 @@ const Leaderboard = ({ players, onPlayerClick, activePositions, includeSecondary
         {
             id: 'gapg',
             title: 'G+A / GM',
-            players: getSortedRatio(p => {
+            players: getRankedRatio(p => {
                 const base = ((p.goals || 0) + (p.assists || 0)) / p.matches;
                 if (!useExpMultiplier) return base;
                 return base * Math.max(0, Math.log10(p.matches || 1));
@@ -383,6 +396,15 @@ const Leaderboard = ({ players, onPlayerClick, activePositions, includeSecondary
             isPerformance: true
         }
     ];
+
+    const filterBySearch = (list) => {
+        if (!searchQuery.trim()) return list;
+        const query = normalizeString(searchQuery);
+        return list.filter(p =>
+            normalizeString(p.name).includes(query) ||
+            normalizeString(p.search_name || '').includes(query)
+        );
+    };
 
     return (
         <div className="max-w-6xl mx-auto pb-12 px-4">
@@ -409,6 +431,7 @@ const Leaderboard = ({ players, onPlayerClick, activePositions, includeSecondary
                         <LeaderboardCard
                             key={cat.id}
                             {...cat}
+                            players={filterBySearch(cat.players)}
                             onExpand={() => setExpandedCategory(cat)}
                             onPlayerClick={onPlayerClick}
                             activePositions={activePositions}
@@ -426,6 +449,7 @@ const Leaderboard = ({ players, onPlayerClick, activePositions, includeSecondary
                         <LeaderboardCard
                             key={cat.id}
                             {...cat}
+                            players={filterBySearch(cat.players)}
                             onExpand={() => setExpandedCategory(cat)}
                             onPlayerClick={onPlayerClick}
                             activePositions={activePositions}
@@ -440,6 +464,7 @@ const Leaderboard = ({ players, onPlayerClick, activePositions, includeSecondary
             {expandedCategory && createPortal(
                 <FullListModal
                     {...expandedCategory}
+                    initialSearch={searchQuery}
                     onClose={() => setExpandedCategory(null)}
                     onPlayerClick={onPlayerClick}
                     activePositions={activePositions}

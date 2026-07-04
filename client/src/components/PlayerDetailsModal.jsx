@@ -126,6 +126,15 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
         };
     }, [players]);
 
+    const featuredPackPlayers = useMemo(() => {
+        const packName = (formData.featured || formData['Featured Players'] || player.featured || player['Featured Players'] || '').trim();
+        if (!packName) return [];
+        return players.filter(p => {
+            const pPack = (p.featured || p['Featured Players'] || '').trim();
+            return pPack.toLowerCase() === packName.toLowerCase();
+        });
+    }, [formData.featured, formData['Featured Players'], player.featured, player['Featured Players'], players]);
+
     const handleAddRule = async (newRule) => {
         let currentRules = [];
         try {
@@ -1908,7 +1917,8 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
                                         { id: 1, label: 'Analytics' },
                                         { id: 2, label: 'Skills' },
                                         { id: 3, label: 'Builds' },
-                                        { id: 4, label: 'Versions' }
+                                        { id: 4, label: 'Versions' },
+                                        { id: 5, label: 'Featured Pack' }
                                     ].map((tab) => (
                                         <button
                                             key={tab.id}
@@ -2835,6 +2845,124 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
                                                 </button>
                                             </div>
                                         </div>
+
+                                         {/* Page 5: Featured Pack */}
+                                         <div className={`flex-1 flex flex-col transition-opacity duration-150 md:overflow-y-auto no-scrollbar ${modalPage === 5 ? 'opacity-100 relative' : 'opacity-0 pointer-events-none absolute inset-0'} `}>
+                                             <div className="flex items-center justify-between mb-4">
+                                                 <h3 className="text-sm font-black text-white uppercase tracking-widest flex items-center gap-2 truncate pr-4">
+                                                     <span className="text-ef-accent">📦</span> {player.featured || player['Featured Players'] || 'Featured Pack'}
+                                                 </h3>
+                                                 {featuredPackPlayers.length > 0 && (
+                                                     <div className="flex items-center gap-2 shrink-0">
+                                                         <span className="px-2 py-0.5 bg-ef-accent/20 text-ef-accent rounded text-[8px] font-black">{featuredPackPlayers.length} Found</span>
+                                                         <button
+                                                             onClick={(e) => {
+                                                                 e.stopPropagation();
+                                                                 if (onAddToCompare) {
+                                                                     const currentId = player._id || player.id || player.pesdb_id || player.ID;
+                                                                     const featuredIds = featuredPackPlayers.map(v => v._id || v.id || v.ID || v.pesdb_id);
+                                                                     onAddToCompare([currentId, ...featuredIds]);
+                                                                 }
+                                                             }}
+                                                             className="px-3 py-1 bg-ef-accent text-ef-dark rounded-lg text-[9px] font-black uppercase hover:scale-105 active:scale-95 transition-transform flex items-center gap-1 shadow-lg shadow-ef-accent/20"
+                                                         >
+                                                             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                                                 <path d="M16 3h5v5" /><path d="M8 21H3v-5" /><path d="M21 3l-7 7" /><path d="M3 21l7-7" />
+                                                             </svg>
+                                                             Compare All
+                                                         </button>
+                                                     </div>
+                                                 )}
+                                             </div>
+
+                                             {featuredPackPlayers.length > 0 ? (
+                                                 <div className="grid grid-cols-4 sm:grid-cols-5 gap-2 pb-6">
+                                                     {featuredPackPlayers.map((v) => {
+                                                         const isCurrent = String(v.id || v.pesdb_id || v.ID || v.pes_id || v._id) === String(player.id || player.pesdb_id || player._id);
+                                                         return (
+                                                             <div
+                                                                 key={v.id || v.pesdb_id || v.ID || v._id}
+                                                                 className="group relative flex flex-col items-center gap-1 cursor-pointer transition-all active:scale-95"
+                                                                 onClick={() => {
+                                                                     if (!isCurrent && onSelectPlayer) {
+                                                                         onSelectPlayer(v);
+                                                                         setModalPage(0);
+                                                                         if (isEditing) setIsEditing(false);
+                                                                     }
+                                                                 }}
+                                                             >
+                                                                 {/* Compare Button Overlay */}
+                                                                 {!isCurrent && (
+                                                                     <button
+                                                                         onClick={(e) => {
+                                                                             e.stopPropagation();
+                                                                             if (onAddToCompare) {
+                                                                                 const currentId = player._id || player.id || player.pesdb_id || player.ID;
+                                                                                 const versionId = v._id || v.id || v.ID || v.pesdb_id;
+                                                                                 onAddToCompare([currentId, versionId]);
+                                                                             }
+                                                                         }}
+                                                                         className="absolute top-1 left-1 z-20 w-8 h-8 bg-ef-accent text-ef-dark rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 hover:scale-110 active:scale-90 transition-all shadow-xl border border-white/20"
+                                                                         title="Compare with Current"
+                                                                     >
+                                                                         <div className="flex flex-col items-center leading-none">
+                                                                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                                                                 <path d="M16 3h5v5" /><path d="M8 21H3v-5" /><path d="M21 3l-7 7" /><path d="M3 21l7-7" />
+                                                                             </svg>
+                                                                             <span className="text-[6px] font-black uppercase mt-0.5">VS</span>
+                                                                         </div>
+                                                                     </button>
+                                                                 )}
+
+                                                                 <div className={`relative w-full aspect-[7/10] bg-[#1a1a1c] border ${isCurrent ? 'border-ef-accent shadow-[0_0_15px_rgba(0,255,136,0.2)]' : 'border-white/10'} rounded-none overflow-hidden hover:border-ef-accent/50 transition-colors shadow-lg`}>
+                                                                     <img
+                                                                         src={getPlayerImage(v) || 'https://pesdb.net/efootball/images/players/0.png'}
+                                                                         className="w-full h-full object-cover object-center"
+                                                                         alt={v.name}
+                                                                     />
+                                                                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
+
+                                                                     {/* Current Indicator */}
+                                                                     {isCurrent && (
+                                                                         <div className="absolute top-0 left-0 right-0 py-0.5 bg-ef-accent text-ef-dark text-[6px] font-black uppercase text-center tracking-tighter">
+                                                                             Current Card
+                                                                         </div>
+                                                                     )}
+
+                                                                     {/* Rating Badge */}
+                                                                     <div className="absolute top-1 right-1 px-1 bg-black/80 rounded-none border border-white/5">
+                                                                         <span className="text-[8px] font-black text-ef-accent italic">{v.rating || v.Rating || '??'}</span>
+                                                                     </div>
+
+                                                                     {/* Position Badge */}
+                                                                     <div className="absolute bottom-1 left-1 px-1 bg-ef-accent rounded-none">
+                                                                         <span className="text-[6px] font-black text-ef-dark uppercase">
+                                                                             {v.position || v.Position || '??'}
+                                                                         </span>
+                                                                     </div>
+                                                                 </div>
+                                                                 <h4 className={`text-[8px] font-bold truncate w-full text-center leading-tight ${isCurrent ? 'text-ef-accent' : 'text-white/80'}`}>{v.name || v.Name}</h4>
+                                                             </div>
+                                                         );
+                                                     })}
+                                                 </div>
+                                             ) : (
+                                                 <div className="flex-1 flex flex-col items-center justify-center py-20 opacity-20 text-center">
+                                                     <span className="text-4xl mb-2">📦</span>
+                                                     <p className="text-[10px] font-black uppercase tracking-[0.2em]">No other players from this pack</p>
+                                                     <p className="text-[8px] font-medium mt-1">This player is not part of a featured pack or is the only one in the squad</p>
+                                                 </div>
+                                             )}
+
+                                             <div className="mt-auto pt-4 border-t border-white/5">
+                                                 <button
+                                                     onClick={() => setModalPage(0)}
+                                                     className="w-full h-[36px] bg-white/5 border border-white/10 rounded-xl text-[13px] font-medium tracking-tight text-white hover:bg-white/10 transition-all active:scale-95 font-inter"
+                                                 >
+                                                     Back to Overview
+                                                 </button>
+                                             </div>
+                                         </div>
                                     </div>
 
                                 </div>

@@ -126,6 +126,126 @@ const MySquadDB = ({ players, onBack, onImport, onPlayerClick, isSidebarOpen }) 
         localStorage.setItem('ef-mysquad-concise', conciseMode);
     }, [conciseMode]);
 
+    const activeFilterPills = useMemo(() => {
+        const pills = [];
+        if (search.trim()) {
+            pills.push({
+                id: 'search',
+                label: 'Search',
+                value: `"${search}"`,
+                clear: () => setSearch('')
+            });
+        }
+        if (filters.posFilter !== 'all') {
+            pills.push({
+                id: 'posFilter',
+                label: 'Position',
+                value: filters.posFilter,
+                clear: () => setFilters(prev => ({ ...prev, posFilter: 'all', includeSecondary: false }))
+            });
+        }
+        if (filters.cardType !== 'all') {
+            pills.push({
+                id: 'cardType',
+                label: 'Card Type',
+                value: filters.cardType,
+                clear: () => setFilters(prev => ({ ...prev, cardType: 'all' }))
+            });
+        }
+        if (filters.club.trim()) {
+            pills.push({
+                id: 'club',
+                label: 'Club',
+                value: filters.club,
+                clear: () => setFilters(prev => ({ ...prev, club: '' }))
+            });
+        }
+        if (filters.league.trim()) {
+            pills.push({
+                id: 'league',
+                label: 'League',
+                value: filters.league,
+                clear: () => setFilters(prev => ({ ...prev, league: '' }))
+            });
+        }
+        if (filters.nationality.trim()) {
+            pills.push({
+                id: 'nationality',
+                label: 'Nationality',
+                value: filters.nationality,
+                clear: () => setFilters(prev => ({ ...prev, nationality: '' }))
+            });
+        }
+        if (filters.rating) {
+            pills.push({
+                id: 'rating',
+                label: 'Rating',
+                value: filters.rating,
+                clear: () => setFilters(prev => ({ ...prev, rating: '' }))
+            });
+        }
+        if (filters.playstyle !== 'all') {
+            pills.push({
+                id: 'playstyle',
+                label: 'Playstyle',
+                value: filters.playstyle,
+                clear: () => setFilters(prev => ({ ...prev, playstyle: 'all' }))
+            });
+        }
+        if (filters.foot !== 'all') {
+            pills.push({
+                id: 'foot',
+                label: 'Foot',
+                value: filters.foot,
+                clear: () => setFilters(prev => ({ ...prev, foot: 'all' }))
+            });
+        }
+        if (filters.skill !== 'all') {
+            pills.push({
+                id: 'skill',
+                label: 'Skill',
+                value: filters.skill,
+                clear: () => setFilters(prev => ({ ...prev, skill: 'all' }))
+            });
+        }
+        if (filters.missing !== 'all') {
+            pills.push({
+                id: 'missing',
+                label: 'Missing',
+                value: filters.missing === 'image' ? 'Image' : filters.missing === 'details' ? 'Details' : filters.missing,
+                clear: () => setFilters(prev => ({ ...prev, missing: 'all' }))
+            });
+        }
+        if (filters.inactive) {
+            pills.push({
+                id: 'inactive',
+                label: 'Status',
+                value: 'Inactive Only',
+                clear: () => setFilters(prev => ({ ...prev, inactive: false }))
+            });
+        }
+        return pills;
+    }, [search, filters]);
+
+    const handleClearAllFilters = () => {
+        setSearch('');
+        setFilters(prev => ({
+            ...prev,
+            posFilter: 'all',
+            includeSecondary: false,
+            cardType: 'all',
+            inactive: false,
+            league: '',
+            club: '',
+            nationality: '',
+            rating: '',
+            playstyle: 'all',
+            skill: 'all',
+            foot: 'all',
+            missing: 'all'
+        }));
+    };
+
     const filteredPlayers = useMemo(() => {
         let result = [...players];
 
@@ -408,21 +528,7 @@ const MySquadDB = ({ players, onBack, onImport, onPlayerClick, isSidebarOpen }) 
                             <div className="flex items-center justify-between mb-6 px-1">
                                 <h3 className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40">Squad Explorer Filters</h3>
                                 <button
-                                    onClick={() => setFilters({
-                                        sortBy: 'rating',
-                                        sortOrder: 'desc',
-                                        posFilter: 'all',
-                                        includeSecondary: false,
-                                        cardType: 'all',
-                                        inactive: false,
-                                        league: '',
-                                        club: '',
-                                        nationality: '',
-                                        rating: '',
-                                        playstyle: 'all',
-                                        skill: 'all',
-                                        missing: 'all'
-                                    })}
+                                    onClick={handleClearAllFilters}
                                     className="text-[9px] font-black uppercase text-ef-accent hover:opacity-60 transition-opacity"
                                 >
                                     Clear All Filters
@@ -779,6 +885,37 @@ const MySquadDB = ({ players, onBack, onImport, onPlayerClick, isSidebarOpen }) 
                     )}
                 </div>
             </header>
+
+            {/* Active Filters Bar */}
+            {activeFilterPills.length > 0 && (
+                <div className="px-4 md:px-6 py-2.5 bg-[#0d121c]/90 border-b border-white/5 flex flex-wrap gap-2 items-center z-[110] animate-fade-in">
+                    <div className="flex flex-wrap gap-2 items-center">
+                        {activeFilterPills.map(pill => (
+                            <div
+                                key={pill.id}
+                                className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[11px] font-bold tracking-tight text-white/50 hover:border-white/20 transition-all"
+                            >
+                                <span>{pill.label}</span>
+                                <span className="opacity-30">|</span>
+                                <span className="text-white">{pill.value}</span>
+                                <button
+                                    onClick={pill.clear}
+                                    className="ml-1 hover:text-ef-accent text-white/40 transition-colors font-black text-xs leading-none"
+                                    title={`Clear ${pill.label} filter`}
+                                >
+                                    ×
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                    <button
+                        onClick={handleClearAllFilters}
+                        className="text-[9px] font-black uppercase text-ef-accent hover:opacity-80 transition-opacity ml-auto"
+                    >
+                        Clear All
+                    </button>
+                </div>
+            )}
 
             {/* Table Container */}
             <div className="flex-1 overflow-auto custom-scrollbar bg-[radial-gradient(circle_at_top,_#1a1f26_0%,_#0a0f16_100%)] font-outfit">

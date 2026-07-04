@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, lazy, Suspense, useRef, useTransition, startTransition } from 'react';
+import { SlidersHorizontal } from 'lucide-react';
 import PlayerCard from './components/PlayerCard';
 import CustomDialog from './components/CustomDialog';
 import SidebarNav from './components/SidebarNav';
@@ -537,6 +538,7 @@ function App() {
 
   // Leaderboard Specific Filters
   const [lbFilters, setLbFilters] = useState({
+    search: '',
     positions: [], // empty means all
     club: '',
     league: '',
@@ -1917,6 +1919,263 @@ function App() {
 
   const processedPlayers = getProcessedPlayers();
 
+  const activeFilterPills = useMemo(() => {
+    const pills = [];
+    if (searchQuery.trim()) {
+      pills.push({
+        id: 'search',
+        label: 'Search',
+        value: `"${searchQuery}"`,
+        clear: () => setSearchQuery('')
+      });
+    }
+    if (filterPos.length > 0) {
+      pills.push({
+        id: 'position',
+        label: 'Position',
+        value: filterPos.join(', '),
+        clear: () => {
+          setFilterPos([]);
+          setIncludeSecondary(false);
+        }
+      });
+    }
+    if (filterTypes.length > 0) {
+      pills.push({
+        id: 'cardType',
+        label: 'Card Type',
+        value: filterTypes.join(', '),
+        clear: () => setFilterTypes([])
+      });
+    }
+    if (filterClub.trim()) {
+      pills.push({
+        id: 'club',
+        label: 'Club',
+        value: filterClub,
+        clear: () => setFilterClub('')
+      });
+    }
+    if (filterLeague.trim()) {
+      pills.push({
+        id: 'league',
+        label: 'League',
+        value: filterLeague,
+        clear: () => setFilterLeague('')
+      });
+    }
+    if (filterNationality.trim()) {
+      pills.push({
+        id: 'nationality',
+        label: 'Nationality',
+        value: filterNationality,
+        clear: () => setFilterNationality('')
+      });
+    }
+    if (filterRating) {
+      pills.push({
+        id: 'rating',
+        label: 'Rating',
+        value: filterRating,
+        clear: () => setFilterRating('')
+      });
+    }
+    if (filterPlaystyles.length > 0) {
+      pills.push({
+        id: 'playstyle',
+        label: 'Playstyle',
+        value: filterPlaystyles.join(', '),
+        clear: () => setFilterPlaystyles([])
+      });
+    }
+    if (filterFoot !== 'All') {
+      pills.push({
+        id: 'foot',
+        label: 'Foot',
+        value: filterFoot,
+        clear: () => setFilterFoot('All')
+      });
+    }
+    if (filterForm !== 'All') {
+      pills.push({
+        id: 'form',
+        label: 'Form',
+        value: filterForm,
+        clear: () => setFilterForm('All')
+      });
+    }
+    if (filterWFUsage !== 'All') {
+      pills.push({
+        id: 'wfUsage',
+        label: 'WF Usage',
+        value: filterWFUsage,
+        clear: () => setFilterWFUsage('All')
+      });
+    }
+    if (filterWFAccuracy !== 'All') {
+      pills.push({
+        id: 'wfAccuracy',
+        label: 'WF Accuracy',
+        value: filterWFAccuracy,
+        clear: () => setFilterWFAccuracy('All')
+      });
+    }
+    if (filterSkill !== 'All') {
+      pills.push({
+        id: 'skill',
+        label: 'Skill',
+        value: filterSkill,
+        clear: () => setFilterSkill('All')
+      });
+    }
+    if (filterMissing !== 'All') {
+      pills.push({
+        id: 'missing',
+        label: 'Missing',
+        value: filterMissing,
+        clear: () => setFilterMissing('All')
+      });
+    }
+    if (filterInactive) {
+      pills.push({
+        id: 'inactive',
+        label: 'Status',
+        value: 'Inactive Only',
+        clear: () => setFilterInactive(false)
+      });
+    }
+    return pills;
+  }, [
+    searchQuery,
+    filterPos,
+    filterTypes,
+    filterClub,
+    filterLeague,
+    filterNationality,
+    filterRating,
+    filterPlaystyles,
+    filterFoot,
+    filterForm,
+    filterWFUsage,
+    filterWFAccuracy,
+    filterSkill,
+    filterMissing,
+    filterInactive
+  ]);
+
+  const handleClearAllMainFilters = () => {
+    setSearchQuery('');
+    setFilterPos([]);
+    setFilterTypes([]);
+    setFilterInactive(false);
+    setFilterLeague('');
+    setFilterClub('');
+    setFilterNationality('');
+    setFilterRating('');
+    setFilterPlaystyles([]);
+    setFilterSkill('All');
+    setFilterFoot('All');
+    setFilterForm('All');
+    setFilterWFUsage('All');
+    setFilterWFAccuracy('All');
+    setFilterMissing('All');
+    setIncludeSecondary(false);
+  };
+
+  const lbActiveFilterPills = useMemo(() => {
+    const pills = [];
+    if (lbFilters.search.trim()) {
+      pills.push({
+        id: 'search',
+        label: 'Search',
+        value: `"${lbFilters.search}"`,
+        clear: () => setLbFilters(prev => ({ ...prev, search: '' }))
+      });
+    }
+    if (lbFilters.positions.length > 0) {
+      pills.push({
+        id: 'position',
+        label: 'Position',
+        value: lbFilters.positions.join(', '),
+        clear: () => setLbFilters(prev => ({ ...prev, positions: [], includeSecondary: false }))
+      });
+    }
+    if (lbFilters.cardTypes.length > 0) {
+      pills.push({
+        id: 'cardType',
+        label: 'Card Type',
+        value: lbFilters.cardTypes.join(', '),
+        clear: () => setLbFilters(prev => ({ ...prev, cardTypes: [] }))
+      });
+    }
+    if (lbFilters.club.trim()) {
+      pills.push({
+        id: 'club',
+        label: 'Club',
+        value: lbFilters.club,
+        clear: () => setLbFilters(prev => ({ ...prev, club: '' }))
+      });
+    }
+    if (lbFilters.league.trim()) {
+      pills.push({
+        id: 'league',
+        label: 'League',
+        value: lbFilters.league,
+        clear: () => setLbFilters(prev => ({ ...prev, league: '' }))
+      });
+    }
+    if (lbFilters.country.trim()) {
+      pills.push({
+        id: 'country',
+        label: 'Country',
+        value: lbFilters.country,
+        clear: () => setLbFilters(prev => ({ ...prev, country: '' }))
+      });
+    }
+    if (lbFilters.playstyles.length > 0) {
+      pills.push({
+        id: 'playstyle',
+        label: 'Playstyle',
+        value: lbFilters.playstyles.join(', '),
+        clear: () => setLbFilters(prev => ({ ...prev, playstyles: [] }))
+      });
+    }
+    if (lbFilters.skill) {
+      pills.push({
+        id: 'skill',
+        label: 'Skill',
+        value: lbFilters.skill,
+        clear: () => setLbFilters(prev => ({ ...prev, skill: '' }))
+      });
+    }
+    if (lbFilters.minGames !== 100 || lbFilters.isCustomMinGames) {
+      pills.push({
+        id: 'minGames',
+        label: 'Min Games',
+        value: lbFilters.isCustomMinGames ? lbFilters.customMinGamesVal : lbFilters.minGames,
+        clear: () => setLbFilters(prev => ({ ...prev, minGames: 100, isCustomMinGames: false, customMinGamesVal: '' }))
+      });
+    }
+    return pills;
+  }, [lbFilters]);
+
+  const handleClearAllLbFilters = () => {
+    setLbFilters({
+      search: '',
+      positions: [],
+      club: '',
+      league: '',
+      country: '',
+      skill: '',
+      cardTypes: [],
+      playstyles: [],
+      minGames: 100,
+      isCustomMinGames: false,
+      customMinGamesVal: '',
+      includeSecondary: false
+    });
+  };
+
   // Selected Player for Details Modal
   const [selectedPlayer, setSelectedPlayer] = useState(null);
   const [startInEditMode, setStartInEditMode] = useState(false);
@@ -2472,23 +2731,7 @@ function App() {
                     <div className="flex items-center justify-between mb-2">
                       <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">Active Filters</h3>
                       <button
-                        onClick={() => {
-                          setFilterPos([]);
-                          setFilterTypes([]);
-                          setFilterInactive(false);
-                          setFilterLeague('');
-                          setFilterClub('');
-                          setFilterNationality('');
-                          setFilterRating('');
-                          setFilterPlaystyles([]);
-                          setFilterSkill('All');
-                          setFilterFoot('All');
-                          setFilterForm('All');
-                          setFilterWFUsage('All');
-                          setFilterWFAccuracy('All');
-                          setFilterMissing('All');
-                          setIncludeSecondary(false);
-                        }}
+                        onClick={handleClearAllMainFilters}
                         className="text-[10px] font-black uppercase tracking-widest text-ef-accent hover:opacity-80 transition-opacity"
                       >
                         Clear All
@@ -3002,6 +3245,35 @@ function App() {
               <>
                 {view === 'list' && (
                   <>
+                    {activeFilterPills.length > 0 && (
+                      <div className="max-w-6xl mx-auto mb-6 px-4 md:px-6 py-3 bg-ef-card border border-white/10 rounded-2xl flex flex-wrap gap-2 items-center animate-fade-in relative z-20">
+                        <div className="flex flex-wrap gap-2 items-center">
+                          {activeFilterPills.map(pill => (
+                            <div
+                              key={pill.id}
+                              className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[11px] font-bold tracking-tight text-white/50 hover:border-white/20 transition-all"
+                            >
+                              <span>{pill.label}</span>
+                              <span className="opacity-30">|</span>
+                              <span className="text-white">{pill.value}</span>
+                              <button
+                                onClick={pill.clear}
+                                className="ml-1 hover:text-ef-accent text-white/40 transition-colors font-black text-xs leading-none"
+                                title={`Clear ${pill.label} filter`}
+                              >
+                                ×
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                        <button
+                          onClick={handleClearAllMainFilters}
+                          className="text-[9px] font-black uppercase text-ef-accent hover:opacity-80 transition-opacity ml-auto"
+                        >
+                          Clear All
+                        </button>
+                      </div>
+                    )}
                     {(() => {
                       const visiblePlayers = settings.enablePagination
                         ? processedPlayers.slice((currentPage - 1) * settings.itemsPerPage, currentPage * settings.itemsPerPage)
@@ -3142,37 +3414,41 @@ function App() {
 
                 {view === 'leaderboard' && (
                   <div className="space-y-6">
-                    {/* Leaderboard Multi-Filters */}
-                    <div className="bg-ef-card border border-white/10 rounded-2xl shadow-xl animate-dropdown mb-6 relative z-30">
+                    {/* Leaderboard Toolbar: Search Bar + Square Filter Button */}
+                    <div className="relative z-30 flex gap-4 items-center justify-center mb-6">
+                      <div className="flex w-[30%] min-w-[200px] h-14 bg-white/5 border border-white/10 rounded-2xl overflow-hidden focus-within:border-ef-accent/50 transition-all shadow-inner items-center">
+                        <span className="p-4 opacity-30 flex items-center">🔍</span>
+                        <input
+                          type="text"
+                          placeholder="Search player name..."
+                          className="w-full bg-transparent border-none outline-none py-4 text-sm font-bold placeholder:text-white/20 text-white"
+                          value={lbFilters.search}
+                          onChange={(e) => setLbFilters(prev => ({ ...prev, search: e.target.value }))}
+                        />
+                      </div>
                       <button
                         onClick={() => setIsLbFiltersExpanded(!isLbFiltersExpanded)}
-                        className={`w-full flex items-center justify-between p-4 hover:bg-white/5 transition-all text-left ${isLbFiltersExpanded ? 'rounded-t-2xl' : 'rounded-2xl'}`}
+                        className={`w-14 h-14 rounded-2xl flex items-center justify-center border transition-all flex-shrink-0 ${isLbFiltersExpanded ? 'bg-ef-blue border-ef-blue text-white' : 'bg-white/5 border-white/10 text-white/40 hover:text-white hover:bg-white/10'}`}
+                        title="Sort & Filter"
                       >
-                        <div className="flex items-center gap-3">
-                          <span className="text-ef-accent text-lg">⚡</span>
-                          <div className="flex flex-col">
-                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white">Ranking Filters</span>
-                            <span className="text-[8px] opacity-30 uppercase font-bold tracking-widest">{isLbFiltersExpanded ? 'Click to collapse' : 'Click to expand filters'}</span>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-4">
-                          {!isLbFiltersExpanded && (
-                            <div className="hidden md:flex items-center gap-2">
-                              {lbFilters.positions.length > 0 && (
-                                <span className="text-[8px] px-1.5 py-0.5 rounded bg-ef-accent/10 border border-ef-accent/20 text-ef-accent font-black">{lbFilters.positions.length} POS</span>
-                              )}
-                              {(lbFilters.club || lbFilters.league || lbFilters.country) && (
-                                <span className="text-[8px] px-1.5 py-0.5 rounded bg-white/5 border border-white/10 text-white/40 font-black">SEARCH ACTIVE</span>
-                              )}
-                            </div>
-                          )}
-                          <span className={`text-[10px] opacity-40 transition-transform duration-300 ${isLbFiltersExpanded ? 'rotate-180' : ''}`}>▼</span>
-                        </div>
+                        <span className="text-xl"><SlidersHorizontal size={20} /></span>
                       </button>
+                    </div>
 
-                      {isLbFiltersExpanded && (
-                        <div className="p-6 pt-0 border-t border-white/5 transition-all duration-300">
-                          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
+                    {/* Leaderboard Expanded Multi-Filters Panel */}
+                    {isLbFiltersExpanded && (
+                      <div className="bg-ef-card border border-white/10 rounded-3xl p-6 shadow-2xl relative z-30 animate-slide-up mb-6">
+                        <div className="absolute top-0 left-0 w-1 h-full bg-ef-accent"></div>
+                        <div className="flex items-center justify-between mb-4">
+                          <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">Ranking Filters</h3>
+                          <button
+                            onClick={handleClearAllLbFilters}
+                            className="text-[10px] font-black uppercase tracking-widest text-ef-accent hover:opacity-80 transition-opacity"
+                          >
+                            Clear All
+                          </button>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
                             {/* Positions Dropdown */}
                             <div className="md:col-span-2 relative" ref={positionDropdownRef}>
                               <label className="block text-[10px] font-black uppercase tracking-[0.2em] opacity-40 mb-3">Positions</label>
@@ -3510,8 +3786,36 @@ function App() {
                             </div>
                           </div>
                         </div>
-                      )}
-                    </div>
+                    )}
+                    {lbActiveFilterPills.length > 0 && (
+                      <div className="mb-6 px-4 md:px-6 py-3 bg-ef-card border border-white/10 rounded-2xl flex flex-wrap gap-2 items-center animate-fade-in relative z-20">
+                        <div className="flex flex-wrap gap-2 items-center">
+                          {lbActiveFilterPills.map(pill => (
+                            <div
+                              key={pill.id}
+                              className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[11px] font-bold tracking-tight text-white/50 hover:border-white/20 transition-all"
+                            >
+                              <span>{pill.label}</span>
+                              <span className="opacity-30">|</span>
+                              <span className="text-white">{pill.value}</span>
+                              <button
+                                onClick={pill.clear}
+                                className="ml-1 hover:text-ef-accent text-white/40 transition-colors font-black text-xs leading-none"
+                                title={`Clear ${pill.label} filter`}
+                              >
+                                ×
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                        <button
+                          onClick={handleClearAllLbFilters}
+                          className="text-[9px] font-black uppercase text-ef-accent hover:opacity-80 transition-opacity ml-auto"
+                        >
+                          Clear All
+                        </button>
+                      </div>
+                    )}
                     <Leaderboard
                       players={enrichedPlayers.filter(p => {
                         let matchesPos = lbFilters.positions.length === 0 || lbFilters.positions.includes(p.position);
@@ -3535,6 +3839,7 @@ function App() {
                         const matchesMinGames = (p.matches || 0) >= targetMinGames;
                         return matchesPos && matchesClub && matchesLeague && matchesCountry && matchesSkill && matchesType && matchesStyle && matchesMinGames;
                       })}
+                      searchQuery={lbFilters.search}
                       onPlayerClick={setSelectedPlayer}
                       activePositions={lbFilters.positions}
                       includeSecondary={lbFilters.includeSecondary}
