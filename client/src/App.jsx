@@ -3449,343 +3449,343 @@ function App() {
                           </button>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
-                            {/* Positions Dropdown */}
-                            <div className="md:col-span-2 relative" ref={positionDropdownRef}>
-                              <label className="block text-[10px] font-black uppercase tracking-[0.2em] opacity-40 mb-3">Positions</label>
-                              <button
-                                type="button"
-                                onClick={() => setIsPositionDropdownOpen(!isPositionDropdownOpen)}
-                                className="w-full flex items-center justify-between bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs font-bold text-white outline-none hover:border-ef-accent/40 focus:border-ef-accent/40 transition-all text-left"
-                              >
-                                <span className="truncate pr-2">
-                                  {lbFilters.positions.length === 0
-                                    ? 'All Positions'
-                                    : `${lbFilters.positions.length} Selected (${lbFilters.positions.slice(0, 2).join(', ')}${lbFilters.positions.length > 2 ? '...' : ''})`
-                                  }
-                                </span>
-                                <span className={`text-[10px] opacity-40 transition-transform duration-300 ${isPositionDropdownOpen ? 'rotate-180' : ''}`}>▼</span>
-                              </button>
+                          {/* Positions Dropdown */}
+                          <div className="md:col-span-2 relative" ref={positionDropdownRef}>
+                            <label className="block text-[10px] font-black uppercase tracking-[0.2em] opacity-40 mb-3">Positions</label>
+                            <button
+                              type="button"
+                              onClick={() => setIsPositionDropdownOpen(!isPositionDropdownOpen)}
+                              className="w-full flex items-center justify-between bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs font-bold text-white outline-none hover:border-ef-accent/40 focus:border-ef-accent/40 transition-all text-left"
+                            >
+                              <span className="truncate pr-2">
+                                {lbFilters.positions.length === 0
+                                  ? 'All Positions'
+                                  : `${lbFilters.positions.length} Selected (${lbFilters.positions.slice(0, 2).join(', ')}${lbFilters.positions.length > 2 ? '...' : ''})`
+                                }
+                              </span>
+                              <span className={`text-[10px] opacity-40 transition-transform duration-300 ${isPositionDropdownOpen ? 'rotate-180' : ''}`}>▼</span>
+                            </button>
 
-                              {isPositionDropdownOpen && (
-                                <div
-                                  className="absolute left-0 right-0 z-50 mt-2 max-h-60 overflow-y-auto border border-white/10 rounded-xl shadow-2xl p-2 custom-scrollbar animate-dropdown"
-                                  style={{ backgroundColor: '#121214', opacity: 1 }}
-                                >
-                                  <div className="flex justify-between items-center px-2 py-1.5 mb-1.5 border-b border-white/5">
-                                    <button
-                                      type="button"
-                                      onClick={() => setLbFilters(prev => ({ ...prev, positions: [], includeSecondary: false }))}
-                                      className="text-[9px] font-black uppercase tracking-wider text-white/40 hover:text-white transition-colors"
-                                    >
-                                      Clear All
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() => setLbFilters(prev => ({ ...prev, positions: ['CF', 'SS', 'LWF', 'RWF', 'LMF', 'RMF', 'AMF', 'CMF', 'DMF', 'CB', 'LB', 'RB', 'GK'] }))}
-                                      className="text-[9px] font-black uppercase tracking-wider text-ef-accent hover:text-white transition-colors"
-                                    >
-                                      Select All
-                                    </button>
-                                  </div>
-                                  <div className="space-y-0.5">
-                                    {['CF', 'SS', 'LWF', 'RWF', 'LMF', 'RMF', 'AMF', 'CMF', 'DMF', 'CB', 'LB', 'RB', 'GK'].map(pos => {
-                                      const isSelected = lbFilters.positions.includes(pos);
-                                      return (
-                                        <button
-                                          key={pos}
-                                          type="button"
-                                          onClick={() => toggleLbFilter('positions', pos)}
-                                          className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-bold transition-all text-left hover:bg-white/5 ${isSelected ? 'text-ef-accent bg-white/5' : 'text-white/60 hover:text-white'}`}
-                                        >
-                                          <span>{pos}</span>
-                                          {isSelected ? (
-                                            <span className="text-ef-accent text-[10px]">✓</span>
-                                          ) : (
-                                            <span className="w-3 h-3 rounded border border-white/10 flex-shrink-0"></span>
-                                          )}
-                                        </button>
-                                      );
-                                    })}
-                                  </div>
+                            {isPositionDropdownOpen && (
+                              <div
+                                className="absolute left-0 right-0 z-50 mt-2 max-h-60 overflow-y-auto border border-white/10 rounded-xl shadow-2xl p-2 custom-scrollbar animate-dropdown"
+                                style={{ backgroundColor: '#121214', opacity: 1 }}
+                              >
+                                <div className="flex justify-between items-center px-2 py-1.5 mb-1.5 border-b border-white/5">
+                                  <button
+                                    type="button"
+                                    onClick={() => setLbFilters(prev => ({ ...prev, positions: [], includeSecondary: false }))}
+                                    className="text-[9px] font-black uppercase tracking-wider text-white/40 hover:text-white transition-colors"
+                                  >
+                                    Clear All
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setLbFilters(prev => ({ ...prev, positions: ['CF', 'SS', 'LWF', 'RWF', 'LMF', 'RMF', 'AMF', 'CMF', 'DMF', 'CB', 'LB', 'RB', 'GK'] }))}
+                                    className="text-[9px] font-black uppercase tracking-wider text-ef-accent hover:text-white transition-colors"
+                                  >
+                                    Select All
+                                  </button>
                                 </div>
-                              )}
-                              <div className="mt-3 flex items-center gap-2">
-                                <label className="relative inline-flex items-center cursor-pointer">
-                                  <input
-                                    type="checkbox"
-                                    className="sr-only peer"
-                                    checked={lbFilters.includeSecondary}
-                                    onChange={(e) => setLbFilters(prev => ({ ...prev, includeSecondary: e.target.checked }))}
-                                  />
-                                  <div className="w-9 h-5 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white/40 after:border-white/10 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-ef-accent peer-checked:after:bg-ef-dark"></div>
-                                </label>
-                                <span className={`text-[10px] font-black uppercase tracking-wider transition-colors ${lbFilters.includeSecondary ? 'text-ef-accent' : 'opacity-30'}`}>
-                                  Include Secondary Positions
-                                </span>
+                                <div className="space-y-0.5">
+                                  {['CF', 'SS', 'LWF', 'RWF', 'LMF', 'RMF', 'AMF', 'CMF', 'DMF', 'CB', 'LB', 'RB', 'GK'].map(pos => {
+                                    const isSelected = lbFilters.positions.includes(pos);
+                                    return (
+                                      <button
+                                        key={pos}
+                                        type="button"
+                                        onClick={() => toggleLbFilter('positions', pos)}
+                                        className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-bold transition-all text-left hover:bg-white/5 ${isSelected ? 'text-ef-accent bg-white/5' : 'text-white/60 hover:text-white'}`}
+                                      >
+                                        <span>{pos}</span>
+                                        {isSelected ? (
+                                          <span className="text-ef-accent text-[10px]">✓</span>
+                                        ) : (
+                                          <span className="w-3 h-3 rounded border border-white/10 flex-shrink-0"></span>
+                                        )}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
                               </div>
+                            )}
+                            <div className="mt-3 flex items-center gap-2">
+                              <label className="relative inline-flex items-center cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  className="sr-only peer"
+                                  checked={lbFilters.includeSecondary}
+                                  onChange={(e) => setLbFilters(prev => ({ ...prev, includeSecondary: e.target.checked }))}
+                                />
+                                <div className="w-9 h-5 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white/40 after:border-white/10 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-ef-accent peer-checked:after:bg-ef-dark"></div>
+                              </label>
+                              <span className={`text-[10px] font-black uppercase tracking-wider transition-colors ${lbFilters.includeSecondary ? 'text-ef-accent' : 'opacity-30'}`}>
+                                Include Secondary Positions
+                              </span>
                             </div>
+                          </div>
 
-                            {/* Card Types Dropdown */}
-                            <div className="md:col-span-2 relative" ref={cardTypeDropdownRef}>
-                              <label className="block text-[10px] font-black uppercase tracking-[0.2em] opacity-40 mb-3">Card Types</label>
-                              <button
-                                type="button"
-                                onClick={() => setIsCardTypeDropdownOpen(!isCardTypeDropdownOpen)}
-                                className="w-full flex items-center justify-between bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs font-bold text-white outline-none hover:border-ef-accent/40 focus:border-ef-accent/40 transition-all text-left"
+                          {/* Card Types Dropdown */}
+                          <div className="md:col-span-2 relative" ref={cardTypeDropdownRef}>
+                            <label className="block text-[10px] font-black uppercase tracking-[0.2em] opacity-40 mb-3">Card Types</label>
+                            <button
+                              type="button"
+                              onClick={() => setIsCardTypeDropdownOpen(!isCardTypeDropdownOpen)}
+                              className="w-full flex items-center justify-between bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs font-bold text-white outline-none hover:border-ef-accent/40 focus:border-ef-accent/40 transition-all text-left"
+                            >
+                              <span className="truncate pr-2">
+                                {lbFilters.cardTypes.length === 0
+                                  ? 'All Card Types'
+                                  : `${lbFilters.cardTypes.length} Selected (${lbFilters.cardTypes.slice(0, 2).join(', ')}${lbFilters.cardTypes.length > 2 ? '...' : ''})`
+                                }
+                              </span>
+                              <span className={`text-[10px] opacity-40 transition-transform duration-300 ${isCardTypeDropdownOpen ? 'rotate-180' : ''}`}>▼</span>
+                            </button>
+
+                            {isCardTypeDropdownOpen && (
+                              <div
+                                className="absolute left-0 right-0 z-50 mt-2 max-h-60 overflow-y-auto border border-white/10 rounded-xl shadow-2xl p-2 custom-scrollbar animate-dropdown"
+                                style={{ backgroundColor: '#121214', opacity: 1 }}
                               >
-                                <span className="truncate pr-2">
-                                  {lbFilters.cardTypes.length === 0
-                                    ? 'All Card Types'
-                                    : `${lbFilters.cardTypes.length} Selected (${lbFilters.cardTypes.slice(0, 2).join(', ')}${lbFilters.cardTypes.length > 2 ? '...' : ''})`
-                                  }
-                                </span>
-                                <span className={`text-[10px] opacity-40 transition-transform duration-300 ${isCardTypeDropdownOpen ? 'rotate-180' : ''}`}>▼</span>
-                              </button>
-
-                              {isCardTypeDropdownOpen && (
-                                <div
-                                  className="absolute left-0 right-0 z-50 mt-2 max-h-60 overflow-y-auto border border-white/10 rounded-xl shadow-2xl p-2 custom-scrollbar animate-dropdown"
-                                  style={{ backgroundColor: '#121214', opacity: 1 }}
-                                >
-                                  <div className="flex justify-between items-center px-2 py-1.5 mb-1.5 border-b border-white/5">
-                                    <button
-                                      type="button"
-                                      onClick={() => setLbFilters(prev => ({ ...prev, cardTypes: [] }))}
-                                      className="text-[9px] font-black uppercase tracking-wider text-white/40 hover:text-white transition-colors"
-                                    >
-                                      Clear All
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() => setLbFilters(prev => ({ ...prev, cardTypes: ['Normal', 'Legend', 'Epic', 'Featured', 'POTW', 'BigTime', 'ShowTime'] }))}
-                                      className="text-[9px] font-black uppercase tracking-wider text-ef-accent hover:text-white transition-colors"
-                                    >
-                                      Select All
-                                    </button>
-                                  </div>
-                                  <div className="space-y-0.5">
-                                    {['Normal', 'Legend', 'Epic', 'Featured', 'POTW', 'BigTime', 'ShowTime'].map(type => {
-                                      const isSelected = lbFilters.cardTypes.includes(type);
-                                      return (
-                                        <button
-                                          key={type}
-                                          type="button"
-                                          onClick={() => toggleLbFilter('cardTypes', type)}
-                                          className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-bold transition-all text-left hover:bg-white/5 ${isSelected ? 'text-ef-accent bg-white/5' : 'text-white/60 hover:text-white'}`}
-                                        >
-                                          <span>{type}</span>
-                                          {isSelected ? (
-                                            <span className="text-ef-accent text-[10px]">✓</span>
-                                          ) : (
-                                            <span className="w-3 h-3 rounded border border-white/10 flex-shrink-0"></span>
-                                          )}
-                                        </button>
-                                      );
-                                    })}
-                                  </div>
+                                <div className="flex justify-between items-center px-2 py-1.5 mb-1.5 border-b border-white/5">
+                                  <button
+                                    type="button"
+                                    onClick={() => setLbFilters(prev => ({ ...prev, cardTypes: [] }))}
+                                    className="text-[9px] font-black uppercase tracking-wider text-white/40 hover:text-white transition-colors"
+                                  >
+                                    Clear All
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setLbFilters(prev => ({ ...prev, cardTypes: ['Normal', 'Legend', 'Epic', 'Featured', 'POTW', 'BigTime', 'ShowTime'] }))}
+                                    className="text-[9px] font-black uppercase tracking-wider text-ef-accent hover:text-white transition-colors"
+                                  >
+                                    Select All
+                                  </button>
                                 </div>
-                              )}
-                            </div>
-
-                            {/* Playstyles Dropdown */}
-                            <div className="md:col-span-2 relative" ref={playstyleDropdownRef}>
-                              <label className="block text-[10px] font-black uppercase tracking-[0.2em] opacity-40 mb-3">Playstyles</label>
-                              <button
-                                type="button"
-                                onClick={() => setIsPlaystyleDropdownOpen(!isPlaystyleDropdownOpen)}
-                                className="w-full flex items-center justify-between bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs font-bold text-white outline-none hover:border-ef-accent/40 focus:border-ef-accent/40 transition-all text-left"
-                              >
-                                <span className="truncate pr-2">
-                                  {lbFilters.playstyles.length === 0
-                                    ? 'All Playstyles'
-                                    : `${lbFilters.playstyles.length} Selected (${lbFilters.playstyles.slice(0, 1).join(', ')}${lbFilters.playstyles.length > 1 ? '...' : ''})`
-                                  }
-                                </span>
-                                <span className={`text-[10px] opacity-40 transition-transform duration-300 ${isPlaystyleDropdownOpen ? 'rotate-180' : ''}`}>▼</span>
-                              </button>
-
-                              {isPlaystyleDropdownOpen && (
-                                <div
-                                  className="absolute left-0 right-0 z-50 mt-2 max-h-60 overflow-y-auto border border-white/10 rounded-xl shadow-2xl p-2 custom-scrollbar animate-dropdown"
-                                  style={{ backgroundColor: '#121214', opacity: 1 }}
-                                >
-                                  <div className="flex justify-between items-center px-2 py-1.5 mb-1.5 border-b border-white/5">
-                                    <button
-                                      type="button"
-                                      onClick={() => setLbFilters(prev => ({ ...prev, playstyles: [] }))}
-                                      className="text-[9px] font-black uppercase tracking-wider text-white/40 hover:text-white transition-colors"
-                                    >
-                                      Clear All
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() => setLbFilters(prev => ({ ...prev, playstyles: [...PLAYSTYLES] }))}
-                                      className="text-[9px] font-black uppercase tracking-wider text-ef-accent hover:text-white transition-colors"
-                                    >
-                                      Select All
-                                    </button>
-                                  </div>
-                                  <div className="space-y-0.5">
-                                    {PLAYSTYLES.map(style => {
-                                      const isSelected = lbFilters.playstyles.includes(style);
-                                      return (
-                                        <button
-                                          key={style}
-                                          type="button"
-                                          onClick={() => toggleLbFilter('playstyles', style)}
-                                          className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-bold transition-all text-left hover:bg-white/5 ${isSelected ? 'text-ef-accent bg-white/5' : 'text-white/60 hover:text-white'}`}
-                                        >
-                                          <span>{style}</span>
-                                          {isSelected ? (
-                                            <span className="text-ef-accent text-[10px]">✓</span>
-                                          ) : (
-                                            <span className="w-3 h-3 rounded border border-white/10 flex-shrink-0"></span>
-                                          )}
-                                        </button>
-                                      );
-                                    })}
-                                  </div>
+                                <div className="space-y-0.5">
+                                  {['Normal', 'Legend', 'Epic', 'Featured', 'POTW', 'BigTime', 'ShowTime'].map(type => {
+                                    const isSelected = lbFilters.cardTypes.includes(type);
+                                    return (
+                                      <button
+                                        key={type}
+                                        type="button"
+                                        onClick={() => toggleLbFilter('cardTypes', type)}
+                                        className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-bold transition-all text-left hover:bg-white/5 ${isSelected ? 'text-ef-accent bg-white/5' : 'text-white/60 hover:text-white'}`}
+                                      >
+                                        <span>{type}</span>
+                                        {isSelected ? (
+                                          <span className="text-ef-accent text-[10px]">✓</span>
+                                        ) : (
+                                          <span className="w-3 h-3 rounded border border-white/10 flex-shrink-0"></span>
+                                        )}
+                                      </button>
+                                    );
+                                  })}
                                 </div>
-                              )}
-                            </div>
+                              </div>
+                            )}
+                          </div>
 
-                            {/* Skill Selection */}
-                            <div className="md:col-span-2">
-                              <label className="block text-xs font-black uppercase tracking-widest opacity-40 mb-2">Skill</label>
-                              <select
-                                value={lbFilters.skill}
-                                onChange={(e) => setLbFilters({ ...lbFilters, skill: e.target.value })}
-                                className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm font-bold text-white outline-none focus:border-ef-accent transition-all"
+                          {/* Playstyles Dropdown */}
+                          <div className="md:col-span-2 relative" ref={playstyleDropdownRef}>
+                            <label className="block text-[10px] font-black uppercase tracking-[0.2em] opacity-40 mb-3">Playstyles</label>
+                            <button
+                              type="button"
+                              onClick={() => setIsPlaystyleDropdownOpen(!isPlaystyleDropdownOpen)}
+                              className="w-full flex items-center justify-between bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs font-bold text-white outline-none hover:border-ef-accent/40 focus:border-ef-accent/40 transition-all text-left"
+                            >
+                              <span className="truncate pr-2">
+                                {lbFilters.playstyles.length === 0
+                                  ? 'All Playstyles'
+                                  : `${lbFilters.playstyles.length} Selected (${lbFilters.playstyles.slice(0, 1).join(', ')}${lbFilters.playstyles.length > 1 ? '...' : ''})`
+                                }
+                              </span>
+                              <span className={`text-[10px] opacity-40 transition-transform duration-300 ${isPlaystyleDropdownOpen ? 'rotate-180' : ''}`}>▼</span>
+                            </button>
+
+                            {isPlaystyleDropdownOpen && (
+                              <div
+                                className="absolute left-0 right-0 z-50 mt-2 max-h-60 overflow-y-auto border border-white/10 rounded-xl shadow-2xl p-2 custom-scrollbar animate-dropdown"
+                                style={{ backgroundColor: '#121214', opacity: 1 }}
                               >
-                                <option value="" className="text-white/40 italic">-- Any Skill --</option>
-                                <option value="Any Special Skill" className="bg-ef-dark text-ef-accent font-black">✨ Any Special Skill</option>
+                                <div className="flex justify-between items-center px-2 py-1.5 mb-1.5 border-b border-white/5">
+                                  <button
+                                    type="button"
+                                    onClick={() => setLbFilters(prev => ({ ...prev, playstyles: [] }))}
+                                    className="text-[9px] font-black uppercase tracking-wider text-white/40 hover:text-white transition-colors"
+                                  >
+                                    Clear All
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setLbFilters(prev => ({ ...prev, playstyles: [...PLAYSTYLES] }))}
+                                    className="text-[9px] font-black uppercase tracking-wider text-ef-accent hover:text-white transition-colors"
+                                  >
+                                    Select All
+                                  </button>
+                                </div>
+                                <div className="space-y-0.5">
+                                  {PLAYSTYLES.map(style => {
+                                    const isSelected = lbFilters.playstyles.includes(style);
+                                    return (
+                                      <button
+                                        key={style}
+                                        type="button"
+                                        onClick={() => toggleLbFilter('playstyles', style)}
+                                        className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-bold transition-all text-left hover:bg-white/5 ${isSelected ? 'text-ef-accent bg-white/5' : 'text-white/60 hover:text-white'}`}
+                                      >
+                                        <span>{style}</span>
+                                        {isSelected ? (
+                                          <span className="text-ef-accent text-[10px]">✓</span>
+                                        ) : (
+                                          <span className="w-3 h-3 rounded border border-white/10 flex-shrink-0"></span>
+                                        )}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
+                          </div>
 
-                                <optgroup label="Special Skills" className="bg-ef-dark text-white/50">
-                                  {SPECIAL_SKILLS.map(s => (
-                                    <option key={s} value={s} className="bg-ef-dark text-white">{s}</option>
-                                  ))}
-                                </optgroup>
+                          {/* Skill Selection */}
+                          <div className="md:col-span-2">
+                            <label className="block text-xs font-black uppercase tracking-widest opacity-40 mb-2">Skill</label>
+                            <select
+                              value={lbFilters.skill}
+                              onChange={(e) => setLbFilters({ ...lbFilters, skill: e.target.value })}
+                              className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm font-bold text-white outline-none focus:border-ef-accent transition-all"
+                            >
+                              <option value="" className="text-white/40 italic">-- Any Skill --</option>
+                              <option value="Any Special Skill" className="bg-ef-dark text-ef-accent font-black">✨ Any Special Skill</option>
 
-                                <optgroup label="Standard Skills" className="bg-ef-dark text-white/50">
-                                  {PLAYER_SKILLS.map(s => (
-                                    <option key={s} value={s} className="bg-ef-dark text-white">{s}</option>
-                                  ))}
-                                </optgroup>
-                              </select>
-                            </div>
+                              <optgroup label="Special Skills" className="bg-ef-dark text-white/50">
+                                {SPECIAL_SKILLS.map(s => (
+                                  <option key={s} value={s} className="bg-ef-dark text-white">{s}</option>
+                                ))}
+                              </optgroup>
 
-                            {/* Club Input */}
-                            <div>
-                              <label className="block text-xs font-black uppercase tracking-widest opacity-40 mb-2">Club</label>
-                              <input
-                                type="text"
-                                placeholder="e.g. Barcelona"
-                                value={lbFilters.club}
-                                onChange={(e) => setLbFilters({ ...lbFilters, club: e.target.value })}
-                                className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm font-bold text-white outline-none focus:border-ef-accent transition-all"
-                              />
-                            </div>
+                              <optgroup label="Standard Skills" className="bg-ef-dark text-white/50">
+                                {PLAYER_SKILLS.map(s => (
+                                  <option key={s} value={s} className="bg-ef-dark text-white">{s}</option>
+                                ))}
+                              </optgroup>
+                            </select>
+                          </div>
 
-                            {/* League Input */}
-                            <div>
-                              <label className="block text-xs font-black uppercase tracking-widest opacity-40 mb-2">League</label>
-                              <input
-                                type="text"
-                                placeholder="e.g. La Liga"
-                                value={lbFilters.league}
-                                onChange={(e) => setLbFilters({ ...lbFilters, league: e.target.value })}
-                                className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm font-bold text-white outline-none focus:border-ef-accent transition-all"
-                              />
-                            </div>
+                          {/* Club Input */}
+                          <div>
+                            <label className="block text-xs font-black uppercase tracking-widest opacity-40 mb-2">Club</label>
+                            <input
+                              type="text"
+                              placeholder="e.g. Barcelona"
+                              value={lbFilters.club}
+                              onChange={(e) => setLbFilters({ ...lbFilters, club: e.target.value })}
+                              className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm font-bold text-white outline-none focus:border-ef-accent transition-all"
+                            />
+                          </div>
 
-                            {/* Country Input */}
-                            <div className="md:col-span-2">
-                              <label className="block text-xs font-black uppercase tracking-widest opacity-40 mb-2">Country</label>
-                              <input
-                                type="text"
-                                placeholder="e.g. Brazil"
-                                value={lbFilters.country}
-                                onChange={(e) => setLbFilters({ ...lbFilters, country: e.target.value })}
-                                className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm font-bold text-white outline-none focus:border-ef-accent transition-all"
-                              />
-                            </div>
-                            <div className="md:col-span-4 mt-4 border-t border-white/5 pt-0 md:pt-4">
-                              <label className="block text-[10px] font-black uppercase tracking-[0.2em] opacity-40 mb-3">Minimum Games Played</label>
-                              <div className="flex flex-wrap items-center gap-4 sm:gap-6">
-                                <label className="flex items-center gap-3 cursor-pointer group">
-                                  <div className="relative flex items-center justify-center">
-                                    <input
-                                      type="radio"
-                                      name="minGames"
-                                      checked={lbFilters.minGames === 0 && !lbFilters.isCustomMinGames}
-                                      onChange={() => setLbFilters({ ...lbFilters, minGames: 0, isCustomMinGames: false })}
-                                      className="peer appearance-none w-5 h-5 border-2 border-white/10 rounded-full checked:border-ef-accent transition-all"
-                                    />
-                                    <div className="absolute w-2.5 h-2.5 rounded-full bg-ef-accent scale-0 peer-checked:scale-100 transition-transform"></div>
-                                  </div>
-                                  <span className={`text-xs font-black uppercase tracking-widest transition-colors ${lbFilters.minGames === 0 && !lbFilters.isCustomMinGames ? 'text-ef-accent' : 'text-white/40 group-hover:text-white/60'}`}>All</span>
-                                </label>
+                          {/* League Input */}
+                          <div>
+                            <label className="block text-xs font-black uppercase tracking-widest opacity-40 mb-2">League</label>
+                            <input
+                              type="text"
+                              placeholder="e.g. La Liga"
+                              value={lbFilters.league}
+                              onChange={(e) => setLbFilters({ ...lbFilters, league: e.target.value })}
+                              className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm font-bold text-white outline-none focus:border-ef-accent transition-all"
+                            />
+                          </div>
 
-                                <label className="flex items-center gap-3 cursor-pointer group">
-                                  <div className="relative flex items-center justify-center">
-                                    <input
-                                      type="radio"
-                                      name="minGames"
-                                      checked={lbFilters.minGames === 50 && !lbFilters.isCustomMinGames}
-                                      onChange={() => setLbFilters({ ...lbFilters, minGames: 50, isCustomMinGames: false })}
-                                      className="peer appearance-none w-5 h-5 border-2 border-white/10 rounded-full checked:border-ef-accent transition-all"
-                                    />
-                                    <div className="absolute w-2.5 h-2.5 rounded-full bg-ef-accent scale-0 peer-checked:scale-100 transition-transform"></div>
-                                  </div>
-                                  <span className={`text-xs font-black uppercase tracking-widest transition-colors ${lbFilters.minGames === 50 && !lbFilters.isCustomMinGames ? 'text-ef-accent' : 'text-white/40 group-hover:text-white/60'}`}>Min games 50</span>
-                                </label>
-
-                                <label className="flex items-center gap-3 cursor-pointer group">
-                                  <div className="relative flex items-center justify-center">
-                                    <input
-                                      type="radio"
-                                      name="minGames"
-                                      checked={lbFilters.minGames === 100 && !lbFilters.isCustomMinGames}
-                                      onChange={() => setLbFilters({ ...lbFilters, minGames: 100, isCustomMinGames: false })}
-                                      className="peer appearance-none w-5 h-5 border-2 border-white/10 rounded-full checked:border-ef-accent transition-all"
-                                    />
-                                    <div className="absolute w-2.5 h-2.5 rounded-full bg-ef-accent scale-0 peer-checked:scale-100 transition-transform"></div>
-                                  </div>
-                                  <span className={`text-xs font-black uppercase tracking-widest transition-colors ${lbFilters.minGames === 100 && !lbFilters.isCustomMinGames ? 'text-ef-accent' : 'text-white/40 group-hover:text-white/60'}`}>Min games 100</span>
-                                </label>
-
-                                <div className="flex items-center gap-3">
-                                  <label className="flex items-center gap-3 cursor-pointer group">
-                                    <div className="relative flex items-center justify-center">
-                                      <input
-                                        type="radio"
-                                        name="minGames"
-                                        checked={lbFilters.isCustomMinGames}
-                                        onChange={() => setLbFilters({ ...lbFilters, isCustomMinGames: true })}
-                                        className="peer appearance-none w-5 h-5 border-2 border-white/10 rounded-full checked:border-ef-accent transition-all"
-                                      />
-                                      <div className="absolute w-2.5 h-2.5 rounded-full bg-ef-accent scale-0 peer-checked:scale-100 transition-transform"></div>
-                                    </div>
-                                    <span className={`text-xs font-black uppercase tracking-widest transition-colors ${lbFilters.isCustomMinGames ? 'text-ef-accent' : 'text-white/40 group-hover:text-white/60'}`}>Custom</span>
-                                  </label>
-
+                          {/* Country Input */}
+                          <div className="md:col-span-2">
+                            <label className="block text-xs font-black uppercase tracking-widest opacity-40 mb-2">Country</label>
+                            <input
+                              type="text"
+                              placeholder="e.g. Brazil"
+                              value={lbFilters.country}
+                              onChange={(e) => setLbFilters({ ...lbFilters, country: e.target.value })}
+                              className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm font-bold text-white outline-none focus:border-ef-accent transition-all"
+                            />
+                          </div>
+                          <div className="md:col-span-4 mt-4 border-t border-white/5 pt-0 md:pt-4">
+                            <label className="block text-[10px] font-black uppercase tracking-[0.2em] opacity-40 mb-3">Minimum Games Played</label>
+                            <div className="flex flex-wrap items-center gap-4 sm:gap-6">
+                              <label className="flex items-center gap-3 cursor-pointer group">
+                                <div className="relative flex items-center justify-center">
                                   <input
-                                    type="number"
-                                    placeholder="Enter min..."
-                                    value={lbFilters.customMinGamesVal}
-                                    onChange={(e) => setLbFilters({ ...lbFilters, customMinGamesVal: e.target.value, isCustomMinGames: true })}
-                                    onFocus={() => setLbFilters({ ...lbFilters, isCustomMinGames: true })}
-                                    className={`w-24 bg-black/40 border rounded-lg px-2.5 py-1 text-xs font-bold text-white outline-none transition-all placeholder:text-white/10 ${lbFilters.isCustomMinGames
-                                      ? 'border-ef-accent/40 focus:border-ef-accent/70'
-                                      : 'border-white/10 opacity-50 hover:opacity-100'
-                                      }`}
-                                    min="0"
+                                    type="radio"
+                                    name="minGames"
+                                    checked={lbFilters.minGames === 0 && !lbFilters.isCustomMinGames}
+                                    onChange={() => setLbFilters({ ...lbFilters, minGames: 0, isCustomMinGames: false })}
+                                    className="peer appearance-none w-5 h-5 border-2 border-white/10 rounded-full checked:border-ef-accent transition-all"
                                   />
+                                  <div className="absolute w-2.5 h-2.5 rounded-full bg-ef-accent scale-0 peer-checked:scale-100 transition-transform"></div>
                                 </div>
+                                <span className={`text-xs font-black uppercase tracking-widest transition-colors ${lbFilters.minGames === 0 && !lbFilters.isCustomMinGames ? 'text-ef-accent' : 'text-white/40 group-hover:text-white/60'}`}>All</span>
+                              </label>
+
+                              <label className="flex items-center gap-3 cursor-pointer group">
+                                <div className="relative flex items-center justify-center">
+                                  <input
+                                    type="radio"
+                                    name="minGames"
+                                    checked={lbFilters.minGames === 50 && !lbFilters.isCustomMinGames}
+                                    onChange={() => setLbFilters({ ...lbFilters, minGames: 50, isCustomMinGames: false })}
+                                    className="peer appearance-none w-5 h-5 border-2 border-white/10 rounded-full checked:border-ef-accent transition-all"
+                                  />
+                                  <div className="absolute w-2.5 h-2.5 rounded-full bg-ef-accent scale-0 peer-checked:scale-100 transition-transform"></div>
+                                </div>
+                                <span className={`text-xs font-black uppercase tracking-widest transition-colors ${lbFilters.minGames === 50 && !lbFilters.isCustomMinGames ? 'text-ef-accent' : 'text-white/40 group-hover:text-white/60'}`}>Min games 50</span>
+                              </label>
+
+                              <label className="flex items-center gap-3 cursor-pointer group">
+                                <div className="relative flex items-center justify-center">
+                                  <input
+                                    type="radio"
+                                    name="minGames"
+                                    checked={lbFilters.minGames === 100 && !lbFilters.isCustomMinGames}
+                                    onChange={() => setLbFilters({ ...lbFilters, minGames: 100, isCustomMinGames: false })}
+                                    className="peer appearance-none w-5 h-5 border-2 border-white/10 rounded-full checked:border-ef-accent transition-all"
+                                  />
+                                  <div className="absolute w-2.5 h-2.5 rounded-full bg-ef-accent scale-0 peer-checked:scale-100 transition-transform"></div>
+                                </div>
+                                <span className={`text-xs font-black uppercase tracking-widest transition-colors ${lbFilters.minGames === 100 && !lbFilters.isCustomMinGames ? 'text-ef-accent' : 'text-white/40 group-hover:text-white/60'}`}>Min games 100</span>
+                              </label>
+
+                              <div className="flex items-center gap-3">
+                                <label className="flex items-center gap-3 cursor-pointer group">
+                                  <div className="relative flex items-center justify-center">
+                                    <input
+                                      type="radio"
+                                      name="minGames"
+                                      checked={lbFilters.isCustomMinGames}
+                                      onChange={() => setLbFilters({ ...lbFilters, isCustomMinGames: true })}
+                                      className="peer appearance-none w-5 h-5 border-2 border-white/10 rounded-full checked:border-ef-accent transition-all"
+                                    />
+                                    <div className="absolute w-2.5 h-2.5 rounded-full bg-ef-accent scale-0 peer-checked:scale-100 transition-transform"></div>
+                                  </div>
+                                  <span className={`text-xs font-black uppercase tracking-widest transition-colors ${lbFilters.isCustomMinGames ? 'text-ef-accent' : 'text-white/40 group-hover:text-white/60'}`}>Custom</span>
+                                </label>
+
+                                <input
+                                  type="number"
+                                  placeholder="Enter min..."
+                                  value={lbFilters.customMinGamesVal}
+                                  onChange={(e) => setLbFilters({ ...lbFilters, customMinGamesVal: e.target.value, isCustomMinGames: true })}
+                                  onFocus={() => setLbFilters({ ...lbFilters, isCustomMinGames: true })}
+                                  className={`w-24 bg-black/40 border rounded-lg px-2.5 py-1 text-xs font-bold text-white outline-none transition-all placeholder:text-white/10 ${lbFilters.isCustomMinGames
+                                    ? 'border-ef-accent/40 focus:border-ef-accent/70'
+                                    : 'border-white/10 opacity-50 hover:opacity-100'
+                                    }`}
+                                  min="0"
+                                />
                               </div>
                             </div>
                           </div>
                         </div>
+                      </div>
                     )}
                     {lbActiveFilterPills.length > 0 && (
                       <div className="mb-6 px-4 md:px-6 py-3 bg-ef-card border border-white/10 rounded-2xl flex flex-wrap gap-2 items-center animate-fade-in relative z-20">
