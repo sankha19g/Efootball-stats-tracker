@@ -1,11 +1,14 @@
 import { useState, useMemo, useEffect } from 'react';
 import { PLAYSTYLES } from '../constants';
+import { ChartSpline, Image, Calendar, Cake, ImageUp, Star,Pencil } from 'lucide-react';
 
-const QuickStatsView = ({ players, onUpdate, onClose, user, activeSquad, isSidebarOpen, settings }) => {
-    const getPlayerImage = (player) => {
-        if (settings?.preferredImageSource === 3) {
-            const pid = player.playerId || player.pesdb_id || player.id || player.ID;
-            return pid ? `https://efimg.com/efootballhub22/images/player_cards/${pid}_l.png` : (player.image || player.image2);
+const PlayerThumbnail = ({ player, settings }) => {
+    const pid = player.playerId || player.pesdb_id || player.id || player.ID;
+    const [isFallback, setIsFallback] = useState(false);
+
+    const getPlayerImage = () => {
+        if (settings?.preferredImageSource === 3 || !settings?.preferredImageSource) {
+            return pid ? `https://efimg.com/efootballhub22/images/mini-cards/mini-cards/${pid}_l.png` : (player.image || player.image2);
         }
         if (settings?.preferredImageSource === 2) {
             return player.image2 || player.image;
@@ -13,6 +16,36 @@ const QuickStatsView = ({ players, onUpdate, onClose, user, activeSquad, isSideb
         return player.image || player.image2;
     };
 
+    const handleImageError = (e) => {
+        e.target.onerror = null;
+        setIsFallback(true);
+        if (pid) {
+            e.target.src = `https://efimg.com/efootballhub22/images/player_cards/${pid}_l.png`;
+        }
+    };
+
+    const src = getPlayerImage();
+
+    return src ? (
+        <div
+            className="relative h-full overflow-hidden flex items-center justify-center"
+            style={{ aspectRatio: '3/2' }}
+        >
+            <img
+                src={src}
+                alt=""
+                className={isFallback ? "absolute z-0 top-0 left-0 w-full h-auto border border-[#b030e3]" : "h-full w-auto object-contain"}
+                onError={handleImageError}
+            />
+        </div>
+    ) : (
+        <div className="w-full h-full flex items-center justify-center bg-white/5 opacity-20">
+            <span className="text-[10px]">👤</span>
+        </div>
+    );
+};
+
+const QuickStatsView = ({ players, onUpdate, onClose, user, activeSquad, isSidebarOpen, settings }) => {
     const [search, setSearch] = useState('');
     const [isManualMode, setIsManualMode] = useState(false);
     const [isRatingsUnlocked, setIsRatingsUnlocked] = useState(false);
@@ -141,14 +174,14 @@ const QuickStatsView = ({ players, onUpdate, onClose, user, activeSquad, isSideb
                         className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${activePage === 0 ? 'bg-ef-accent text-ef-dark shadow-lg shadow-ef-accent/20 scale-110' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
                         title="Match Stats & Ratings"
                     >
-                        <span className="text-xl">📊</span>
+                        <span className="text-xl"><ChartSpline /></span>
                     </button>
                     <button
                         onClick={() => { setActivePage(2); setEditingPlayerId(null); }}
                         className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${activePage === 2 ? 'bg-purple-500 text-white shadow-lg shadow-purple-500/20 scale-110' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
                         title="Photo Upload"
                     >
-                        <span className="text-xl">📸</span>
+                        <span className="text-xl"><Image /></span>
                     </button>
                     <button
                         onClick={() => { setActivePage(3); setEditingPlayerId(null); }}
@@ -162,35 +195,35 @@ const QuickStatsView = ({ players, onUpdate, onClose, user, activeSquad, isSideb
                         className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${activePage === 4 ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/20 scale-110' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
                         title="Rename"
                     >
-                        <span className="text-xl">✏️</span>
+                        <span className="text-xl">   <Pencil /></span>
                     </button>
                     <button
                         onClick={() => { setActivePage(5); setEditingPlayerId(null); }}
                         className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${activePage === 5 ? 'bg-cyan-500 text-white shadow-lg shadow-cyan-500/20 scale-110' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
                         title="Date Added"
                     >
-                        <span className="text-xl">📅</span>
+                        <span className="text-xl">   <Calendar /></span>
                     </button>
                     <button
                         onClick={() => { setActivePage(6); setEditingPlayerId(null); }}
                         className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${activePage === 6 ? 'bg-ef-accent text-ef-dark shadow-lg shadow-ef-accent/20 scale-110' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
                         title="Image Source 2 URL"
                     >
-                        <span className="text-xl">🖼️</span>
+                        <span className="text-xl"> <ImageUp /></span>
                     </button>
                     <button
                         onClick={() => { setActivePage(7); setEditingPlayerId(null); }}
                         className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${activePage === 7 ? 'bg-ef-blue text-white shadow-lg shadow-ef-blue/20 scale-110' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
                         title="Update Age"
                     >
-                        <span className="text-xl">👶</span>
+                        <span className="text-xl">  <Cake /></span>
                     </button>
                     <button
                         onClick={() => { setActivePage(8); setEditingPlayerId(null); }}
                         className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${activePage === 8 ? 'bg-yellow-500 text-ef-dark shadow-lg shadow-yellow-500/20 scale-110' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
                         title="Featured Players"
                     >
-                        <span className="text-xl">⭐</span>
+                        <span className="text-xl"><Star /></span>
                     </button>
                 </div>
 
@@ -368,8 +401,8 @@ const QuickStatsView = ({ players, onUpdate, onClose, user, activeSquad, isSideb
                                             <div key={player._id} className={`group bg-white/5 hover:bg-white/10 border border-white/5 rounded-2xl p-[3px] flex items-center justify-between gap-4 transition-all hover:border-white/10 ${isEditing ? 'bg-white/10 border-ef-accent/30' : ''}`}>
                                                 {/* Photo & Basic Info */}
                                                 <div className="flex items-center gap-3 w-1/4 min-w-0">
-                                                    <div className="w-10 h-10 md:w-12 md:h-12 flex-shrink-0 rounded-xl overflow-hidden border border-white/10 bg-black/40">
-                                                        <img src={getPlayerImage(player)} alt="" className="w-full h-full object-cover object-top" />
+                                                    <div className="h-10 md:h-12 w-auto min-w-[34px] flex-shrink-0  overflow-hidden border border-white/10 bg-black/40 flex items-center justify-center">
+                                                        <PlayerThumbnail player={player} settings={settings} />
                                                     </div>
                                                     <div className="truncate">
                                                         <h4 className="text-xs md:text-sm font-black text-white truncate uppercase tracking-tight">{player.name}</h4>
@@ -497,8 +530,8 @@ const QuickStatsView = ({ players, onUpdate, onClose, user, activeSquad, isSideb
                                         <div key={player._id} className="group bg-white/5 hover:bg-white/10 border border-white/5 rounded-2xl p-[3px] flex items-center justify-between gap-4 transition-all hover:border-white/10">
                                             {/* Photo & Info */}
                                             <div className="flex items-center gap-3 w-1/3 min-w-0">
-                                                <div className="w-10 h-10 flex-shrink-0 rounded-lg overflow-hidden border border-white/10 bg-black/40">
-                                                    <img src={getPlayerImage(player)} alt="" className="w-full h-full object-cover object-top" />
+                                                <div className="h-10 w-auto min-w-[30px] flex-shrink-0  overflow-hidden border border-white/10 bg-black/40 flex items-center justify-center">
+                                                    <PlayerThumbnail player={player} settings={settings} />
                                                 </div>
                                                 <div className="truncate">
                                                     <h4 className="text-xs font-black text-white truncate uppercase tracking-tight">{player.name}</h4>
@@ -541,8 +574,8 @@ const QuickStatsView = ({ players, onUpdate, onClose, user, activeSquad, isSideb
                                         <div key={player._id} className="group bg-white/5 hover:bg-white/10 border border-white/5 rounded-2xl p-[3px] flex items-center justify-between gap-4 transition-all hover:border-white/10">
                                             {/* Photo & Basic Info */}
                                             <div className="flex items-center gap-3 w-1/3 min-w-0">
-                                                <div className="w-10 h-10 flex-shrink-0 rounded-lg overflow-hidden border border-white/10 bg-black/40">
-                                                    <img src={getPlayerImage(player)} alt="" className="w-full h-full object-cover object-top" />
+                                                <div className="h-10 w-auto min-w-[30px] flex-shrink-0  overflow-hidden border border-white/10 bg-black/40 flex items-center justify-center">
+                                                    <PlayerThumbnail player={player} settings={settings} />
                                                 </div>
                                                 <div className="truncate">
                                                     <h4 className="text-xs font-black text-white truncate uppercase tracking-tight">{player.name}</h4>
@@ -585,8 +618,8 @@ const QuickStatsView = ({ players, onUpdate, onClose, user, activeSquad, isSideb
                                         <div key={player._id} className="group bg-white/5 hover:bg-white/10 border border-white/5 rounded-2xl p-[3px] flex items-center justify-between gap-4 transition-all hover:border-white/10">
                                             {/* Photo & Info */}
                                             <div className="flex items-center gap-3 w-1/3 min-w-0">
-                                                <div className="w-10 h-10 flex-shrink-0 rounded-lg overflow-hidden border border-white/10 bg-black/40">
-                                                    <img src={getPlayerImage(player)} alt="" className="w-full h-full object-cover object-top" />
+                                                <div className="h-10 w-auto min-w-[30px] flex-shrink-0  overflow-hidden border border-white/10 bg-black/40 flex items-center justify-center">
+                                                    <PlayerThumbnail player={player} settings={settings} />
                                                 </div>
                                                 <div className="truncate">
                                                     <h4 className="text-xs font-black text-white truncate uppercase tracking-tight">{player.name}</h4>
@@ -629,8 +662,8 @@ const QuickStatsView = ({ players, onUpdate, onClose, user, activeSquad, isSideb
                                         <div key={player._id} className="group bg-white/5 hover:bg-white/10 border border-white/5 rounded-2xl p-[3px] flex items-center justify-between gap-4 transition-all hover:border-white/10">
                                             {/* Photo & Info */}
                                             <div className="flex items-center gap-3 w-1/3 min-w-0">
-                                                <div className="w-10 h-10 flex-shrink-0 rounded-lg overflow-hidden border border-white/10 bg-black/40">
-                                                    <img src={getPlayerImage(player)} alt="" className="w-full h-full object-cover object-top" />
+                                                <div className="h-10 w-auto min-w-[30px] flex-shrink-0  overflow-hidden border border-white/10 bg-black/40 flex items-center justify-center">
+                                                    <PlayerThumbnail player={player} settings={settings} />
                                                 </div>
                                                 <div className="truncate">
                                                     <h4 className="text-xs font-black text-white truncate uppercase tracking-tight">{player.name}</h4>
@@ -673,8 +706,8 @@ const QuickStatsView = ({ players, onUpdate, onClose, user, activeSquad, isSideb
                                         <div key={player._id} className="group bg-white/5 hover:bg-white/10 border border-white/5 rounded-2xl p-[3px] flex items-center justify-between gap-4 transition-all hover:border-white/10">
                                             {/* Photo & Info */}
                                             <div className="flex items-center gap-3 w-1/3 min-w-0">
-                                                <div className="w-10 h-10 flex-shrink-0 rounded-lg overflow-hidden border border-white/10 bg-black/40">
-                                                    <img src={getPlayerImage(player)} alt="" className="w-full h-full object-cover object-top" />
+                                                <div className="h-10 w-auto min-w-[30px] flex-shrink-0  overflow-hidden border border-white/10 bg-black/40 flex items-center justify-center">
+                                                    <PlayerThumbnail player={player} settings={settings} />
                                                 </div>
                                                 <div className="truncate">
                                                     <h4 className="text-xs font-black text-white truncate uppercase tracking-tight">{player.name}</h4>
@@ -717,8 +750,8 @@ const QuickStatsView = ({ players, onUpdate, onClose, user, activeSquad, isSideb
                                         <div key={player._id} className="group bg-white/5 hover:bg-white/10 border border-white/5 rounded-2xl p-[3px] flex items-center justify-between gap-4 transition-all hover:border-white/10">
                                             {/* Photo & Info */}
                                             <div className="flex items-center gap-3 w-1/3 min-w-0">
-                                                <div className="w-10 h-10 flex-shrink-0 rounded-lg overflow-hidden border border-white/10 bg-black/40">
-                                                    <img src={getPlayerImage(player)} alt="" className="w-full h-full object-cover object-top" />
+                                                <div className="h-10 w-auto min-w-[30px] flex-shrink-0  overflow-hidden border border-white/10 bg-black/40 flex items-center justify-center">
+                                                    <PlayerThumbnail player={player} settings={settings} />
                                                 </div>
                                                 <div className="truncate">
                                                     <h4 className="text-xs font-black text-white truncate uppercase tracking-tight">{player.name}</h4>
@@ -862,7 +895,7 @@ const FilterSelect = ({ label, value, options, onChange }) => (
 
 const SecondaryPosInput = ({ value, onUpdate }) => {
     const [localValue, setLocalValue] = useState(Array.isArray(value) ? value.join(', ') : (value || ''));
- 
+
     useEffect(() => {
         setLocalValue(Array.isArray(value) ? value.join(', ') : (value || ''));
     }, [value]);
@@ -889,8 +922,8 @@ const SecondaryPosInput = ({ value, onUpdate }) => {
 
 const PhotoUploadCard = ({ player, onUpdate, settings }) => {
     const getPlayerImage = (player) => {
-        if (settings?.preferredImageSource === 3) {
-            const pid = player.playerId || player.pesdb_id || player.id || player.ID;
+        const pid = player.playerId || player.pesdb_id || player.id || player.ID;
+        if (settings?.preferredImageSource === 3 || !settings?.preferredImageSource) {
             return pid ? `https://efimg.com/efootballhub22/images/player_cards/${pid}_l.png` : (player.image || player.image2);
         }
         if (settings?.preferredImageSource === 2) {
@@ -901,6 +934,7 @@ const PhotoUploadCard = ({ player, onUpdate, settings }) => {
 
     const [isDragging, setIsDragging] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
+    const [isFallback, setIsFallback] = useState(false);
 
     const handlePaste = (e) => {
         const items = e.clipboardData?.items;
@@ -987,8 +1021,23 @@ const PhotoUploadCard = ({ player, onUpdate, settings }) => {
             tabIndex="0"
         >
             <div className="flex items-center gap-2">
-                <div className="w-12 h-12 rounded-lg overflow-hidden border border-white/10 bg-black/40 shrink-0">
-                    <img src={getPlayerImage(player)} alt="" className="w-full h-full object-cover object-top" />
+                <div
+                    className="relative h-12 overflow-hidden border border-white/10 bg-black/40 shrink-0 flex items-center justify-center"
+                    style={{ aspectRatio: '3/2' }}
+                >
+                    <img
+                        src={getPlayerImage(player)}
+                        alt=""
+                        className={isFallback ? "absolute z-0 top-0 left-0 w-full h-auto" : "h-full w-auto object-contain"}
+                        onError={(e) => {
+                            e.target.onerror = null;
+                            setIsFallback(true);
+                            const pid = player.playerId || player.pesdb_id || player.id || player.ID;
+                            if (pid) {
+                                e.target.src = `https://efimg.com/efootballhub22/images/player_cards/${pid}_l.png`;
+                            }
+                        }}
+                    />
                 </div>
                 <div className="truncate flex-1 min-w-0">
                     <div className="flex items-center gap-1">

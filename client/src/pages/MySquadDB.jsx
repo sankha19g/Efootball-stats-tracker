@@ -375,6 +375,12 @@ const MySquadDB = ({ players, onBack, onImport, onPlayerClick, isSidebarOpen }) 
                     valA = parseEfDate(a.DateAdded || a['Date Added'] || a.createdAt || 0)?.getTime() || 0;
                     valB = parseEfDate(b.DateAdded || b['Date Added'] || b.createdAt || 0)?.getTime() || 0;
                     break;
+                case 'createdAt':
+                case 'createdAt_desc':
+                case 'createdAt_asc':
+                    valA = new Date(a.createdAt || 0).getTime() || 0;
+                    valB = new Date(b.createdAt || 0).getTime() || 0;
+                    break;
                 case 'games':
                     valA = Number(a.matches || a.games) || 0;
                     valB = Number(b.matches || b.games) || 0;
@@ -400,8 +406,8 @@ const MySquadDB = ({ players, onBack, onImport, onPlayerClick, isSidebarOpen }) 
                     valB = String(b[filters.sortBy] || '').toLowerCase();
             }
 
-            const isDateAsc = filters.sortBy === 'dateAdded_asc';
-            const isDateDesc = filters.sortBy === 'dateAdded_desc';
+            const isDateAsc = filters.sortBy === 'dateAdded_asc' || filters.sortBy === 'createdAt_asc';
+            const isDateDesc = filters.sortBy === 'dateAdded_desc' || filters.sortBy === 'createdAt_desc';
 
             let order;
             if (isDateAsc) order = 1;
@@ -638,6 +644,8 @@ const MySquadDB = ({ players, onBack, onImport, onPlayerClick, isSidebarOpen }) 
                                             className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-xs font-bold text-white outline-none focus:border-ef-accent/50 transition-all cursor-pointer"
                                         >
                                             <option value="rating" className="bg-[#121216]">Overall Rating</option>
+                                            <option value="createdAt_desc" className="bg-[#121216]">Date Uploaded (Newest)</option>
+                                            <option value="createdAt_asc" className="bg-[#121216]">Date Uploaded (Oldest)</option>
                                             <option value="dateAdded_desc" className="bg-[#121216]">Date Added (Newest)</option>
                                             <option value="dateAdded_asc" className="bg-[#121216]">Date Added (Oldest)</option>
                                             <option value="games" className="bg-[#121216]">Most Games Played</option>

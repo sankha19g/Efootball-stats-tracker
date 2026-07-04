@@ -5,6 +5,7 @@ import { searchLeagues, searchTeams, searchCountries, getFlagUrl } from '../serv
 import SavedProgressionsModal from './SavedProgressionsModal';
 import { saveAutoMergeRules } from '../services/playerService';
 import { BadgeEditModal, BadgeAddRuleModal } from './BadgeModals';
+import { ChartSpline } from 'lucide-react';
 
 const parseEfDate = (dateStr) => {
     if (!dateStr) return null;
@@ -140,7 +141,7 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
         try {
             const saved = localStorage.getItem('ef-auto-merge-rules');
             if (saved) currentRules = JSON.parse(saved);
-        } catch (err) {}
+        } catch (err) { }
 
         if (!Array.isArray(currentRules)) {
             currentRules = [{ type: 'club', from: '', to: '' }];
@@ -2144,7 +2145,7 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
                                         <div className={`flex-1 flex flex-col transition-opacity duration-150 md:overflow-y-auto no-scrollbar ${modalPage === 1 ? 'opacity-100 relative' : 'opacity-0 pointer-events-none absolute inset-0'} `}>
                                             <div className="flex items-center justify-between mb-4">
                                                 <h3 className="text-sm font-black text-white uppercase tracking-widest flex items-center gap-2">
-                                                    <span className="text-ef-accent">📊</span> Stat Ranking
+                                                    <span className="text-ef-accent"><ChartSpline /></span> Stat Ranking
                                                 </h3>
 
                                                 <div className="flex gap-2">
@@ -2591,7 +2592,7 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
                                                     {/* Header */}
                                                     <div className="flex items-center justify-between mb-3">
                                                         <h3 className="text-sm font-black text-white uppercase tracking-widest flex items-center gap-2">
-                                                            <span className="text-ef-accent">📊</span> Saved Builds
+                                                            <span className="text-ef-accent"><ChartSpline /></span> Saved Builds
                                                         </h3>
                                                         {player.progressions?.length > 0 && (
                                                             <span className="px-2 py-0.5 bg-ef-accent/20 text-ef-accent rounded text-[8px] font-black">{player.progressions.length} Saved</span>
@@ -2713,7 +2714,7 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
                                                     ) : (
                                                         <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-white/[0.02] border border-white/5 rounded-3xl">
                                                             <div className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center mb-3">
-                                                                <span className="text-2xl opacity-20">📊</span>
+                                                                <span className="text-2xl opacity-20"><ChartSpline /></span>
                                                             </div>
                                                             <h4 className="text-[13px] font-black text-white/40 tracking-tight">No Saved Progressions</h4>
                                                             <p className="text-[10px] text-white/20 font-medium mt-1">Create your first custom build above</p>
@@ -2846,123 +2847,123 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
                                             </div>
                                         </div>
 
-                                         {/* Page 5: Featured Pack */}
-                                         <div className={`flex-1 flex flex-col transition-opacity duration-150 md:overflow-y-auto no-scrollbar ${modalPage === 5 ? 'opacity-100 relative' : 'opacity-0 pointer-events-none absolute inset-0'} `}>
-                                             <div className="flex items-center justify-between mb-4">
-                                                 <h3 className="text-sm font-black text-white uppercase tracking-widest flex items-center gap-2 truncate pr-4">
-                                                     <span className="text-ef-accent">📦</span> {player.featured || player['Featured Players'] || 'Featured Pack'}
-                                                 </h3>
-                                                 {featuredPackPlayers.length > 0 && (
-                                                     <div className="flex items-center gap-2 shrink-0">
-                                                         <span className="px-2 py-0.5 bg-ef-accent/20 text-ef-accent rounded text-[8px] font-black">{featuredPackPlayers.length} Found</span>
-                                                         <button
-                                                             onClick={(e) => {
-                                                                 e.stopPropagation();
-                                                                 if (onAddToCompare) {
-                                                                     const currentId = player._id || player.id || player.pesdb_id || player.ID;
-                                                                     const featuredIds = featuredPackPlayers.map(v => v._id || v.id || v.ID || v.pesdb_id);
-                                                                     onAddToCompare([currentId, ...featuredIds]);
-                                                                 }
-                                                             }}
-                                                             className="px-3 py-1 bg-ef-accent text-ef-dark rounded-lg text-[9px] font-black uppercase hover:scale-105 active:scale-95 transition-transform flex items-center gap-1 shadow-lg shadow-ef-accent/20"
-                                                         >
-                                                             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                                                                 <path d="M16 3h5v5" /><path d="M8 21H3v-5" /><path d="M21 3l-7 7" /><path d="M3 21l7-7" />
-                                                             </svg>
-                                                             Compare All
-                                                         </button>
-                                                     </div>
-                                                 )}
-                                             </div>
+                                        {/* Page 5: Featured Pack */}
+                                        <div className={`flex-1 flex flex-col transition-opacity duration-150 md:overflow-y-auto no-scrollbar ${modalPage === 5 ? 'opacity-100 relative' : 'opacity-0 pointer-events-none absolute inset-0'} `}>
+                                            <div className="flex items-center justify-between mb-4">
+                                                <h3 className="text-sm font-black text-white uppercase tracking-widest flex items-center gap-2 truncate pr-4">
+                                                    <span className="text-ef-accent">📦</span> {player.featured || player['Featured Players'] || 'Featured Pack'}
+                                                </h3>
+                                                {featuredPackPlayers.length > 0 && (
+                                                    <div className="flex items-center gap-2 shrink-0">
+                                                        <span className="px-2 py-0.5 bg-ef-accent/20 text-ef-accent rounded text-[8px] font-black">{featuredPackPlayers.length} Found</span>
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                if (onAddToCompare) {
+                                                                    const currentId = player._id || player.id || player.pesdb_id || player.ID;
+                                                                    const featuredIds = featuredPackPlayers.map(v => v._id || v.id || v.ID || v.pesdb_id);
+                                                                    onAddToCompare([currentId, ...featuredIds]);
+                                                                }
+                                                            }}
+                                                            className="px-3 py-1 bg-ef-accent text-ef-dark rounded-lg text-[9px] font-black uppercase hover:scale-105 active:scale-95 transition-transform flex items-center gap-1 shadow-lg shadow-ef-accent/20"
+                                                        >
+                                                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                                                <path d="M16 3h5v5" /><path d="M8 21H3v-5" /><path d="M21 3l-7 7" /><path d="M3 21l7-7" />
+                                                            </svg>
+                                                            Compare All
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </div>
 
-                                             {featuredPackPlayers.length > 0 ? (
-                                                 <div className="grid grid-cols-4 sm:grid-cols-5 gap-2 pb-6">
-                                                     {featuredPackPlayers.map((v) => {
-                                                         const isCurrent = String(v.id || v.pesdb_id || v.ID || v.pes_id || v._id) === String(player.id || player.pesdb_id || player._id);
-                                                         return (
-                                                             <div
-                                                                 key={v.id || v.pesdb_id || v.ID || v._id}
-                                                                 className="group relative flex flex-col items-center gap-1 cursor-pointer transition-all active:scale-95"
-                                                                 onClick={() => {
-                                                                     if (!isCurrent && onSelectPlayer) {
-                                                                         onSelectPlayer(v);
-                                                                         setModalPage(0);
-                                                                         if (isEditing) setIsEditing(false);
-                                                                     }
-                                                                 }}
-                                                             >
-                                                                 {/* Compare Button Overlay */}
-                                                                 {!isCurrent && (
-                                                                     <button
-                                                                         onClick={(e) => {
-                                                                             e.stopPropagation();
-                                                                             if (onAddToCompare) {
-                                                                                 const currentId = player._id || player.id || player.pesdb_id || player.ID;
-                                                                                 const versionId = v._id || v.id || v.ID || v.pesdb_id;
-                                                                                 onAddToCompare([currentId, versionId]);
-                                                                             }
-                                                                         }}
-                                                                         className="absolute top-1 left-1 z-20 w-8 h-8 bg-ef-accent text-ef-dark rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 hover:scale-110 active:scale-90 transition-all shadow-xl border border-white/20"
-                                                                         title="Compare with Current"
-                                                                     >
-                                                                         <div className="flex flex-col items-center leading-none">
-                                                                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                                                                                 <path d="M16 3h5v5" /><path d="M8 21H3v-5" /><path d="M21 3l-7 7" /><path d="M3 21l7-7" />
-                                                                             </svg>
-                                                                             <span className="text-[6px] font-black uppercase mt-0.5">VS</span>
-                                                                         </div>
-                                                                     </button>
-                                                                 )}
+                                            {featuredPackPlayers.length > 0 ? (
+                                                <div className="grid grid-cols-4 sm:grid-cols-5 gap-2 pb-6">
+                                                    {featuredPackPlayers.map((v) => {
+                                                        const isCurrent = String(v.id || v.pesdb_id || v.ID || v.pes_id || v._id) === String(player.id || player.pesdb_id || player._id);
+                                                        return (
+                                                            <div
+                                                                key={v.id || v.pesdb_id || v.ID || v._id}
+                                                                className="group relative flex flex-col items-center gap-1 cursor-pointer transition-all active:scale-95"
+                                                                onClick={() => {
+                                                                    if (!isCurrent && onSelectPlayer) {
+                                                                        onSelectPlayer(v);
+                                                                        setModalPage(0);
+                                                                        if (isEditing) setIsEditing(false);
+                                                                    }
+                                                                }}
+                                                            >
+                                                                {/* Compare Button Overlay */}
+                                                                {!isCurrent && (
+                                                                    <button
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            if (onAddToCompare) {
+                                                                                const currentId = player._id || player.id || player.pesdb_id || player.ID;
+                                                                                const versionId = v._id || v.id || v.ID || v.pesdb_id;
+                                                                                onAddToCompare([currentId, versionId]);
+                                                                            }
+                                                                        }}
+                                                                        className="absolute top-1 left-1 z-20 w-8 h-8 bg-ef-accent text-ef-dark rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 hover:scale-110 active:scale-90 transition-all shadow-xl border border-white/20"
+                                                                        title="Compare with Current"
+                                                                    >
+                                                                        <div className="flex flex-col items-center leading-none">
+                                                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                                                                <path d="M16 3h5v5" /><path d="M8 21H3v-5" /><path d="M21 3l-7 7" /><path d="M3 21l7-7" />
+                                                                            </svg>
+                                                                            <span className="text-[6px] font-black uppercase mt-0.5">VS</span>
+                                                                        </div>
+                                                                    </button>
+                                                                )}
 
-                                                                 <div className={`relative w-full aspect-[7/10] bg-[#1a1a1c] border ${isCurrent ? 'border-ef-accent shadow-[0_0_15px_rgba(0,255,136,0.2)]' : 'border-white/10'} rounded-none overflow-hidden hover:border-ef-accent/50 transition-colors shadow-lg`}>
-                                                                     <img
-                                                                         src={getPlayerImage(v) || 'https://pesdb.net/efootball/images/players/0.png'}
-                                                                         className="w-full h-full object-cover object-center"
-                                                                         alt={v.name}
-                                                                     />
-                                                                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
+                                                                <div className={`relative w-full aspect-[7/10] bg-[#1a1a1c] border ${isCurrent ? 'border-ef-accent shadow-[0_0_15px_rgba(0,255,136,0.2)]' : 'border-white/10'} rounded-none overflow-hidden hover:border-ef-accent/50 transition-colors shadow-lg`}>
+                                                                    <img
+                                                                        src={getPlayerImage(v) || 'https://pesdb.net/efootball/images/players/0.png'}
+                                                                        className="w-full h-full object-cover object-center"
+                                                                        alt={v.name}
+                                                                    />
+                                                                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
 
-                                                                     {/* Current Indicator */}
-                                                                     {isCurrent && (
-                                                                         <div className="absolute top-0 left-0 right-0 py-0.5 bg-ef-accent text-ef-dark text-[6px] font-black uppercase text-center tracking-tighter">
-                                                                             Current Card
-                                                                         </div>
-                                                                     )}
+                                                                    {/* Current Indicator */}
+                                                                    {isCurrent && (
+                                                                        <div className="absolute top-0 left-0 right-0 py-0.5 bg-ef-accent text-ef-dark text-[6px] font-black uppercase text-center tracking-tighter">
+                                                                            Current Card
+                                                                        </div>
+                                                                    )}
 
-                                                                     {/* Rating Badge */}
-                                                                     <div className="absolute top-1 right-1 px-1 bg-black/80 rounded-none border border-white/5">
-                                                                         <span className="text-[8px] font-black text-ef-accent italic">{v.rating || v.Rating || '??'}</span>
-                                                                     </div>
+                                                                    {/* Rating Badge */}
+                                                                    <div className="absolute top-1 right-1 px-1 bg-black/80 rounded-none border border-white/5">
+                                                                        <span className="text-[8px] font-black text-ef-accent italic">{v.rating || v.Rating || '??'}</span>
+                                                                    </div>
 
-                                                                     {/* Position Badge */}
-                                                                     <div className="absolute bottom-1 left-1 px-1 bg-ef-accent rounded-none">
-                                                                         <span className="text-[6px] font-black text-ef-dark uppercase">
-                                                                             {v.position || v.Position || '??'}
-                                                                         </span>
-                                                                     </div>
-                                                                 </div>
-                                                                 <h4 className={`text-[8px] font-bold truncate w-full text-center leading-tight ${isCurrent ? 'text-ef-accent' : 'text-white/80'}`}>{v.name || v.Name}</h4>
-                                                             </div>
-                                                         );
-                                                     })}
-                                                 </div>
-                                             ) : (
-                                                 <div className="flex-1 flex flex-col items-center justify-center py-20 opacity-20 text-center">
-                                                     <span className="text-4xl mb-2">📦</span>
-                                                     <p className="text-[10px] font-black uppercase tracking-[0.2em]">No other players from this pack</p>
-                                                     <p className="text-[8px] font-medium mt-1">This player is not part of a featured pack or is the only one in the squad</p>
-                                                 </div>
-                                             )}
+                                                                    {/* Position Badge */}
+                                                                    <div className="absolute bottom-1 left-1 px-1 bg-ef-accent rounded-none">
+                                                                        <span className="text-[6px] font-black text-ef-dark uppercase">
+                                                                            {v.position || v.Position || '??'}
+                                                                        </span>
+                                                                    </div>
+                                                                </div>
+                                                                <h4 className={`text-[8px] font-bold truncate w-full text-center leading-tight ${isCurrent ? 'text-ef-accent' : 'text-white/80'}`}>{v.name || v.Name}</h4>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            ) : (
+                                                <div className="flex-1 flex flex-col items-center justify-center py-20 opacity-20 text-center">
+                                                    <span className="text-4xl mb-2">📦</span>
+                                                    <p className="text-[10px] font-black uppercase tracking-[0.2em]">No other players from this pack</p>
+                                                    <p className="text-[8px] font-medium mt-1">This player is not part of a featured pack or is the only one in the squad</p>
+                                                </div>
+                                            )}
 
-                                             <div className="mt-auto pt-4 border-t border-white/5">
-                                                 <button
-                                                     onClick={() => setModalPage(0)}
-                                                     className="w-full h-[36px] bg-white/5 border border-white/10 rounded-xl text-[13px] font-medium tracking-tight text-white hover:bg-white/10 transition-all active:scale-95 font-inter"
-                                                 >
-                                                     Back to Overview
-                                                 </button>
-                                             </div>
-                                         </div>
+                                            <div className="mt-auto pt-4 border-t border-white/5">
+                                                <button
+                                                    onClick={() => setModalPage(0)}
+                                                    className="w-full h-[36px] bg-white/5 border border-white/10 rounded-xl text-[13px] font-medium tracking-tight text-white hover:bg-white/10 transition-all active:scale-95 font-inter"
+                                                >
+                                                    Back to Overview
+                                                </button>
+                                            </div>
+                                        </div>
                                     </div>
 
                                 </div>

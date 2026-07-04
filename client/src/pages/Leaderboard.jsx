@@ -158,32 +158,33 @@ const getCardStyles = (type) => {
 const MiniPlayerCard = ({ player, activePositions, includeSecondary, settings }) => {
     const styles = getCardStyles(player.cardType);
     const displayPos = getDisplayPosition(player, activePositions, includeSecondary);
+    const pid = player.playerId || player.pesdb_id || player.id || player.ID;
+    const miniCardUrl = pid ? `https://efimg.com/efootballhub22/images/mini-cards/mini-cards/${pid}_l.png` : (player.image || player.image2);
+    const [isFallback, setIsFallback] = useState(false);
+
     return (
-        <div className={`relative w-12 h-16 rounded-lg overflow-hidden border-2 border-white/10 ${styles.bg} ${styles.glow} shrink-0`}>
-            {(() => {
-                const img = settings?.preferredImageSource === 2 ? (player.image2 || player.image) : (player.image || player.image2);
-                return img ? (
-                    <img
-                        src={img}
-                        alt=""
-                        className="w-full h-full object-cover relative z-0"
-                    />
-                ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-white/5 opacity-20">
-                        <span className="text-[10px]">👤</span>
-                    </div>
-                );
-            })()}
-            {/* Smooth Fading Blur & Info */}
-            <div className="absolute inset-x-0 bottom-0 py-1 px-1 bg-gradient-to-t from-black/90 to-transparent pt-0 sm:pt-4 flex flex-col items-center">
-                <span className="text-[8px] font-black text-ef-accent leading-none">{player.rating}</span>
-                <span className={`text-[5px] font-bold uppercase leading-none ${displayPos.startsWith('(') ? 'text-ef-accent' : 'text-white/70'}`}>{displayPos}</span>
-                {player.playstyle && player.playstyle !== 'None' && (
-                    <span className="text-[4px] font-black text-white/30 uppercase leading-none mt-0.5 truncate w-full text-center">
-                        {player.playstyle}
-                    </span>
-                )}
-            </div>
+        <div 
+            className={`relative h-16 overflow-hidden border-2 border-white/10 ${styles.bg} ${styles.glow} shrink-0 flex items-center justify-center`}
+            style={{ aspectRatio: '3/2' }}
+        >
+            {miniCardUrl ? (
+                <img
+                    src={miniCardUrl}
+                    alt=""
+                    className={isFallback ? "absolute z-0 top-0 left-0 w-full h-auto" : "h-full w-auto object-contain relative z-0"}
+                    onError={(e) => {
+                        e.target.onerror = null;
+                        setIsFallback(true);
+                        if (pid) {
+                            e.target.src = `https://efimg.com/efootballhub22/images/player_cards/${pid}_l.png`;
+                        }
+                    }}
+                />
+            ) : (
+                <div className="w-full h-full flex items-center justify-center bg-white/5 opacity-20">
+                    <span className="text-[10px]">👤</span>
+                </div>
+            )}
         </div>
     );
 };
