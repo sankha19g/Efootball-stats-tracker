@@ -4,7 +4,7 @@ import { PLAYSTYLES, TOP_LEAGUES, SPECIAL_SKILLS, PLAYER_SKILLS, ALL_SKILLS } fr
 import { searchLeagues, searchTeams, searchCountries, getFlagUrl } from '../services/footballApi';
 import SavedProgressionsModal from './SavedProgressionsModal';
 import { saveAutoMergeRules } from '../services/playerService';
-import { BadgeEditModal, BadgeAddRuleModal } from './BadgeModals';
+import { BadgeEditModal, BadgeAddRuleModal, AutocompleteInput } from './BadgeModals';
 import { ChartSpline } from 'lucide-react';
 
 const parseEfDate = (dateStr) => {
@@ -104,6 +104,7 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
     const badgeContextMenuRef = useRef(null);
     const [editingBadge, setEditingBadge] = useState(null);
     const [addingRuleBadge, setAddingRuleBadge] = useState(null);
+    const [isChangingClub, setIsChangingClub] = useState(null);
 
     const handleBadgeContextMenu = (e, badgeName, badgeLogo, badgeLeague, badgeType) => {
         e.preventDefault();
@@ -849,7 +850,8 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
         if (comparisonContext === 'club') filteredPlayers = filteredPlayers.filter(p => p.club === player.club);
         if (comparisonContext === 'country') filteredPlayers = filteredPlayers.filter(p => p.nationality === player.nationality);
         if (comparisonContext === 'playstyle') filteredPlayers = filteredPlayers.filter(p => p.playstyle === player.playstyle);
-        if (comparisonContext === 'card_type') filteredPlayers = filteredPlayers.filter(p => (p.card_type || 'base') === (player.card_type || 'base'));
+        if (comparisonContext === 'card_type') filteredPlayers = filteredPlayers.filter(p => (p.cardType || p.card_type || 'base').toLowerCase() === (player.cardType || player.card_type || 'base').toLowerCase());
+        if (comparisonContext === 'versions') filteredPlayers = filteredPlayers.filter(p => p.name && player.name && p.name.toLowerCase() === player.name.toLowerCase());
 
         const sorted = [...filteredPlayers].sort((a, b) => getValue(b) - getValue(a));
 
@@ -896,7 +898,8 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
         { id: 'club', label: 'Same Club', icon: '🛡️' },
         { id: 'country', label: 'Same Country', icon: '🏳️' },
         { id: 'playstyle', label: 'Same Playstyle', icon: '🎮' },
-        { id: 'card_type', label: 'Same Card Type', icon: '🃏' }
+        { id: 'card_type', label: 'Same Card Type', icon: '🃏' },
+        { id: 'versions', label: 'Same Player (Versions)', icon: '👥' }
     ];
 
     // ─── Smart Awards Computation ─────────────────────────────────────────────
@@ -1777,21 +1780,22 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
                                                 <div className="h-[1px] flex-1 bg-gradient-to-l from-transparent to-purple-500/20"></div>
                                             </div>
 
-                                            <div className="grid grid-cols-2 gap-3">
-                                                <div className="flex flex-col gap-1.5">
-                                                    <label className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-1">Height / Weight</label>
-                                                    <div className="flex gap-2">
-                                                        <input type="number" name="height" value={formData.height || ''} onChange={handleChange} placeholder="CM" className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 font-bold text-white focus:border-ef-accent focus:outline-none" />
-                                                        <input type="number" name="weight" value={formData.weight || ''} onChange={handleChange} placeholder="KG" className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 font-bold text-white focus:border-ef-accent focus:outline-none" />
-                                                    </div>
-                                                </div>
-                                                <div className="flex flex-col gap-1.5">
-                                                    <label className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-1">Preferred Foot</label>
-                                                    <select name="strongFoot" value={formData.strongFoot} onChange={handleChange} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 font-bold text-white focus:border-ef-accent focus:outline-none appearance-none cursor-pointer">
-                                                        <option value="Right">Right</option>
-                                                        <option value="Left">Left</option>
-                                                    </select>
-                                                </div>
+                                            <div className="grid grid-cols-3 gap-3">
+                                                 <div className="flex flex-col gap-1.5">
+                                                     <label className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-1">Height (cm)</label>
+                                                     <input type="number" name="height" value={formData.height || ''} onChange={handleChange} placeholder="CM" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 font-bold text-white focus:border-ef-accent focus:outline-none" />
+                                                 </div>
+                                                 <div className="flex flex-col gap-1.5">
+                                                     <label className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-1">Weight (kg)</label>
+                                                     <input type="number" name="weight" value={formData.weight || ''} onChange={handleChange} placeholder="KG" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 font-bold text-white focus:border-ef-accent focus:outline-none" />
+                                                 </div>
+                                                 <div className="flex flex-col gap-1.5">
+                                                     <label className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-1">Preferred Foot</label>
+                                                     <select name="strongFoot" value={formData.strongFoot} onChange={handleChange} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 font-bold text-white focus:border-ef-accent focus:outline-none appearance-none cursor-pointer">
+                                                         <option value="Right">Right</option>
+                                                         <option value="Left">Left</option>
+                                                     </select>
+                                                 </div>
                                             </div>
 
                                             <div className="grid grid-cols-1 gap-3 mt-3">
@@ -1963,36 +1967,6 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
                                                 ))}
                                             </div>
 
-
-                                            {/* Ranking Dropdown */}
-                                            <div className="mb-3 relative" ref={rankingDropdownRef}>
-                                                <button
-                                                    onClick={() => setIsRankingDropdownOpen(!isRankingDropdownOpen)}
-                                                    className="w-full flex items-center justify-between px-3 py-2 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-all font-bold"
-                                                >
-                                                    <div className="flex items-center gap-3">
-                                                        <span className="text-base">{rankingOptions.find(opt => opt.id === rankingContext)?.icon}</span>
-                                                        <span className="text-[13px] font-medium tracking-tight text-white/80 font-inter">{rankingOptions.find(opt => opt.id === rankingContext)?.label}</span>
-                                                    </div>
-                                                    <span className="text-[8px] opacity-30">▼</span>
-                                                </button>
-
-                                                {isRankingDropdownOpen && (
-                                                    <div className="absolute top-full left-0 right-0 mt-1 bg-[#121214] border border-white/10 rounded-xl overflow-hidden z-50 shadow-2xl py-1 backdrop-blur-xl">
-                                                        {rankingOptions.map((ctx) => (
-                                                            <button
-                                                                key={ctx.id}
-                                                                onClick={() => { setRankingContext(ctx.id); setIsRankingDropdownOpen(false); }}
-                                                                className={`w-full flex items-center gap-3 px-4 py-2 transition-colors hover:bg-white/5 ${rankingContext === ctx.id ? 'bg-ef-accent/5' : ''} `}
-                                                            >
-                                                                <span className="text-sm">{ctx.icon}</span>
-                                                                <span className={`text-[9px] font-black uppercase tracking-widest ${rankingContext === ctx.id ? 'text-ef-accent' : 'text-white/50'} `}>{ctx.label}</span>
-                                                            </button>
-                                                        ))}
-                                                    </div>
-                                                )}
-                                            </div>
-
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                                                 {/* Analysis Box */}
                                                 <div className="space-y-4 bg-[#111111] rounded-[1.5rem] p-5 border border-white/5 shadow-xl">
@@ -2015,10 +1989,42 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
 
                                                 {/* Ranking Box */}
                                                 <div className="space-y-4 bg-[#111111] rounded-[1.5rem] p-5 border border-white/5 shadow-xl">
-                                                    <h4 className="text-[13px] font-medium tracking-tight text-white/40 font-inter border-b border-white/10 pb-1 flex justify-between">
-                                                        <span>RANKING OUT OF</span>
-                                                        <span className="text-ef-accent font-inter">{rankInfo.total}</span>
-                                                    </h4>
+                                                    <div className="flex items-center justify-between border-b border-white/10 pb-2.5 relative">
+                                                        {/* Ranking Dropdown */}
+                                                        <div className="relative animate-fade-in" ref={rankingDropdownRef}>
+                                                            <button
+                                                                onClick={() => setIsRankingDropdownOpen(!isRankingDropdownOpen)}
+                                                                className="flex items-center gap-2 px-2.5 py-1 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10 hover:border-white/20 transition-all text-left"
+                                                            >
+                                                                <span className="text-sm leading-none">{rankingOptions.find(opt => opt.id === rankingContext)?.icon}</span>
+                                                                <span className="text-[12px] font-semibold tracking-tight text-white/80 font-inter">{rankingOptions.find(opt => opt.id === rankingContext)?.label}</span>
+                                                                <svg className="w-3.5 h-3.5 text-white/50 ml-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" stroke="currentColor" />
+                                                                </svg>
+                                                            </button>
+
+                                                            {isRankingDropdownOpen && (
+                                                                <div className="absolute top-full left-0 mt-1 min-w-[140px] bg-[#121214] border border-white/10 rounded-xl overflow-hidden z-[60] shadow-2xl py-1 backdrop-blur-xl">
+                                                                    {rankingOptions.map((ctx) => (
+                                                                        <button
+                                                                            key={ctx.id}
+                                                                            onClick={() => { setRankingContext(ctx.id); setIsRankingDropdownOpen(false); }}
+                                                                            className={`w-full flex items-center gap-3 px-3 py-2 transition-colors hover:bg-white/5 ${rankingContext === ctx.id ? 'bg-ef-accent/5' : ''} `}
+                                                                        >
+                                                                            <span className="text-sm">{ctx.icon}</span>
+                                                                            <span className={`text-[10px] font-black uppercase tracking-widest ${rankingContext === ctx.id ? 'text-ef-accent' : 'text-white/50'} `}>{ctx.label}</span>
+                                                                        </button>
+                                                                    ))}
+                                                                </div>
+                                                            )}
+                                                        </div>
+
+                                                        {/* Right side: Ranking Out OF */}
+                                                        <div className="text-[13px] font-medium tracking-tight font-inter flex items-center gap-1.5">
+                                                            <span className="text-white/40">Ranking Out OF</span>
+                                                            <span className="text-ef-accent font-black font-mono">{rankInfo.total}</span>
+                                                        </div>
+                                                    </div>
                                                     <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 pt-0.5">
                                                         <div className="flex justify-between items-center">
                                                             <span className="text-[13px] font-medium tracking-tight text-white/40 font-inter">Matches</span>
@@ -3210,6 +3216,17 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
                     >
                         <span>✏️</span> Edit Badge
                     </button>
+                    {badgeContextMenu.badgeType === 'club' && (
+                        <button
+                            onClick={() => {
+                                setIsChangingClub({ x: badgeContextMenu.x, y: badgeContextMenu.y });
+                                setBadgeContextMenu(null);
+                            }}
+                            className="w-full text-left px-4 py-3 rounded-xl hover:bg-white/5 transition-all text-xs font-black uppercase tracking-widest flex items-center gap-3 text-white/70 hover:text-white border-t border-white/5 mt-1 pt-3"
+                        >
+                            <span>🛡️</span> Change Club
+                        </button>
+                    )}
                     <button
                         onClick={() => {
                             setAddingRuleBadge({
@@ -3248,6 +3265,111 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
                 />,
                 document.body
             )}
+
+            {/* Change Club Modal Portal */}
+            {isChangingClub && createPortal(
+                <ChangeClubModal
+                    currentClub={formData.club || player.club || ''}
+                    suggestions={suggestions.club}
+                    coords={isChangingClub}
+                    onClose={() => setIsChangingClub(null)}
+                    onSave={(newClub) => {
+                        const matchingPlayer = players.find(p => p.club && p.club.toLowerCase() === newClub.toLowerCase());
+                        const clubLogo = matchingPlayer?.logos?.club || matchingPlayer?.club_badge_url || '';
+                        const clubLeague = matchingPlayer?.league || '';
+                        const leagueLogo = matchingPlayer?.logos?.league || '';
+
+                        const updatedFields = {
+                            club: newClub,
+                            logos: {
+                                ...(formData.logos || {}),
+                                club: clubLogo || formData.logos?.club || '',
+                                league: leagueLogo || formData.logos?.league || ''
+                            },
+                            club_badge_url: clubLogo || player.club_badge_url || '',
+                            league: clubLeague || formData.league || player.league || ''
+                        };
+
+                        onUpdate(player._id, updatedFields, false);
+                        setFormData(prev => ({
+                            ...prev,
+                            ...updatedFields
+                        }));
+                        setIsChangingClub(null);
+                    }}
+                />,
+                document.body
+            )}
+        </div>
+    );
+};
+
+const ChangeClubModal = ({ currentClub, suggestions, coords, onClose, onSave }) => {
+    const [club, setClub] = useState(currentClub);
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        onSave(club.trim());
+    };
+
+    const style = useMemo(() => {
+        if (!coords) return { top: '50%', left: '50%', transform: 'translate(-50%, -50%)', position: 'fixed' };
+        const width = 340;
+        const height = 48;
+        let left = coords.x;
+        let top = coords.y;
+
+        if (left + width > window.innerWidth) {
+            left = window.innerWidth - width - 16;
+        }
+        if (top + height > window.innerHeight) {
+            top = window.innerHeight - height - 16;
+        }
+        return {
+            position: 'fixed',
+            top: `${top}px`,
+            left: `${left}px`,
+            width: `${width}px`,
+            zIndex: 9999
+        };
+    }, [coords]);
+
+    return (
+        <div className="fixed inset-0 z-[9998]" onClick={onClose}>
+            <div
+                style={style}
+                onClick={(e) => e.stopPropagation()}
+                className="bg-[#0a0a0c] border border-white/10 rounded-xl p-1.5 flex items-center shadow-2xl animate-in fade-in zoom-in-95 duration-100"
+            >
+                <form onSubmit={handleSubmit} className="flex items-center w-full gap-2">
+                    <div className="flex-1 min-w-0">
+                        <AutocompleteInput
+                            value={club}
+                            onChange={setClub}
+                            suggestions={suggestions}
+                            placeholder="BAYERN MUNCHEN"
+                            className="w-full bg-black/40 border border-white/5 rounded-lg px-3 py-2 text-xs font-bold text-white outline-none focus:border-ef-accent/50 transition-all placeholder:text-white/20 uppercase"
+                        />
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0 pr-1">
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="w-8 h-8 rounded-lg border border-white/15 bg-white/[0.02] hover:bg-white/[0.08] hover:border-white/30 transition-all flex items-center justify-center text-white/80 hover:text-white"
+                            title="Cancel"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                        </button>
+                        <button
+                            type="submit"
+                            className="w-8 h-8 rounded-lg border border-white/15 bg-white/[0.02] hover:bg-white/[0.08] hover:border-white/30 hover:text-ef-accent hover:border-ef-accent/40 transition-all flex items-center justify-center text-white/80"
+                            title="Save"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
     );
 };

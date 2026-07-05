@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { PLAYSTYLES, TOP_LEAGUES, SPECIAL_SKILLS, PLAYER_SKILLS, ALL_SKILLS } from '../constants';
 import { searchLeagues, searchTeams, searchCountries, getFlagUrl } from '../services/footballApi';
 import SavedProgressionsModal from './SavedProgressionsModal';
@@ -695,7 +695,8 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
         if (comparisonContext === 'club') filteredPlayers = filteredPlayers.filter(p => p.club === player.club);
         if (comparisonContext === 'country') filteredPlayers = filteredPlayers.filter(p => p.nationality === player.nationality);
         if (comparisonContext === 'playstyle') filteredPlayers = filteredPlayers.filter(p => p.playstyle === player.playstyle);
-        if (comparisonContext === 'card_type') filteredPlayers = filteredPlayers.filter(p => (p.card_type || 'base') === (player.card_type || 'base'));
+        if (comparisonContext === 'card_type') filteredPlayers = filteredPlayers.filter(p => (p.cardType || p.card_type || 'base').toLowerCase() === (player.cardType || player.card_type || 'base').toLowerCase());
+        if (comparisonContext === 'versions') filteredPlayers = filteredPlayers.filter(p => p.name && player.name && p.name.toLowerCase() === player.name.toLowerCase());
 
         const sorted = [...filteredPlayers].sort((a, b) => getValue(b) - getValue(a));
 
@@ -742,7 +743,8 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
         { id: 'club', label: 'Same Club', icon: '≡ƒ¢í∩╕Å' },
         { id: 'country', label: 'Same Country', icon: '≡ƒÅ│∩╕Å' },
         { id: 'playstyle', label: 'Same Playstyle', icon: '≡ƒÄ«' },
-        { id: 'card_type', label: 'Same Card Type', icon: '≡ƒâÅ' }
+        { id: 'card_type', label: 'Same Card Type', icon: '≡ƒâÅ' },
+        { id: 'versions', label: 'Same Player (Versions)', icon: '👥' }
     ];
 
     // ΓöÇΓöÇΓöÇ Smart Awards Computation ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ

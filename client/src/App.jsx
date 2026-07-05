@@ -2403,6 +2403,40 @@ function App() {
                               <div className="w-3 h-3 border-2 border-ef-accent border-t-transparent rounded-full animate-spin"></div>
                             </div>
                           )}
+                          {showBulkClubResults && (
+                            <div className="absolute z-[60] left-0 w-[205%] min-w-[300px] top-full mt-1 bg-[#1a1a1e] border border-white/10 rounded-xl shadow-2xl overflow-hidden max-h-[200px] overflow-y-auto">
+                              {bulkClubResults.length > 0 ? (
+                                bulkClubResults.map(club => (
+                                  <div
+                                    key={club.idTeam}
+                                    onClick={() => handleSelectBulkClub(club)}
+                                    className={`px-4 py-3 hover:bg-white/10 cursor-pointer flex items-center gap-3 transition-colors border-b border-white/5 last:border-0 ${club.isLocal ? 'bg-ef-accent/5' : ''}`}
+                                  >
+                                    <div className="relative">
+                                      <img src={club.strBadge} alt="" className="w-8 h-8 object-contain" />
+                                      {club.isLocal && (
+                                        <div className="absolute -top-1 -right-1 bg-ef-accent text-black text-[6px] font-black px-1 rounded-sm shadow-sm ring-1 ring-black/10">BADGE</div>
+                                      )}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-baseline gap-2">
+                                        <span className="text-xs font-black text-white truncate">{club.strTeam}</span>
+                                        {club.isLocal && <span className="text-[7px] text-ef-accent font-black uppercase tracking-tighter opacity-60">Existing</span>}
+                                      </div>
+                                      <div className="text-[8px] uppercase font-bold opacity-30 truncate">{club.strLeague || 'No League Info'}</div>
+                                    </div>
+                                    <div className="text-xs opacity-20">➜</div>
+                                  </div>
+                                ))
+                              ) : (
+                                !isBulkSearchingClub && bulkEditData.club?.length >= 2 && (
+                                  <div className="px-4 py-6 text-center text-white/40 text-[10px] font-bold uppercase tracking-widest">
+                                    No clubs found
+                                  </div>
+                                )
+                              )}
+                            </div>
+                          )}
                         </div>
                       </div>
 
@@ -2440,6 +2474,39 @@ function App() {
                           {isBulkSearchingNation && (
                             <div className="absolute right-3 top-1/2 -translate-y-1/2">
                               <div className="w-3 h-3 border-2 border-ef-accent border-t-transparent rounded-full animate-spin"></div>
+                            </div>
+                          )}
+                          {showBulkNationResults && (
+                            <div className="absolute z-[60] left-0 w-[205%] min-w-[300px] top-full mt-1 bg-[#1a1a1e] border border-white/10 rounded-xl shadow-2xl overflow-hidden max-h-[200px] overflow-y-auto">
+                              {bulkNationResults.length > 0 ? (
+                                bulkNationResults.map(nation => (
+                                  <div
+                                    key={nation.idTeam || nation.name}
+                                    onClick={() => handleSelectBulkNation(nation)}
+                                    className={`px-4 py-3 hover:bg-white/10 cursor-pointer flex items-center gap-3 transition-colors border-b border-white/5 last:border-0 ${nation.isLocal ? 'bg-ef-accent/5' : ''}`}
+                                  >
+                                    <div className="relative">
+                                      <img src={nation.flag} alt="" className="w-8 h-8 object-contain" />
+                                      {nation.isLocal && (
+                                        <div className="absolute -top-1 -right-1 bg-ef-accent text-black text-[6px] font-black px-1 rounded-sm shadow-sm ring-1 ring-black/10">BADGE</div>
+                                      )}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-baseline gap-2">
+                                        <span className="text-xs font-black text-white truncate">{nation.name}</span>
+                                        {nation.isLocal && <span className="text-[7px] text-ef-accent font-black uppercase tracking-tighter opacity-60">Existing</span>}
+                                      </div>
+                                    </div>
+                                    <div className="text-xs opacity-20">➜</div>
+                                  </div>
+                                ))
+                              ) : (
+                                !isBulkSearchingNation && bulkEditData.nationality?.length >= 2 && (
+                                  <div className="px-4 py-6 text-center text-white/40 text-[10px] font-bold uppercase tracking-widest">
+                                    No nations found
+                                  </div>
+                                )
+                              )}
                             </div>
                           )}
                         </div>
@@ -2495,74 +2562,6 @@ function App() {
                       />
                     </div>
 
-                    {showBulkClubResults && (
-                      <div className="absolute z-[60] left-6 right-6 mt-0 bg-[#1a1a1e] border border-white/10 rounded-xl shadow-2xl overflow-hidden max-h-[200px] overflow-y-auto">
-                        {bulkClubResults.length > 0 ? (
-                          bulkClubResults.map(club => (
-                            <div
-                              key={club.idTeam}
-                              onClick={() => handleSelectBulkClub(club)}
-                              className={`px-4 py-3 hover:bg-white/10 cursor-pointer flex items-center gap-3 transition-colors border-b border-white/5 last:border-0 ${club.isLocal ? 'bg-ef-accent/5' : ''}`}
-                            >
-                              <div className="relative">
-                                <img src={club.strBadge} alt="" className="w-8 h-8 object-contain" />
-                                {club.isLocal && (
-                                  <div className="absolute -top-1 -right-1 bg-ef-accent text-black text-[6px] font-black px-1 rounded-sm shadow-sm ring-1 ring-black/10">BADGE</div>
-                                )}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-baseline gap-2">
-                                  <span className="text-xs font-black text-white truncate">{club.strTeam}</span>
-                                  {club.isLocal && <span className="text-[7px] text-ef-accent font-black uppercase tracking-tighter opacity-60">Existing</span>}
-                                </div>
-                                <div className="text-[8px] uppercase font-bold opacity-30 truncate">{club.strLeague || 'No League Info'}</div>
-                              </div>
-                              <div className="text-xs opacity-20">➜</div>
-                            </div>
-                          ))
-                        ) : (
-                          !isBulkSearchingClub && bulkEditData.club?.length >= 2 && (
-                            <div className="px-4 py-6 text-center text-white/40 text-[10px] font-bold uppercase tracking-widest">
-                              No clubs found
-                            </div>
-                          )
-                        )}
-                      </div>
-                    )}
-
-                    {showBulkNationResults && (
-                      <div className="absolute z-[60] left-6 right-6 mt-0 bg-[#1a1a1e] border border-white/10 rounded-xl shadow-2xl overflow-hidden max-h-[200px] overflow-y-auto">
-                        {bulkNationResults.length > 0 ? (
-                          bulkNationResults.map(nation => (
-                            <div
-                              key={nation.idTeam || nation.name}
-                              onClick={() => handleSelectBulkNation(nation)}
-                              className={`px-4 py-3 hover:bg-white/10 cursor-pointer flex items-center gap-3 transition-colors border-b border-white/5 last:border-0 ${nation.isLocal ? 'bg-ef-accent/5' : ''}`}
-                            >
-                              <div className="relative">
-                                <img src={nation.flag} alt="" className="w-8 h-8 object-contain" />
-                                {nation.isLocal && (
-                                  <div className="absolute -top-1 -right-1 bg-ef-accent text-black text-[6px] font-black px-1 rounded-sm shadow-sm ring-1 ring-black/10">BADGE</div>
-                                )}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-baseline gap-2">
-                                  <span className="text-xs font-black text-white truncate">{nation.name}</span>
-                                  {nation.isLocal && <span className="text-[7px] text-ef-accent font-black uppercase tracking-tighter opacity-60">Existing</span>}
-                                </div>
-                              </div>
-                              <div className="text-xs opacity-20">➜</div>
-                            </div>
-                          ))
-                        ) : (
-                          !isBulkSearchingNation && bulkEditData.nationality?.length >= 2 && (
-                            <div className="px-4 py-6 text-center text-white/40 text-[10px] font-bold uppercase tracking-widest">
-                              No nations found
-                            </div>
-                          )
-                        )}
-                      </div>
-                    )}
                   </div>
 
                   {bulkEditData.league && (
@@ -2575,49 +2574,7 @@ function App() {
                     </div>
                   )}
 
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="relative group">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        id="bulk-club-badge-input"
-                        className="hidden"
-                        onChange={(e) => handleBulkBadgeUpload('club', e.target.files[0])}
-                      />
-                      <button
-                        onClick={() => document.getElementById('bulk-club-badge-input').click()}
-                        className={`w-full py-4 border rounded-xl flex flex-col items-center justify-center gap-2 transition-all ${bulkEditData.logos?.club ? 'bg-ef-accent/10 border-ef-accent text-ef-accent' : 'bg-black/40 border-white/10 text-white/40 hover:bg-white/5 hover:text-white'}`}
-                      >
-                        {bulkEditData.logos?.club ? (
-                          <img src={bulkEditData.logos.club} className="w-6 h-6 object-contain" alt="" />
-                        ) : (
-                          <span className="text-xl">🛡️</span>
-                        )}
-                        <span className="text-[8px] font-black uppercase tracking-widest">{bulkEditData.logos?.club ? 'Change Club' : 'Add Club'}</span>
-                      </button>
-                    </div>
 
-                    <div className="relative group">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        id="bulk-nation-badge-input"
-                        className="hidden"
-                        onChange={(e) => handleBulkBadgeUpload('country', e.target.files[0])}
-                      />
-                      <button
-                        onClick={() => document.getElementById('bulk-nation-badge-input').click()}
-                        className={`w-full py-4 border rounded-xl flex flex-col items-center justify-center gap-2 transition-all ${bulkEditData.logos?.country ? 'bg-ef-blue/10 border-ef-blue text-ef-blue' : 'bg-black/40 border-white/10 text-white/40 hover:bg-white/5 hover:text-white'}`}
-                      >
-                        {bulkEditData.logos?.country ? (
-                          <img src={bulkEditData.logos.country} className="w-6 h-6 object-contain" alt="" />
-                        ) : (
-                          <span className="text-xl">🏴</span>
-                        )}
-                        <span className="text-[8px] font-black uppercase tracking-widest">{bulkEditData.logos?.country ? 'Change Nation' : 'Add Nation'}</span>
-                      </button>
-                    </div>
-                  </div>
 
                   {/* Bulk Tags */}
                   <div className="pt-4 border-t border-white/5">
@@ -2668,29 +2625,7 @@ function App() {
                     )}
                   </div>
 
-                  {/* Link inputs for badges */}
-                  <div className="grid grid-cols-2 gap-3 pt-2">
-                    <div>
-                      <label className="block text-[8px] font-black uppercase tracking-widest opacity-30 mb-1 ml-1">Or Paste Club Link</label>
-                      <input
-                        type="text"
-                        placeholder="https://..."
-                        value={bulkEditData.logos?.club?.startsWith('data:image') ? '' : bulkEditData.logos?.club}
-                        onChange={(e) => setBulkEditData(prev => ({ ...prev, logos: { ...prev.logos, club: e.target.value } }))}
-                        className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-[9px] font-bold text-white outline-none focus:border-ef-accent/40 transition-all placeholder:text-white/5"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[8px] font-black uppercase tracking-widest opacity-30 mb-1 ml-1">Or Paste Nation Link</label>
-                      <input
-                        type="text"
-                        placeholder="https://..."
-                        value={bulkEditData.logos?.country?.startsWith('data:image') ? '' : bulkEditData.logos?.country}
-                        onChange={(e) => setBulkEditData(prev => ({ ...prev, logos: { ...prev.logos, country: e.target.value } }))}
-                        className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-[9px] font-bold text-white outline-none focus:border-ef-blue/40 transition-all placeholder:text-white/5"
-                      />
-                    </div>
-                  </div>
+
                 </div>
 
                 <div className="p-6 pt-0 flex flex-col gap-3">
