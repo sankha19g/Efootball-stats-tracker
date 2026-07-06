@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 
-export const AutocompleteInput = ({ value, onChange, suggestions, placeholder, className }) => {
+export const AutocompleteInput = ({ value, onChange, suggestions, placeholder, className, required }) => {
     const [open, setOpen] = useState(false);
     const [highlighted, setHighlighted] = useState(-1);
     const wrapRef = useRef(null);
@@ -51,6 +51,7 @@ export const AutocompleteInput = ({ value, onChange, suggestions, placeholder, c
                 placeholder={placeholder}
                 className={className}
                 autoComplete="off"
+                required={required}
             />
             {open && filtered.length > 0 && (
                 <div
@@ -63,11 +64,10 @@ export const AutocompleteInput = ({ value, onChange, suggestions, placeholder, c
                             type="button"
                             onMouseDown={e => { e.preventDefault(); onChange(s); setOpen(false); setHighlighted(-1); }}
                             onMouseEnter={() => setHighlighted(i)}
-                            className={`w-full text-left px-4 py-2.5 text-sm font-bold truncate transition-colors ${
-                                i === highlighted
+                            className={`w-full text-left px-4 py-2.5 text-sm font-bold truncate transition-colors ${i === highlighted
                                     ? 'bg-ef-accent/20 text-ef-accent'
                                     : 'text-white/70 hover:bg-white/5 hover:text-white'
-                             }`}
+                                }`}
                         >
                             {s}
                         </button>
@@ -78,7 +78,7 @@ export const AutocompleteInput = ({ value, onChange, suggestions, placeholder, c
     );
 };
 
-export const BadgeEditModal = ({ badge, type, onClose, onUpdate }) => {
+export const BadgeEditModal = ({ badge, type, onClose, onUpdate, suggestions }) => {
     const [name, setName] = useState(badge.name);
     const [logo, setLogo] = useState(badge.logo);
     const [league, setLeague] = useState(badge.league || '');
@@ -91,7 +91,7 @@ export const BadgeEditModal = ({ badge, type, onClose, onUpdate }) => {
 
     return (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[300] flex items-center justify-center p-4 animate-fade-in text-white">
-            <div className="w-full max-w-md bg-ef-card rounded-[2.5rem] border border-white/10 shadow-2xl overflow-hidden animate-slide-up">
+            <div className="w-full max-w-md bg-ef-card rounded-xl border border-white/10 shadow-2xl overflow-hidden animate-slide-up">
                 <div className="p-8 border-b border-white/5 flex items-center justify-between bg-black/20">
                     <h3 className="text-xl font-black uppercase tracking-tighter italic text-white flex items-center gap-3">
                         <span className="text-ef-accent">✏️</span> Edit {type === 'club' ? 'Club' : type === 'league' ? 'League' : 'Nation'}
@@ -124,10 +124,11 @@ export const BadgeEditModal = ({ badge, type, onClose, onUpdate }) => {
                     {type === 'club' && (
                         <div>
                             <label className="block text-[10px] font-black uppercase tracking-widest text-white/40 mb-2 ml-1">League</label>
-                            <input
-                                type="text"
+                            <AutocompleteInput
                                 value={league}
-                                onChange={(e) => setLeague(e.target.value)}
+                                onChange={setLeague}
+                                suggestions={suggestions?.league || []}
+                                placeholder="e.g., Spanish League"
                                 className="w-full bg-black/40 border border-white/10 rounded-2xl px-5 py-4 text-sm font-bold text-white outline-none focus:border-ef-accent/50 transition-all shadow-inner"
                                 required
                             />
@@ -244,11 +245,10 @@ export const BadgeAddRuleModal = ({ badge, initialType, suggestions, onClose, on
                         <button
                             type="submit"
                             disabled={isSaving || !from.trim() || !to.trim()}
-                            className={`flex-1 py-4 px-6 rounded-2xl font-black uppercase tracking-widest text-[10px] transition-all shadow-lg flex items-center justify-center gap-2 ${
-                                isSaving || !from.trim() || !to.trim()
+                            className={`flex-1 py-4 px-6 rounded-2xl font-black uppercase tracking-widest text-[10px] transition-all shadow-lg flex items-center justify-center gap-2 ${isSaving || !from.trim() || !to.trim()
                                     ? 'bg-white/5 text-white/20 cursor-not-allowed border border-white/5'
                                     : 'bg-ef-accent text-ef-dark hover:scale-[1.02] active:scale-95 shadow-ef-accent/20'
-                            }`}
+                                }`}
                         >
                             {isSaving ? 'Adding Rule...' : 'Add Rule'}
                         </button>

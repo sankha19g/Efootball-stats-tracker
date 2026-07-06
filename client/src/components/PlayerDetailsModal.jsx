@@ -3248,6 +3248,7 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
                 <BadgeEditModal
                     badge={editingBadge}
                     type={editingBadge.type}
+                    suggestions={suggestions}
                     onClose={() => setEditingBadge(null)}
                     onUpdate={onUpdateBadge}
                 />,

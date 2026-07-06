@@ -921,6 +921,7 @@ const BadgesView = ({ players, onUpdateBadge, onAddBadge, onMergeBadge, onAutoMe
                 <BadgeEditModal
                     badge={editingBadge}
                     type={mode}
+                    suggestions={suggestions}
                     onClose={() => setEditingBadge(null)}
                     onUpdate={onUpdateBadge}
                 />,
