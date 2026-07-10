@@ -10,7 +10,7 @@ const ALL_SKILLS = [
     "Captaincy", "Fighting Spirit", "Penalty Specialist", "Super-sub", "Track Back"
 ];
 
-const SavedProgressionsModal = ({ player, onClose, onUpdatePlayer, settings, showConfirm, openOnCreate = false, isInline = false, initialBuildId = null }) => {
+const SavedProgressionsModal = ({ player, onClose, onUpdatePlayer, settings, showConfirm, openOnCreate = false, isInline = false, initialBuildId = null, addToast }) => {
     const [progressions, setProgressions] = useState(player.progressions || []);
     const [isAdding, setIsAdding] = useState(openOnCreate || !!initialBuildId);
     const [zoomedImage, setZoomedImage] = useState(null);
@@ -65,6 +65,9 @@ const SavedProgressionsModal = ({ player, onClose, onUpdatePlayer, settings, sho
                 ...newBuild
             };
             updated = [...progressions, build];
+            if (addToast) {
+                addToast(newBuild.name || 'Build', 'build_added');
+            }
         }
 
         saveToBackend(updated);
@@ -101,9 +104,14 @@ const SavedProgressionsModal = ({ player, onClose, onUpdatePlayer, settings, sho
     };
 
     const handleDelete = (id) => {
+        const build = progressions.find(p => p.id === id);
+        const buildName = build ? build.name : 'Build';
         showConfirm('Delete Build', 'Delete this build?', () => {
             const updated = progressions.filter(p => p.id !== id);
             saveToBackend(updated);
+            if (addToast) {
+                addToast(buildName, 'build_removed');
+            }
             if (editingBuildId === id) {
                 setEditingBuildId(null);
                 setIsAdding(false);

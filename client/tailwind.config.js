@@ -27,6 +27,10 @@ export default {
                     '0%': { transform: 'translateY(20px)', opacity: '0' },
                     '100%': { transform: 'translateY(0)', opacity: '1' },
                 },
+                slideInRight: {
+                    '0%': { transform: 'translateX(100%)', opacity: '0' },
+                    '100%': { transform: 'translateX(0)', opacity: '1' },
+                },
                 shine: {
                     '0%': { transform: 'translateX(-100%) skewX(-15deg)' },
                     '100%': { transform: 'translateX(200%) skewX(-15deg)' },
@@ -35,6 +39,7 @@ export default {
             animation: {
                 'fade-in': 'fadeIn 0.5s ease-out',
                 'slide-up': 'slideUp 0.5s ease-out',
+                'slide-in-right': 'slideInRight 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards',
                 'pulse-slow': 'pulse 3s infinite',
                 'shine': 'shine 2.5s infinite linear',
                 'shine-slow': 'shine 4s infinite linear',

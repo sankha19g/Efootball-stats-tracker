@@ -64,6 +64,20 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
         return [...arr, ...Array(5 - arr.length).fill('')];
     });
     const [activeAdditionalSlot, setActiveAdditionalSlot] = useState(null);
+    const [toasts, setToasts] = useState([]);
+
+    const addToast = (skillName, type = 'added') => {
+        const id = Date.now() + Math.random();
+        setToasts(prev => [...prev, {
+            id,
+            skillName,
+            type,
+            playerName: formData.name || player.name || 'Player'
+        }]);
+        setTimeout(() => {
+            setToasts(prev => prev.filter(t => t.id !== id));
+        }, 3000);
+    };
 
     const [skillSearch, setSkillSearch] = useState('');
     const [isEditingSkills, setIsEditingSkills] = useState(false);
@@ -82,6 +96,7 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
     const [isLeaguePopupOpen, setIsLeaguePopupOpen] = useState(false);
     const [isRankingDropdownOpen, setIsRankingDropdownOpen] = useState(false);
     const rankingDropdownRef = useRef(null);
+    const skillsPopupRef = useRef(null);
     const [awardFilter, setAwardFilter] = useState('All');
     const [isAwardsExpanded, setIsAwardsExpanded] = useState(false);
 
@@ -217,6 +232,10 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
             // Ranking Dropdown
             if (rankingDropdownRef.current && !rankingDropdownRef.current.contains(event.target)) {
                 setIsRankingDropdownOpen(false);
+            }
+            // Skills Popup
+            if (skillsPopupRef.current && !skillsPopupRef.current.contains(event.target)) {
+                setActiveAdditionalSlot(null);
             }
             // Context Menu
             if (contextMenuRef.current && !contextMenuRef.current.contains(event.target)) {
@@ -1018,6 +1037,8 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
 
                 if (rank >= 1 && rank <= (group.maxRank ?? 3)) {
                     const value = stat.getValue(player);
+                    // Skip award if the player's stat value is 0 — a 0-goal rank means nothing
+                    if (value <= 0) continue;
                     const displayVal = stat.type === 'ratio' ? value.toFixed(2) : value;
                     awards.push({
                         rank,
@@ -1408,11 +1429,10 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
                                 <div className="h-[1px] flex-1 bg-gradient-to-l from-transparent to-white/10"></div>
                             </div>
 
-                            <div className="space-y-0">
+                            <div className="flex flex-wrap gap-2 pt-2">
                                 {[
                                     { label: 'Player ID', value: formData.playerId || formData.pesdb_id, mono: true },
                                     { label: 'Form', value: formData['Form'] || 'Standard', highlight: true },
-
                                     { label: 'Weak Foot Usage', value: formData['Weak Foot Usage'] },
                                     { label: 'Weak Foot Accuracy', value: formData['Weak Foot Accuracy'] },
                                     { label: 'Injury Resistance', value: formData['Injury Resistance'] },
@@ -1420,9 +1440,9 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
                                     { label: 'Date Added', value: (() => { const d = parseEfDate(formData['Date Added']); return d ? d.toLocaleDateString() : 'Unknown'; })() },
                                     { label: 'Uploaded', value: formData.createdAt ? new Date(formData.createdAt).toLocaleDateString() : 'N/A', dim: true }
                                 ].map((item, i) => (
-                                    <div key={i} className="w-full flex items-center justify-between px-[10px] h-[26px] transition-all duration-300 border-l-4 border-transparent hover:bg-white/5 group/spec">
-                                        <span className="text-[13px] font-medium tracking-tight text-white/40 font-inter group-hover/spec:text-ef-accent transition-colors">{item.label}</span>
-                                        <span className={`text-[13px] font-medium tracking-tight font-inter ${item.mono ? 'font-mono text-[12px]' : ''} ${item.highlight ? 'text-ef-accent' :
+                                    <div key={i} className="flex items-center h-[26px] gap-1.5 px-[10px] bg-white/[0.03] border border-white/10 rounded-md transition-all font-inter text-[13px] font-medium tracking-tight hover:bg-white/[0.08]">
+                                        <span className="text-white/40">{item.label}:</span>
+                                        <span className={`font-semibold ${item.mono ? 'font-mono text-[12px]' : ''} ${item.highlight ? 'text-ef-accent' :
                                             item.blue ? 'text-ef-blue' :
                                                 'text-white'
                                             }`}>
@@ -1968,26 +1988,7 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
                                             </div>
 
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                                                {/* Analysis Box */}
-                                                <div className="space-y-4 bg-[#111111] rounded-[1.5rem] p-5 border border-white/5 shadow-xl">
-                                                    <h4 className="text-[13px] font-medium tracking-tight text-white/40 font-inter border-b border-white/10 pb-1">Efficiency</h4>
-                                                    <div className="space-y-1.5 pt-1">
-                                                        <div className="flex justify-between items-center group">
-                                                            <span className="text-[13px] font-medium tracking-tight text-white/40 font-inter">Goals / GM</span>
-                                                            <span className="font-mono text-sm font-black text-ef-accent">{(player.goals / (player.matches || 1)).toFixed(2)}</span>
-                                                        </div>
-                                                        <div className="flex justify-between items-center group">
-                                                            <span className="text-[13px] font-medium tracking-tight text-white/40 font-inter">Assists / GM</span>
-                                                            <span className="font-mono text-sm font-black text-ef-blue">{(player.assists / (player.matches || 1)).toFixed(2)}</span>
-                                                        </div>
-                                                        <div className="flex justify-between items-center group">
-                                                            <span className="text-[13px] font-medium tracking-tight text-white/40 font-inter">G+A / GM</span>
-                                                            <span className="font-mono text-sm font-black text-white">{((player.goals + player.assists) / (player.matches || 1)).toFixed(2)}</span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                {/* Ranking Box */}
+                                                {/* Ranking & Efficiency Box */}
                                                 <div className="space-y-4 bg-[#111111] rounded-[1.5rem] p-5 border border-white/5 shadow-xl">
                                                     <div className="flex items-center justify-between border-b border-white/10 pb-2.5 relative">
                                                         {/* Ranking Dropdown */}
@@ -2019,40 +2020,217 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
                                                             )}
                                                         </div>
 
-                                                        {/* Right side: Ranking Out OF */}
-                                                        <div className="text-[13px] font-medium tracking-tight font-inter flex items-center gap-1.5">
-                                                            <span className="text-white/40">Ranking Out OF</span>
-                                                            <span className="text-ef-accent font-black font-mono">{rankInfo.total}</span>
+                                                        {/* Right side: Ranking Out OF Badge */}
+                                                        <div className="h-[22px] px-2.5 bg-ef-accent/10 border border-ef-accent/30 rounded-full flex items-center justify-center">
+                                                            <span className="text-[11px] font-bold font-mono tracking-tight text-ef-accent">{rankInfo.total}</span>
                                                         </div>
                                                     </div>
-                                                    <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 pt-0.5">
-                                                        <div className="flex justify-between items-center">
-                                                            <span className="text-[13px] font-medium tracking-tight text-white/40 font-inter">Matches</span>
+                                                    <div className="flex flex-wrap gap-2 pt-0.5">
+                                                        <div className="flex items-center h-[26px] gap-1.5 px-[10px] bg-white/[0.03] border border-white/10 rounded-md text-white/85 text-[13px] font-medium tracking-tight font-inter">
+                                                            <span className="text-white/40">Matches:</span>
                                                             <span className="font-mono text-[11px] font-black text-white/80">#{rankInfo.matches}</span>
                                                         </div>
-                                                        <div className="flex justify-between items-center text-ef-accent">
-                                                            <span className="text-[13px] font-medium tracking-tight text-ef-accent/60 font-inter">G+A</span>
+                                                        <div className="flex items-center h-[26px] gap-1.5 px-[10px] bg-ef-accent/10 border border-ef-accent/30 rounded-md text-ef-accent text-[13px] font-medium tracking-tight font-inter">
+                                                            <span className="text-ef-accent/60">G+A:</span>
                                                             <span className="font-mono text-[11px] font-black text-ef-accent">#{rankInfo.ga}</span>
                                                         </div>
-                                                        <div className="flex justify-between items-center">
-                                                            <span className="text-[13px] font-medium tracking-tight text-white/40 font-inter">Goals</span>
+                                                        <div className="flex items-center h-[26px] gap-1.5 px-[10px] bg-white/[0.03] border border-white/10 rounded-md text-white/85 text-[13px] font-medium tracking-tight font-inter">
+                                                            <span className="text-white/40">Goals:</span>
                                                             <span className="font-mono text-[11px] font-black text-white/80">#{rankInfo.goals}</span>
                                                         </div>
-                                                        <div className="flex justify-between items-center">
-                                                            <span className="text-[13px] font-medium tracking-tight text-white/40 font-inter">Assists</span>
+                                                        <div className="flex items-center h-[26px] gap-1.5 px-[10px] bg-white/[0.03] border border-white/10 rounded-md text-white/85 text-[13px] font-medium tracking-tight font-inter">
+                                                            <span className="text-white/40">Assists:</span>
                                                             <span className="font-mono text-[11px] font-black text-white/80">#{rankInfo.assists}</span>
                                                         </div>
-                                                        <div className="flex justify-between items-center border-t border-white/5 pt-1">
-                                                            <span className="text-[13px] font-medium tracking-tight text-white/40 font-inter">Goals/GM</span>
+                                                        <div className="flex items-center h-[26px] gap-1.5 px-[10px] bg-ef-accent/5 border border-ef-accent/20 rounded-md text-ef-accent text-[13px] font-medium tracking-tight font-inter">
+                                                            <span className="text-ef-accent/60">Goals/GM:</span>
                                                             <span className="font-mono text-[11px] font-black text-ef-accent">#{rankInfo.gpg}</span>
                                                         </div>
-                                                        <div className="flex justify-between items-center border-t border-white/5 pt-1">
-                                                            <span className="text-[13px] font-medium tracking-tight text-white/40 font-inter">Ast/GM</span>
+                                                        <div className="flex items-center h-[26px] gap-1.5 px-[10px] bg-ef-blue/5 border border-ef-blue/20 rounded-md text-ef-blue text-[13px] font-medium tracking-tight font-inter">
+                                                            <span className="text-ef-blue/60">Ast/GM:</span>
                                                             <span className="font-mono text-[11px] font-black text-ef-blue">#{rankInfo.apg}</span>
                                                         </div>
-                                                        <div className="flex justify-between items-center col-span-2 bg-white/5 p-1 px-2 rounded">
-                                                            <span className="text-[13px] font-medium tracking-tight text-white/40 font-inter">G+A / Game</span>
+                                                        <div className="flex items-center h-[26px] gap-1.5 px-[10px] bg-ef-accent/10 border border-ef-accent/30 rounded-md text-ef-accent text-[13px] font-medium tracking-tight font-inter">
+                                                            <span className="text-ef-accent/60">G+A/Game:</span>
                                                             <span className="font-mono text-[11px] font-black text-ef-accent">#{rankInfo.gapg}</span>
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    {/* Efficiency Section */}
+                                                    <div className="border-t border-white/5 pt-3">
+                                                        <div className="flex items-center justify-between mb-2.5">
+                                                            <h4 className="text-[11px] font-black uppercase tracking-widest text-white/40 font-inter">Efficiency</h4>
+                                                        </div>
+                                                        <div className="flex flex-wrap gap-2">
+                                                            <div className="flex items-center h-[26px] gap-2 px-[10px] bg-white/[0.03] border border-white/10 rounded-md hover:bg-white/[0.08] transition-all">
+                                                                <span className="text-[13px] font-medium tracking-tight text-white/40 font-inter">Goals/GM</span>
+                                                                <span className="text-[13px] font-semibold tracking-tight font-inter text-ef-accent">{((player.goals || 0) / (player.matches || 1)).toFixed(2)}</span>
+                                                            </div>
+                                                            <div className="flex items-center h-[26px] gap-2 px-[10px] bg-white/[0.03] border border-white/10 rounded-md hover:bg-white/[0.08] transition-all">
+                                                                <span className="text-[13px] font-medium tracking-tight text-white/40 font-inter">Assists/GM</span>
+                                                                <span className="text-[13px] font-semibold tracking-tight font-inter text-ef-blue">{((player.assists || 0) / (player.matches || 1)).toFixed(2)}</span>
+                                                            </div>
+                                                            <div className="flex items-center h-[26px] gap-2 px-[10px] bg-white/[0.03] border border-white/10 rounded-md hover:bg-white/[0.08] transition-all">
+                                                                <span className="text-[13px] font-medium tracking-tight text-white/40 font-inter">G+A/GM</span>
+                                                                <span className="text-[13px] font-semibold tracking-tight font-inter text-white">{(((player.goals || 0) + (player.assists || 0)) / (player.matches || 1)).toFixed(2)}</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* Skills Box */}
+                                                <div className="space-y-4 bg-[#111111] rounded-[1.5rem] p-5 border border-white/5 shadow-xl">
+                                                    <div>
+                                                        <div className="flex items-center justify-between mb-2.5">
+                                                            <h4 className="text-[11px] font-black uppercase tracking-widest text-white/40 font-inter">Skills</h4>
+                                                            <span className="text-[11px] font-black tracking-widest text-white/20 font-inter">{skills.filter(Boolean).length}</span>
+                                                        </div>
+                                                        <div className="flex flex-wrap gap-2">
+                                                            {skills.filter(Boolean).map((skill, idx) => {
+                                                                const displayName = typeof skill === 'object' ? (skill.name || skill.label || JSON.stringify(skill)) : skill;
+                                                                const displayClean = displayName.replace('⚡', '').trim();
+                                                                const isSpecial = SPECIAL_SKILLS.includes(displayClean) || displayName.includes('⚡');
+                                                                return (
+                                                                    <div
+                                                                        key={idx}
+                                                                        className={`flex items-center h-[26px] gap-1 px-[10px] rounded-md transition-all font-inter text-[13px] font-medium tracking-tight ${
+                                                                            isSpecial
+                                                                                ? 'bg-red-500/10 border border-red-500/30 text-red-300'
+                                                                                : 'bg-white/[0.03] border border-white/10 text-white/80'
+                                                                        }`}
+                                                                    >
+                                                                        <span>{displayClean}</span>
+                                                                        {isSpecial && <span className="text-red-400">⚡</span>}
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                            {skills.filter(Boolean).length === 0 && (
+                                                                <span className="text-[13px] italic text-white/20 font-inter">No core skills</span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="border-t border-white/5 pt-3">
+                                                        <div className="flex items-center justify-between mb-2.5">
+                                                            <h4 className="text-[11px] font-black uppercase tracking-widest text-white/40 font-inter">Additional Skills</h4>
+                                                            <span className="text-[11px] font-black tracking-widest text-white/20 font-inter">
+                                                                {additionalSkills.filter(Boolean).length}/5
+                                                            </span>
+                                                        </div>
+                                                        <div className="flex flex-wrap gap-2">
+                                                            {additionalSkills.map((addedSkill, idx) => {
+                                                                if (!addedSkill) return null;
+                                                                const displayName = typeof addedSkill === 'object' ? (addedSkill.name || addedSkill.label || JSON.stringify(addedSkill)) : addedSkill;
+                                                                const displayClean = displayName ? displayName.replace('⚡', '').trim() : '';
+                                                                const isSpecial = SPECIAL_SKILLS.includes(displayClean) || (displayName && displayName.includes('⚡'));
+                                                                return (
+                                                                    <div key={idx} className="relative">
+                                                                        <div
+                                                                            className={`flex items-center h-[26px] gap-1 px-[10px] rounded-md transition-all font-inter text-[13px] font-medium tracking-tight ${
+                                                                                isSpecial
+                                                                                    ? 'bg-red-500/10 border border-red-500/30 text-red-300'
+                                                                                    : 'bg-blue-500/10 border border-blue-500/30 text-blue-300'
+                                                                            }`}
+                                                                        >
+                                                                            <span>{displayClean}</span>
+                                                                            {isSpecial && <span className="text-red-400">⚡</span>}
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation();
+                                                                                    const performDelete = () => {
+                                                                                        const next = [...additionalSkills];
+                                                                                        next[idx] = '';
+                                                                                        setAdditionalSkills(next);
+                                                                                        setActiveAdditionalSlot(null);
+                                                                                        addToast(displayClean, 'removed');
+                                                                                        if (player._id) onUpdate(player._id, { additionalSkills: next.filter(Boolean) }, false);
+                                                                                    };
+                                                                                    if (showConfirm) {
+                                                                                        showConfirm(
+                                                                                            'Remove Skill',
+                                                                                            `Are you sure you want to remove the skill "${displayClean}"?`,
+                                                                                            performDelete
+                                                                                        );
+                                                                                    } else {
+                                                                                        if (window.confirm(`Are you sure you want to remove the skill "${displayClean}"?`)) {
+                                                                                            performDelete();
+                                                                                        }
+                                                                                    }
+                                                                                }}
+                                                                                className="text-white/20 hover:text-white text-xs leading-none ml-1.5 flex-shrink-0 active:scale-90 transition-all"
+                                                                            >✕</button>
+                                                                        </div>
+                                                                    </div>
+                                                                );
+                                                            })}
+
+                                                            {additionalSkills.filter(Boolean).length < 5 && (
+                                                                <div className="relative">
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => {
+                                                                            const emptyIdx = additionalSkills.findIndex(s => !s);
+                                                                            if (emptyIdx !== -1) {
+                                                                                setActiveAdditionalSlot(activeAdditionalSlot === emptyIdx ? null : emptyIdx);
+                                                                                setSkillSearch('');
+                                                                            }
+                                                                        }}
+                                                                        className="flex items-center h-[26px] gap-1 px-[10px] bg-white/[0.03] border border-dashed border-white/20 rounded-md hover:bg-white/[0.08] hover:border-white/40 transition-all text-white/50 text-[13px] font-medium tracking-tight font-inter"
+                                                                    >
+                                                                        <span className="text-xs font-black">+</span>
+                                                                        <span>Add skill</span>
+                                                                    </button>
+
+                                                                    {/* In-place Popup */}
+                                                                    {activeAdditionalSlot !== null && !additionalSkills[activeAdditionalSlot] && (
+                                                                        <div ref={skillsPopupRef} className="absolute bottom-full mb-1 left-0 bg-[#18181c] border border-white/15 rounded-xl shadow-[0_-10px_40px_rgba(0,0,0,0.7)] z-[80] overflow-hidden min-w-[200px]">
+                                                                            <div className="p-2 border-b border-white/5">
+                                                                                <input
+                                                                                    autoFocus
+                                                                                    value={skillSearch}
+                                                                                    onChange={e => setSkillSearch(e.target.value)}
+                                                                                    placeholder="Search skills..."
+                                                                                    className="w-full bg-white/5 border border-white/10 rounded-lg px-[10px] h-[26px] text-[13px] font-medium tracking-tight font-inter text-white placeholder-white/20 focus:outline-none focus:border-blue-400/40"
+                                                                                    onClick={e => e.stopPropagation()}
+                                                                                />
+                                                                            </div>
+                                                                            <div className="overflow-y-auto max-h-[180px] custom-scrollbar">
+                                                                                {PLAYER_SKILLS
+                                                                                    .filter(s => !skills.includes(s) && !additionalSkills.includes(s))
+                                                                                    .filter(s => !skillSearch || s.toLowerCase().includes(skillSearch.toLowerCase()))
+                                                                                    .map(skill => (
+                                                                                        <button
+                                                                                            key={skill}
+                                                                                            type="button"
+                                                                                            onClick={(e) => {
+                                                                                                e.stopPropagation();
+                                                                                                const next = [...additionalSkills];
+                                                                                                next[activeAdditionalSlot] = skill;
+                                                                                                setAdditionalSkills(next);
+                                                                                                setActiveAdditionalSlot(null);
+                                                                                                setSkillSearch('');
+                                                                                                addToast(skill);
+                                                                                                if (player._id) onUpdate(player._id, { additionalSkills: next.filter(Boolean) }, false);
+                                                                                            }}
+                                                                                            className="w-full text-left px-[10px] h-[26px] text-[13px] font-medium tracking-tight font-inter text-white/60 hover:text-white hover:bg-white/5 flex items-center gap-2 border-b border-white/5 last:border-0 transition-all"
+                                                                                        >
+                                                                                            <span className="w-1 h-1 rounded-full flex-shrink-0 bg-ef-accent/40"></span>
+                                                                                            {skill}
+                                                                                        </button>
+                                                                                    ))
+                                                                                }
+                                                                                {PLAYER_SKILLS
+                                                                                    .filter(s => !skills.includes(s) && !additionalSkills.includes(s))
+                                                                                    .filter(s => !skillSearch || s.toLowerCase().includes(skillSearch.toLowerCase()))
+                                                                                    .length === 0 && (
+                                                                                        <div className="px-3 py-4 text-center text-[13px] font-medium tracking-tight text-white/30 font-inter">No skills available</div>
+                                                                                    )}
+                                                                            </div>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 </div>
@@ -2501,11 +2679,26 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
                                                                         <button
                                                                             onClick={(e) => {
                                                                                 e.stopPropagation();
-                                                                                const next = [...additionalSkills];
-                                                                                next[idx] = '';
-                                                                                setAdditionalSkills(next);
-                                                                                setActiveAdditionalSlot(null);
-                                                                                if (player._id) onUpdate(player._id, { additionalSkills: next.filter(Boolean) }, false);
+                                                                                const skillClean = addedSkill.replace('⚡', '').trim();
+                                                                                const performDelete = () => {
+                                                                                    const next = [...additionalSkills];
+                                                                                    next[idx] = '';
+                                                                                    setAdditionalSkills(next);
+                                                                                    setActiveAdditionalSlot(null);
+                                                                                    addToast(skillClean, 'removed');
+                                                                                    if (player._id) onUpdate(player._id, { additionalSkills: next.filter(Boolean) }, false);
+                                                                                };
+                                                                                if (showConfirm) {
+                                                                                    showConfirm(
+                                                                                        'Remove Skill',
+                                                                                        `Are you sure you want to remove the skill "${skillClean}"?`,
+                                                                                        performDelete
+                                                                                    );
+                                                                                } else {
+                                                                                    if (window.confirm(`Are you sure you want to remove the skill "${skillClean}"?`)) {
+                                                                                        performDelete();
+                                                                                    }
+                                                                                }
                                                                             }}
                                                                             className="text-white/20 hover:text-white text-xs leading-none flex-shrink-0 active:scale-90 transition-all"
                                                                         >✕</button>
@@ -2540,6 +2733,7 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
                                                                                             setAdditionalSkills(next);
                                                                                             setActiveAdditionalSlot(null);
                                                                                             setSkillSearch('');
+                                                                                            addToast(skill);
                                                                                             if (player._id) onUpdate(player._id, { additionalSkills: next.filter(Boolean) }, false);
                                                                                         }}
                                                                                         className="w-full text-left px-[10px] h-[26px] text-[13px] font-medium tracking-tight font-inter text-white/60 hover:text-white hover:bg-white/5 flex items-center gap-2 border-b border-white/5 last:border-0 transition-all"
@@ -2591,6 +2785,7 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
                                                         showAlert={showAlert}
                                                         openOnCreate={progressionOpenCreate}
                                                         initialBuildId={selectedProgressionId}
+                                                        addToast={addToast}
                                                     />
                                                 </div>
                                             ) : (
@@ -2629,67 +2824,88 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
                                                     {player.progressions?.length > 0 ? (
                                                         <div className="space-y-2">
                                                             {player.progressions.map((build, idx) => (
-                                                                <div key={build.id || idx} className="relative group">
-                                                                    <button
-                                                                        onClick={() => {
-                                                                            setProgressionOpenCreate(false);
-                                                                            setSelectedProgressionId(build.id);
-                                                                            setIsEditingBuildInline(true);
-                                                                        }}
-                                                                        className="w-full flex flex-col gap-2 px-4 py-3 bg-white/5 border border-white/10 rounded-2xl hover:bg-white/8 hover:border-white/20 active:scale-[0.98] transition-all text-left"
-                                                                    >
-                                                                        <div className="flex items-center gap-3 pr-8">
-                                                                            <div className="w-8 h-8 rounded-xl bg-ef-accent/10 flex items-center justify-center flex-shrink-0">
-                                                                                <span className="text-sm">🏗️</span>
-                                                                            </div>
-                                                                            <div className="flex flex-col flex-1 min-w-0">
-                                                                                <div className="flex items-center gap-2">
-                                                                                    <span className="text-[13px] font-black text-white truncate">{build.name || `Build ${idx + 1}`}</span>
-                                                                                    <span className="px-1.5 py-0.5 bg-ef-accent/20 text-ef-accent rounded text-[8px] font-mono font-bold">{build.rating || player.rating}</span>
-                                                                                </div>
-                                                                                {build.description && (
-                                                                                    <span className="text-[10px] text-white/30 font-medium truncate">{build.description}</span>
-                                                                                )}
-                                                                            </div>
-                                                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-white/20 group-hover:text-white/50 transition-colors flex-shrink-0">
-                                                                                <polyline points="9 18 15 12 9 6" />
-                                                                            </svg>
+                                                                <div key={build.id || idx} className="w-full flex flex-col gap-2 p-3.5 bg-[#111111] border border-white/5 rounded-3xl hover:border-white/10 transition-all text-left relative group">
+                                                                    
+                                                                    {/* Header section: Badges, Title, Action Buttons */}
+                                                                    <div className="flex items-center gap-3 w-full">
+                                                                        {/* Badges */}
+                                                                        <div className="flex items-center gap-1 bg-[#0c0c0c] p-1 rounded-2xl border border-white/[0.03] flex-shrink-0">
+                                                                            <span className="px-3 py-1 bg-[#0a3820] text-ef-accent rounded-xl text-base md:text-lg font-mono font-black leading-none flex items-center justify-center">{build.rating || player.rating}</span>
+                                                                            {build.position && (
+                                                                                <span className="px-3 py-1 bg-[#242424] text-white/80 rounded-xl text-base md:text-lg font-mono font-black leading-none flex items-center justify-center">{build.position}</span>
+                                                                            )}
                                                                         </div>
 
-                                                                        <button
-                                                                            onClick={(e) => {
-                                                                                e.stopPropagation();
-                                                                                showConfirm('Delete Progression', 'Delete this build?', () => {
-                                                                                    const updated = player.progressions.filter(p => p.id !== (build.id || idx));
-                                                                                    onUpdate(player._id, { ...player, progressions: updated }, false);
-                                                                                }, 'danger', 'Delete');
+                                                                        {/* Title */}
+                                                                        <span 
+                                                                            onClick={() => {
+                                                                                setProgressionOpenCreate(false);
+                                                                                setSelectedProgressionId(build.id);
+                                                                                setIsEditingBuildInline(true);
                                                                             }}
-                                                                            className="absolute top-3 right-3 p-1.5 text-white/10 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all opacity-0 group-hover:opacity-100 z-10"
-                                                                            title="Delete Build"
+                                                                            className="text-xl md:text-2xl font-mono text-white truncate cursor-pointer hover:text-ef-accent transition-colors flex-1"
                                                                         >
-                                                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                                                                <path d="M3 6h18m-2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                                                                            </svg>
-                                                                        </button>
+                                                                            {build.name || `Build ${idx + 1}`}
+                                                                        </span>
 
+                                                                        {/* Action Buttons (Edit and Delete) */}
+                                                                        <div className="flex items-center gap-2 flex-shrink-0">
+                                                                            {/* Edit Button */}
+                                                                            <button
+                                                                                onClick={() => {
+                                                                                    setProgressionOpenCreate(false);
+                                                                                    setSelectedProgressionId(build.id);
+                                                                                    setIsEditingBuildInline(true);
+                                                                                }}
+                                                                                className="w-8 h-8 rounded-full border border-white/10 hover:border-white/30 text-white/60 hover:text-white flex items-center justify-center transition-all bg-white/5 hover:bg-white/10"
+                                                                                title="Edit Build"
+                                                                            >
+                                                                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                                                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                                                                                    <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                                                                                </svg>
+                                                                            </button>
+
+                                                                            {/* Delete Button */}
+                                                                            <button
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation();
+                                                                                    showConfirm('Delete Progression', 'Delete this build?', () => {
+                                                                                        const updated = player.progressions.filter(p => p.id !== (build.id || idx));
+                                                                                        onUpdate(player._id, { ...player, progressions: updated }, false);
+                                                                                        addToast(build.name || 'Build', 'build_removed');
+                                                                                    }, 'danger', 'Delete');
+                                                                                }}
+                                                                                className="w-8 h-8 rounded-full border border-white/10 hover:border-red-500/30 text-white/60 hover:text-red-400 flex items-center justify-center transition-all bg-white/5 hover:bg-red-500/10"
+                                                                                title="Delete Build"
+                                                                            >
+                                                                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                                                                    <path d="M3 6h18m-2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                                                                </svg>
+                                                                            </button>
+                                                                        </div>
+                                                                    </div>
+
+                                                                    {/* Inner block: Stats Progression and Added Skills */}
+                                                                    <div className="w-full bg-[#0c0c0c] border border-white/[0.03] rounded-2xl p-3 flex flex-col gap-2.5">
                                                                         {/* Stats Progression Display */}
-                                                                        <div className="flex flex-wrap gap-1.5 mt-1">
+                                                                        <div className="flex flex-wrap gap-1.5">
                                                                             {[
-                                                                                { key: 'shooting', label: 'Sho' },
-                                                                                { key: 'passing', label: 'Pas' },
-                                                                                { key: 'dribbling', label: 'Dri' },
-                                                                                { key: 'dexterity', label: 'Dex' },
+                                                                                { key: 'shooting', label: 'SHO' },
+                                                                                { key: 'passing', label: 'PAS' },
+                                                                                { key: 'dribbling', label: 'DRI' },
+                                                                                { key: 'dexterity', label: 'DEX' },
                                                                                 { key: 'lowerBody', label: 'LBS' },
-                                                                                { key: 'aerial', label: 'Aer' },
-                                                                                { key: 'defending', label: 'Def' },
-                                                                                { key: 'gk1', label: 'G1' },
-                                                                                { key: 'gk2', label: 'G2' },
-                                                                                { key: 'gk3', label: 'G3' }
+                                                                                { key: 'aerial', label: 'AER' },
+                                                                                { key: 'defending', label: 'DEF' },
+                                                                                { key: 'gk1', label: 'GK1' },
+                                                                                { key: 'gk2', label: 'GK2' },
+                                                                                { key: 'gk3', label: 'GK3' }
                                                                             ].map(stat => {
                                                                                 const val = build[stat.key];
                                                                                 if (!val || val === 0) return null;
                                                                                 return (
-                                                                                    <div key={stat.key} className="flex items-center gap-1 bg-black/40 px-2 py-0.5 rounded-md border border-white/5">
+                                                                                    <div key={stat.key} className="flex items-center gap-1 bg-[#141414] px-2 py-0.5 rounded-md border border-white/5">
                                                                                         <span className="text-[9px] font-bold text-white/40 uppercase">{stat.label}</span>
                                                                                         <span className="text-[11px] font-mono font-black text-ef-accent">{val}</span>
                                                                                     </div>
@@ -2699,21 +2915,19 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
 
                                                                         {/* Added Skills Display */}
                                                                         {(build.skill1 || build.skill2 || build.skill3 || build.skill4 || build.skill5) && (
-                                                                            <div className="flex flex-wrap gap-1 pt-1 border-t border-white/5">
+                                                                            <div className="flex flex-wrap gap-1.5 pt-2.5 border-t border-white/5">
                                                                                 {[1, 2, 3, 4, 5].map(i => {
                                                                                     const skill = build[`skill${i}`];
                                                                                     if (!skill) return null;
                                                                                     return (
-                                                                                        <span key={i} className="text-[9px] font-bold px-1.5 py-0.5 bg-white/5 text-white/60 rounded border border-white/5">
+                                                                                        <span key={i} className="text-[10px] font-medium px-2 py-0.5 bg-white/5 text-white/70 rounded border border-white/10">
                                                                                             {skill}
                                                                                         </span>
                                                                                     );
                                                                                 })}
                                                                             </div>
                                                                         )}
-                                                                    </button>
-
-                                                                    {/* Optional: Delete button overlay or inside button */}
+                                                                    </div>
                                                                 </div>
                                                             ))}
                                                         </div>
@@ -2976,6 +3190,54 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
                             </div>
                         )}
                     </>
+            {/* Toast Container */}
+            <div className="fixed top-6 right-6 z-[9999] flex flex-col gap-3 pointer-events-none">
+                {toasts.map(toast => {
+                    const isRemoved = toast.type === 'removed' || toast.type === 'build_removed';
+                    return (
+                        <div
+                            key={toast.id}
+                            className={`pointer-events-auto flex items-center gap-3 px-4 py-3 bg-[#0a0a0c]/95 border rounded-xl backdrop-blur-md max-w-sm text-white font-inter text-xs md:text-sm animate-slide-in-right ${
+                                isRemoved
+                                    ? 'border-red-500/30 shadow-[0_8px_32px_rgba(239,68,68,0.12)]'
+                                    : 'border-ef-accent/30 shadow-[0_8px_32px_rgba(0,255,136,0.12)]'
+                            }`}
+                        >
+                            <span className={`flex-shrink-0 w-2.5 h-2.5 rounded-full ${
+                                isRemoved ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]' : 'bg-ef-accent shadow-[0_0_8px_rgba(0,255,136,0.8)]'
+                            }`}></span>
+                            <span className="flex-1 text-white/90">
+                                {toast.type === 'removed' && (
+                                    <>
+                                        <span className="text-red-400 font-bold">{toast.skillName}</span> skill removed successfully
+                                    </>
+                                )}
+                                {toast.type === 'added' && (
+                                    <>
+                                        <span className="text-ef-accent font-bold">{toast.skillName}</span> added to <span className="font-bold text-white">{toast.playerName}</span>
+                                    </>
+                                )}
+                                {toast.type === 'build_added' && (
+                                    <>
+                                        New build <span className="text-ef-accent font-bold">"{toast.skillName}"</span> added
+                                    </>
+                                )}
+                                {toast.type === 'build_removed' && (
+                                    <>
+                                        Build <span className="text-red-400 font-bold">"{toast.skillName}"</span> successfully deleted
+                                    </>
+                                )}
+                            </span>
+                            <button
+                                onClick={() => setToasts(prev => prev.filter(t => t.id !== toast.id))}
+                                className="text-white/30 hover:text-white transition-colors pl-2 focus:outline-none text-xs"
+                            >
+                                ✕
+                            </button>
+                        </div>
+                    );
+                })}
+            </div>
                 </div>
             </div>
 

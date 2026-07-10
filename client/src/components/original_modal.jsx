@@ -1734,22 +1734,102 @@ const PlayerDetailsModal = ({ player, players = [], onClose, onUpdate, onSelectP
                                                 )}
                                             </div>
 
+                                            {/* Efficiency Pills */}
+                                            <div className="flex flex-wrap items-center gap-x-4 gap-y-3 mb-6 max-w-full">
+                                                <div className="flex items-center h-[26px] gap-2 px-[10px] bg-white/[0.03] border border-white/10 rounded-md hover:bg-white/[0.08] transition-all">
+                                                    <span className="text-[13px] font-medium tracking-tight text-white/40 font-inter">Goals/GM</span>
+                                                    <span className="text-[13px] font-semibold tracking-tight font-inter text-ef-accent">{((player.goals || 0) / (player.matches || 1)).toFixed(2)}</span>
+                                                </div>
+                                                <div className="flex items-center h-[26px] gap-2 px-[10px] bg-white/[0.03] border border-white/10 rounded-md hover:bg-white/[0.08] transition-all">
+                                                    <span className="text-[13px] font-medium tracking-tight text-white/40 font-inter">Assists/GM</span>
+                                                    <span className="text-[13px] font-semibold tracking-tight font-inter text-ef-blue">{((player.assists || 0) / (player.matches || 1)).toFixed(2)}</span>
+                                                </div>
+                                                <div className="flex items-center h-[26px] gap-2 px-[10px] bg-white/[0.03] border border-white/10 rounded-md hover:bg-white/[0.08] transition-all">
+                                                    <span className="text-[13px] font-medium tracking-tight text-white/40 font-inter">G+A/GM</span>
+                                                    <span className="text-[13px] font-semibold tracking-tight font-inter text-white">{(((player.goals || 0) + (player.assists || 0)) / (player.matches || 1)).toFixed(2)}</span>
+                                                </div>
+                                            </div>
+
+                                            {/* Side-by-Side: Skills and Ranking Box */}
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                                                {/* Analysis Box */}
-                                                <div className="space-y-4 bg-[#111111] rounded-[1.5rem] p-5 border border-white/5 shadow-xl">
-                                                    <h4 className="text-[13px] font-medium tracking-tight text-white/40 font-inter border-b border-white/10 pb-1">Efficiency</h4>
-                                                    <div className="space-y-1.5 pt-1">
-                                                        <div className="flex justify-between items-center group">
-                                                            <span className="text-[13px] font-medium tracking-tight text-white/40 font-inter">Goals / GM</span>
-                                                            <span className="font-mono text-sm font-black text-ef-accent">{(player.goals / (player.matches || 1)).toFixed(2)}</span>
+                                                {/* Skills Box */}
+                                                <div className="bg-[#111111] rounded-[1.5rem] p-5 border border-white/5 shadow-xl flex flex-col justify-between min-h-0">
+                                                    <div className="space-y-5">
+                                                        {/* Section: Core Skills */}
+                                                        <div>
+                                                            <div className="flex items-center justify-between mb-2.5">
+                                                                <h4 className="text-[11px] font-black uppercase tracking-widest text-white/40 font-inter">Skills</h4>
+                                                                <span className="text-[11px] font-black tracking-widest text-white/20 font-inter">{skills.filter(Boolean).length}</span>
+                                                            </div>
+                                                            <div className="flex flex-wrap gap-2">
+                                                                {skills.filter(Boolean).map((skill, idx) => {
+                                                                    const displayName = typeof skill === 'object' ? (skill.name || skill.label || JSON.stringify(skill)) : skill;
+                                                                    const displayClean = displayName.replace('⚡', '').trim();
+                                                                    const isSpecial = SPECIAL_SKILLS.includes(displayClean) || displayName.includes('⚡');
+                                                                    return (
+                                                                        <div
+                                                                            key={idx}
+                                                                            onClick={() => setModalPage(2)}
+                                                                            className={`flex items-center h-[26px] gap-1 px-[10px] rounded-md transition-all cursor-pointer font-inter text-[13px] font-medium tracking-tight ${isSpecial
+                                                                                    ? 'bg-red-500/10 border border-red-500/30 text-red-300 hover:bg-red-500/20'
+                                                                                    : 'bg-white/[0.03] border border-white/10 text-white/80 hover:bg-white/[0.08]'
+                                                                                }`}
+                                                                        >
+                                                                            <span>{displayClean}</span>
+                                                                            {isSpecial && <span className="text-red-400">⚡</span>}
+                                                                        </div>
+                                                                    );
+                                                                })}
+                                                                {skills.filter(Boolean).length === 0 && (
+                                                                    <span className="text-[13px] italic text-white/20 font-inter">No core skills</span>
+                                                                )}
+                                                            </div>
                                                         </div>
-                                                        <div className="flex justify-between items-center group">
-                                                            <span className="text-[13px] font-medium tracking-tight text-white/40 font-inter">Assists / GM</span>
-                                                            <span className="font-mono text-sm font-black text-ef-blue">{(player.assists / (player.matches || 1)).toFixed(2)}</span>
-                                                        </div>
-                                                        <div className="flex justify-between items-center group">
-                                                            <span className="text-[13px] font-medium tracking-tight text-white/40 font-inter">G+A / GM</span>
-                                                            <span className="font-mono text-sm font-black text-white">{((player.goals + player.assists) / (player.matches || 1)).toFixed(2)}</span>
+
+                                                        {/* Section: Additional Skills */}
+                                                        <div>
+                                                            <div className="flex items-center justify-between mb-2.5">
+                                                                <h4 className="text-[11px] font-black uppercase tracking-widest text-white/40 font-inter">Additional Skills</h4>
+                                                                <span className="text-[11px] font-black tracking-widest text-white/20 font-inter">
+                                                                    {additionalSkills.filter(Boolean).length}/5
+                                                                </span>
+                                                            </div>
+                                                            <div className="flex flex-wrap gap-2">
+                                                                {additionalSkills.filter(Boolean).map((skill, idx) => {
+                                                                    const displayName = typeof skill === 'object' ? (skill.name || skill.label || JSON.stringify(skill)) : skill;
+                                                                    const displayClean = displayName.replace('⚡', '').trim();
+                                                                    const isSpecial = SPECIAL_SKILLS.includes(displayClean) || displayName.includes('⚡');
+                                                                    return (
+                                                                        <div
+                                                                            key={idx}
+                                                                            onClick={() => setModalPage(2)}
+                                                                            className={`flex items-center h-[26px] gap-1 px-[10px] rounded-md transition-all cursor-pointer font-inter text-[13px] font-medium tracking-tight ${isSpecial
+                                                                                    ? 'bg-red-500/10 border border-red-500/30 text-red-300 hover:bg-red-500/20'
+                                                                                    : 'bg-blue-500/10 border border-blue-500/30 text-blue-300 hover:bg-blue-500/20'
+                                                                                }`}
+                                                                        >
+                                                                            <span>{displayClean}</span>
+                                                                            {isSpecial && <span className="text-red-400">⚡</span>}
+                                                                        </div>
+                                                                    );
+                                                                })}
+                                                                {additionalSkills.filter(Boolean).length < 5 && (
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => {
+                                                                            setModalPage(2);
+                                                                            const emptyIdx = additionalSkills.findIndex(s => !s);
+                                                                            if (emptyIdx !== -1) {
+                                                                                setActiveAdditionalSlot(emptyIdx);
+                                                                            }
+                                                                        }}
+                                                                        className="flex items-center h-[26px] gap-1 px-[10px] bg-white/[0.03] border border-dashed border-white/20 rounded-md hover:bg-white/[0.08] hover:border-white/40 transition-all text-white/50 text-[13px] font-medium tracking-tight font-inter"
+                                                                    >
+                                                                        <span className="text-xs font-black">+</span>
+                                                                        <span>Add skill</span>
+                                                                    </button>
+                                                                )}
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </div>
