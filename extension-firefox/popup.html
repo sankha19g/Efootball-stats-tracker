@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>eFootball Stats Tracker</title>
+    <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+    <div class="popup-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo-area">
+                <div class="logo-badge">⚡</div>
+                <div>
+                    <h1 class="logo-title">eFootball Stats</h1>
+                    <span class="logo-sub">Companion Extension</span>
+                </div>
+            </div>
+            <div id="status-indicator" class="status-badge status-offline">Not Logged In</div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Auth Form Card -->
+            <div id="auth-section" class="card">
+                <div class="card-header">
+                    <span class="card-icon">👤</span>
+                    <span class="card-title">Firebase Account Login</span>
+                </div>
+                
+                <div id="login-form">
+                    <p class="desc">Log in with your eFootball Stats Tracker account to authenticate and sync scraped players directly to your Cloud Firestore DB.</p>
+                    
+                    <div id="auth-error-msg" class="error-msg hidden"></div>
+
+                    <div class="input-group">
+                        <label>Email Address</label>
+                        <input type="email" id="input-email" placeholder="youremail@gmail.com" />
+                    </div>
+                    <div class="input-group">
+                        <label>Password</label>
+                        <input type="password" id="input-password" placeholder="••••••••" />
+                    </div>
+                    
+                    <button id="btn-login" class="btn btn-primary">Sign In with Account</button>
+                </div>
+
+                <!-- Logged In User Profile -->
+                <div id="user-profile" class="hidden">
+                    <div class="user-info">
+                        <div class="user-avatar" id="user-avatar">⚽</div>
+                        <div class="user-details">
+                            <span class="user-email" id="user-email">user@email.com</span>
+                            <span class="user-status" id="user-status">● Authenticated & Ready</span>
+                        </div>
+                    </div>
+
+                    <div class="sync-settings">
+                        <label class="setting-row">
+                            <span>Import Destination:</span>
+                            <select id="select-target" class="select-input">
+                                <option value="global">Global Database</option>
+                                <option value="squad">Direct to My Squad</option>
+                            </select>
+                        </label>
+                    </div>
+
+                    <div class="btn-row">
+                        <button id="btn-test-conn" class="btn btn-sm btn-secondary">Test Connection</button>
+                        <button id="btn-logout" class="btn btn-sm btn-outline">Sign Out</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Diagnostics & Activity Card -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-icon">📊</span>
+                    <span class="card-title">Live Sync Status</span>
+                </div>
+                <div id="diag-info" class="diag-info">
+                    <div class="diag-row">
+                        <span class="diag-lbl">Cloud Firestore:</span>
+                        <span id="diag-firestore" class="diag-val text-yellow">Checking...</span>
+                    </div>
+                    <div class="diag-row">
+                        <span class="diag-lbl">Local Server:</span>
+                        <span id="diag-server" class="diag-val text-gray">http://localhost:5001</span>
+                    </div>
+                    <div class="diag-row">
+                        <span class="diag-lbl">Last Scraped:</span>
+                        <span id="diag-last-player" class="diag-val text-white">None yet</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Features & Info -->
+            <div class="card card-info">
+                <div class="card-header">
+                    <span class="card-icon">⚡</span>
+                    <span class="card-title">PESDB Integration Active</span>
+                </div>
+                <ul class="feature-list">
+                    <li><span class="check">✓</span> 1-Click floating button on player profiles</li>
+                    <li><span class="check">✓</span> <b>Add All Visible (N)</b> on list tables</li>
+                    <li><span class="check">✓</span> Dual playstyles (Att & Def) extraction</li>
+                    <li><span class="check">✓</span> Instant in-page HUD summary with Undo</li>
+                </ul>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <a href="http://localhost:5173" target="_blank" id="link-webapp" class="footer-link">
+                Open Web Tracker ↗
+            </a>
+            <span class="version">v1.1.0</span>
+        </footer>
+    </div>
+    <script src="popup.js"></script>
+</body>
+</html>

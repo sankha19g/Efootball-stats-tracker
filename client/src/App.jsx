@@ -15,9 +15,7 @@ import {
   updatePlayersBulk,
   batchUpdatePlayers,
   batchAddPlayers,
-  logActivity,
-  getActivityLogs,
-  cleanupActivityLogs
+  logActivity
 } from './services/playerService';
 import { getApps, addApp, deleteApp } from './services/miscService';
 import { getSquads, saveSquad, deleteSquad } from './services/squadService';
@@ -43,9 +41,10 @@ const AutoMergeView = lazy(() => import('./pages/AutoMergeView'));
 const SocialDrawer = lazy(() => import('./components/SocialDrawer'));
 const BrochureModal = lazy(() => import('./components/BrochureModal'));
 const MySquadDB = lazy(() => import('./pages/MySquadDB'));
-const ActivityLog = lazy(() => import('./pages/ActivityLog'));
 const ComparePlayers = lazy(() => import('./pages/ComparePlayers'));
 const RandomChooser = lazy(() => import('./pages/RandomChooser'));
+const BuildsPage = lazy(() => import('./pages/BuildsPage'));
+const ExtensionsPage = lazy(() => import('./pages/ExtensionsPage'));
 
 const parseEfDate = (dateStr) => {
   if (!dateStr) return null;
@@ -303,37 +302,6 @@ function App() {
   const [filterClub, setFilterClub] = useState('');
   const [filterNationality, setFilterNationality] = useState('');
   const [filterRating, setFilterRating] = useState('');
-  const [activityLogs, setActivityLogs] = useState([]);
-
-  // Fetch Activity Logs
-  useEffect(() => {
-    const fetchLogs = async () => {
-      if (view === 'activity-log' && user?.uid) {
-        // Run cleanup first
-        await cleanupActivityLogs(user.uid);
-
-        let logs = await getActivityLogs(user.uid);
-
-        // If no logs exist, backfill from existing players for immediate feedback
-        if (logs.length === 0 && players.length > 0) {
-          const backfill = players.slice(0, 10).map(p => ({
-            id: `backfill-${p._id}`,
-            type: 'player_add',
-            title: 'Existing Squad Member',
-            description: `${p.name} (${p.position}) is part of your squad.`,
-            timestamp: p.createdAt || p.dateAdded || new Date().toISOString(),
-            device: 'System Migration',
-            storage: 'Firebase Cloud Firestore',
-            player: { id: p._id, name: p.name, position: p.position, rating: p.rating, image: p.image }
-          }));
-          logs = backfill;
-        }
-
-        setActivityLogs(logs);
-      }
-    };
-    fetchLogs();
-  }, [view, user, players]);
   const [filterPlaystyles, setFilterPlaystyles] = useState([]);
   const [filterSkill, setFilterSkill] = useState('All');
   const [filterFoot, setFilterFoot] = useState('All');
@@ -856,10 +824,6 @@ function App() {
         player: { id: addedPlayer._id, name: addedPlayer.name, position: addedPlayer.position, rating: addedPlayer.rating, image: addedPlayer.image }
       });
 
-      if (newLog) {
-        setActivityLogs(prev => [newLog, ...prev]);
-      }
-
       setPlayers(prev => [addedPlayer, ...prev]);
 
       // Only switch to list view if it's NOT a badge template
@@ -881,8 +845,7 @@ function App() {
     try {
       const addedPlayers = await addPlayersBulk(user.uid, playersList);
       setPlayers(prev => [...addedPlayers, ...prev]);
-      setShowDatabase(false);
-      showAlert('Bulk Import', `Successfully added ${playersList.length} players to your squad!`, 'success');
+      showAlert('Added to Squad', `Successfully added ${playersList.length} player${playersList.length > 1 ? 's' : ''} to your squad!`, 'success');
       return addedPlayers;
     } catch (err) {
       console.error('Error bulk adding players:', err);
@@ -919,10 +882,6 @@ function App() {
           title: 'Bulk Deletion',
           description: `Removed ${selectedIds.size} players from your squad.`
         });
-
-        if (newLog) {
-          setActivityLogs(prev => [newLog, ...prev]);
-        }
 
         // Cleanup
         setPlayers(prev => prev.filter(p => !selectedIds.has(p._id)));
@@ -1772,9 +1731,6 @@ function App() {
             player: { id: originalPlayer._id, name: originalPlayer.name, position: originalPlayer.position, rating: updatesToSave.rating || originalPlayer.rating, image: updatesToSave.image || originalPlayer.image }
           });
 
-          if (newLog) {
-            setActivityLogs(prev => [newLog, ...prev]);
-          }
         }
       }
 
@@ -2179,6 +2135,9 @@ function App() {
   // Selected Player for Details Modal
   const [selectedPlayer, setSelectedPlayer] = useState(null);
   const [startInEditMode, setStartInEditMode] = useState(false);
+  const [startInModalPage, setStartInModalPage] = useState(0);
+  const [startInBuildId, setStartInBuildId] = useState(null);
+  const [startInCreateBuild, setStartInCreateBuild] = useState(false);
 
   const enrichedSelectedPlayer = useMemo(() => {
     if (!selectedPlayer) return null;
@@ -2281,14 +2240,6 @@ function App() {
               activeSquad={activeSquad}
               onUpdate={(id, updates) => handleUpdatePlayer(id, updates, false)}
               onClose={() => startTransition(() => setView('list'))}
-              isSidebarOpen={isSidebarOpen}
-              settings={settings}
-            />
-          )}
-
-          {view === 'activity-log' && (
-            <ActivityLog
-              activities={activityLogs}
               isSidebarOpen={isSidebarOpen}
               settings={settings}
             />
@@ -3128,11 +3079,17 @@ function App() {
               onClose={() => {
                 setSelectedPlayer(null);
                 setStartInEditMode(false);
+                setStartInModalPage(0);
+                setStartInBuildId(null);
+                setStartInCreateBuild(false);
               }}
               onUpdate={handleUpdatePlayer}
               onSelectPlayer={setSelectedPlayer}
               onAddToCompare={handleAddToCompare}
               initialEditMode={startInEditMode}
+              initialModalPage={startInModalPage}
+              initialBuildId={startInBuildId}
+              initialCreateBuild={startInCreateBuild}
               settings={settings}
               showAlert={showAlert}
               showConfirm={showConfirm}
@@ -3875,6 +3832,42 @@ function App() {
                     user={user}
                     activeSquad={activeSquad}
                     isFullPage={true}
+                  />
+                )}
+
+                {view === 'builds' && (
+                  <BuildsPage
+                    players={enrichedPlayers}
+                    onPlayerClick={(player) => {
+                      startTransition(() => {
+                        setStartInModalPage(3);
+                        setSelectedPlayer(player);
+                      });
+                    }}
+                    onBuildClick={(player, buildId) => {
+                      startTransition(() => {
+                        setStartInModalPage(3);
+                        setStartInBuildId(buildId);
+                        setSelectedPlayer(player);
+                      });
+                    }}
+                    onAddBuildClick={(player) => {
+                      startTransition(() => {
+                        setStartInModalPage(3);
+                        setStartInCreateBuild(true);
+                        setSelectedPlayer(player);
+                      });
+                    }}
+                    onUpdatePlayer={handleUpdatePlayer}
+                    showConfirm={showConfirm}
+                    settings={settings}
+                  />
+                )}
+
+                {view === 'extensions' && (
+                  <ExtensionsPage
+                    user={user}
+                    showAlert={showAlert}
                   />
                 )}
               </>

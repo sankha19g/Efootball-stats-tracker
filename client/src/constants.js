@@ -1,10 +1,30 @@
+import { 
+    OFFENSIVE_PLAYSTYLES, 
+    DEFENSIVE_PLAYSTYLES, 
+    PLAYSTYLE_DETAILS, 
+    getOffensivePlaystyle, 
+    getDefensivePlaystyle, 
+    getPlaystyleInfo,
+    normalizePlaystyleName,
+    isOffensivePlaystyle,
+    isDefensivePlaystyle
+} from './data/playstyles';
+
+export {
+    OFFENSIVE_PLAYSTYLES,
+    DEFENSIVE_PLAYSTYLES,
+    PLAYSTYLE_DETAILS,
+    getOffensivePlaystyle,
+    getDefensivePlaystyle,
+    getPlaystyleInfo,
+    normalizePlaystyleName,
+    isOffensivePlaystyle,
+    isDefensivePlaystyle
+};
+
 export const PLAYSTYLES = [
-    'None', 'Goal Poacher', 'Fox in the Box', 'Target Man', 'Deep-lying Forward',
-    'Dummy Runner', 'Prolific Winger', 'Roaming Flank', 'Cross Specialist',
-    'Creative Playmaker', 'Hole Player', 'Box-to-Box', 'Orchestrator',
-    'Anchor Man', 'Classic No. 10', 'Build Up', 'The Destroyer',
-    'Extra Frontman', 'Attacking Full-back', 'Defensive Full-back',
-    'Full-back Finisher', 'Offensive Goalkeeper', 'Defensive Goalkeeper'
+    'None', 'Basic',
+    ...Array.from(new Set([...OFFENSIVE_PLAYSTYLES, ...DEFENSIVE_PLAYSTYLES])).filter(s => s !== 'Basic' && s !== 'None')
 ];
 
 export const TOP_LEAGUES = [

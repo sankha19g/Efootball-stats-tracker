@@ -1,4 +1,5 @@
 import { searchGlobalFirestore, getRecentGlobalPlayers } from './playerService';
+import API_URL from '../config/api';
 
 // Client-side search implementation (No backend server required)
 // This service loads the large player database ONLY when needed.
@@ -379,8 +380,7 @@ export const getFlagUrl = (nationality) => {
  */
 export const scrapePlayer = async (url) => {
     try {
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001';
-        const response = await fetch(`${apiUrl}/api/scrape`, {
+        const response = await fetch(`${API_URL}/api/scrape`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ url })

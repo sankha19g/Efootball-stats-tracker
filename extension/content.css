@@ -1,0 +1,608 @@
+/* ─── eFootball Stats Tracker Injected Extension Styles ─── */
+
+/* ── Floating Action Button on Player Profile ── */
+#ef-tracker-fab {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 999999;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: linear-gradient(135deg, #0a0e17 0%, #151b28 100%);
+    color: #ffffff;
+    border: 1px solid rgba(0, 255, 136, 0.4);
+    padding: 10px 18px;
+    border-radius: 30px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    font-size: 12px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    cursor: pointer;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6), 0 0 25px rgba(0, 255, 136, 0.25);
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+#ef-tracker-fab:hover {
+    transform: translateY(-2px) scale(1.04);
+    border-color: #00ff88;
+    box-shadow: 0 6px 25px rgba(0, 0, 0, 0.8), 0 0 35px rgba(0, 255, 136, 0.4);
+}
+
+#ef-tracker-fab .ef-icon {
+    font-size: 15px;
+    color: #00ff88;
+}
+
+#ef-tracker-fab.ef-loading {
+    opacity: 0.8;
+    cursor: wait;
+}
+
+#ef-tracker-fab.ef-success {
+    border-color: #00ff88;
+    background: #00ff88;
+    color: #050505;
+}
+
+/* ── In-Table Buttons & Top Bar ── */
+#ef-table-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #141923;
+    border: 1px solid rgba(0, 255, 136, 0.3);
+    border-radius: 12px;
+    padding: 10px 16px;
+    margin: 12px 0;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+#ef-table-topbar .ef-topbar-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 900;
+    text-transform: uppercase;
+    color: #00ff88;
+    letter-spacing: 0.5px;
+}
+
+#ef-table-topbar .ef-topbar-count {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.5);
+    font-weight: 600;
+}
+
+.ef-btn-add-all {
+    background: #00ff88;
+    color: #050505;
+    border: none;
+    border-radius: 8px;
+    padding: 7px 16px;
+    font-size: 11px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 0 15px rgba(0, 255, 136, 0.3);
+}
+
+.ef-btn-add-all:hover {
+    background: #00e077;
+    transform: scale(1.03);
+}
+
+.ef-table-add-btn {
+    background: rgba(0, 255, 136, 0.15);
+    color: #00ff88;
+    border: 1px solid rgba(0, 255, 136, 0.3);
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.ef-table-add-btn:hover {
+    background: #00ff88;
+    color: #050505;
+    box-shadow: 0 0 10px rgba(0, 255, 136, 0.4);
+}
+
+.ef-table-add-btn.added {
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.5);
+    border-color: transparent;
+    cursor: default;
+}
+
+/* ── Full HUD Scrape Complete Modal Overlay (Matches Website 1:1) ── */
+#ef-hud-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1000000;
+    background: rgba(0, 0, 0, 0.9);
+    backdrop-filter: blur(10px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+}
+
+#ef-hud-overlay.ef-show {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+#ef-hud-card {
+    background: #121620;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 20px;
+    width: 100%;
+    max-width: 680px;
+    height: 80vh;
+    max-height: 720px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.95), 0 0 40px rgba(0, 255, 136, 0.15);
+    color: #ffffff;
+    overflow: hidden;
+    padding: 24px;
+    box-sizing: border-box;
+    transform: scale(0.96);
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+#ef-hud-overlay.ef-show #ef-hud-card {
+    transform: scale(1);
+}
+
+/* Header */
+.ef-modal-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+
+.ef-modal-title {
+    font-size: 22px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #00ff88;
+    margin-bottom: 4px;
+}
+
+.ef-modal-sub {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.ef-modal-sub strong {
+    color: #ffffff;
+}
+
+.ef-modal-close {
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 20px;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 8px;
+    transition: all 0.2s;
+}
+
+.ef-modal-close:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* Coverage Chips Row */
+.ef-coverage-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 12px;
+}
+
+.ef-cov-chip {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 8px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.ef-cov-label {
+    font-size: 8px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    opacity: 0.3;
+}
+
+.ef-cov-val {
+    font-size: 11px;
+    font-weight: 900;
+}
+
+/* Controls Bar */
+.ef-controls-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    padding: 0 2px;
+}
+
+.ef-controls-left {
+    font-size: 9px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    opacity: 0.3;
+}
+
+.ef-btn-expand-all {
+    background: transparent;
+    border: none;
+    font-size: 8px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #00ff88;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.ef-btn-expand-all:hover {
+    opacity: 0.7;
+}
+
+/* Players Scroll Container */
+.ef-players-container {
+    flex: 1;
+    overflow-y: auto;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 14px;
+    min-height: 0;
+}
+
+/* Player Row Component */
+.ef-player-item {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    transition: background-color 0.2s;
+}
+
+.ef-player-item:last-child {
+    border-bottom: none;
+}
+
+.ef-player-item.expanded {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.ef-player-summary {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.ef-player-idx {
+    font-size: 10px;
+    font-weight: 700;
+    opacity: 0.25;
+    width: 18px;
+    text-align: right;
+    shrink: 0;
+}
+
+.ef-player-thumb-box {
+    width: 28px;
+    height: 40px;
+    border-radius: 5px;
+    background: #000000;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    flex-shrink: 0;
+}
+
+.ef-player-thumb-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: top;
+}
+
+.ef-player-name-block {
+    flex: 1;
+    min-width: 0;
+}
+
+.ef-player-name-txt {
+    font-size: 12px;
+    font-weight: 900;
+    text-transform: uppercase;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.2;
+    color: #ffffff;
+}
+
+.ef-player-nat-txt {
+    font-size: 9px;
+    color: rgba(255, 255, 255, 0.4);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.ef-pos-badge {
+    font-size: 8px;
+    font-weight: 900;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: rgba(0, 255, 136, 0.12);
+    color: #00ff88;
+    border: 1px solid rgba(0, 255, 136, 0.25);
+    flex-shrink: 0;
+}
+
+.ef-ovr-txt {
+    font-size: 12px;
+    font-weight: 900;
+    color: rgba(255, 255, 255, 0.6);
+    width: 24px;
+    text-align: right;
+    flex-shrink: 0;
+}
+
+.ef-club-txt {
+    font-size: 9px;
+    color: rgba(255, 255, 255, 0.4);
+    max-width: 90px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex-shrink: 0;
+}
+
+/* Dual Playstyle Badges on Summary Row */
+.ef-playstyle-pill-box {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex-shrink: 0;
+}
+
+.ef-style-row-compact {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.ef-badge-att {
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+    background: rgba(255, 42, 95, 0.2);
+    border: 1px solid #ff2a5f;
+    color: #ff2a5f;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 8px;
+    font-weight: 900;
+}
+
+.ef-badge-def {
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+    background: rgba(0, 229, 255, 0.2);
+    border: 1px solid #00e5ff;
+    color: #00e5ff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 8px;
+    font-weight: 900;
+}
+
+.ef-style-name-att {
+    font-size: 9px;
+    font-weight: 900;
+    color: #ff2a5f;
+    text-transform: uppercase;
+}
+
+.ef-style-name-def {
+    font-size: 9px;
+    font-weight: 900;
+    color: #00e5ff;
+    text-transform: uppercase;
+}
+
+.ef-skills-cnt-pill {
+    font-size: 8px;
+    font-weight: 900;
+    padding: 2px 6px;
+    border-radius: 12px;
+    background: rgba(168, 85, 247, 0.15);
+    color: #c084fc;
+    border: 1px solid rgba(168, 85, 247, 0.3);
+    flex-shrink: 0;
+}
+
+.ef-chevron {
+    font-size: 10px;
+    opacity: 0.3;
+    transition: transform 0.2s;
+    margin-left: 4px;
+}
+
+.ef-player-item.expanded .ef-chevron {
+    transform: rotate(180deg);
+}
+
+/* Expanded Sub-Panel */
+.ef-player-detail-panel {
+    padding: 8px 16px 14px 16px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.ef-stats-pills-wrap {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.ef-stat-pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 8px;
+    padding: 4px 8px;
+}
+
+.ef-stat-lbl {
+    font-size: 7px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    opacity: 0.3;
+}
+
+.ef-stat-val {
+    font-size: 10px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.ef-stat-val.accent {
+    color: #00ff88;
+}
+
+.ef-skills-section {
+    margin-top: 4px;
+}
+
+.ef-skills-sec-title {
+    font-size: 8px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    opacity: 0.25;
+    margin-bottom: 6px;
+}
+
+.ef-skills-list-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.ef-skill-pill {
+    font-size: 8px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.ef-skill-pill.special {
+    background: rgba(239, 68, 68, 0.12);
+    border-color: rgba(239, 68, 68, 0.3);
+    color: #f87171;
+}
+
+/* Footer Action Bar */
+.ef-modal-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.ef-footer-status {
+    font-size: 9px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    opacity: 0.25;
+}
+
+.ef-footer-btn-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.ef-btn-undo {
+    background: rgba(239, 68, 68, 0.06);
+    border: 1px solid rgba(239, 68, 68, 0.25);
+    color: #ef4444;
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 10px 20px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.ef-btn-undo:hover {
+    background: rgba(239, 68, 68, 0.15);
+    border-color: #ef4444;
+}
+
+.ef-btn-finish {
+    background: #00ff88;
+    color: #050505;
+    border: none;
+    font-size: 12px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 10px 30px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 0 25px rgba(0, 255, 136, 0.3);
+}
+
+.ef-btn-finish:hover {
+    background: #00e077;
+    transform: scale(1.03);
+}

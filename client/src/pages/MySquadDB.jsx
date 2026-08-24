@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
-import { PLAYSTYLES, PLAYER_SKILLS, SPECIAL_SKILLS } from '../constants';
+import { PLAYSTYLES, PLAYER_SKILLS, SPECIAL_SKILLS, getOffensivePlaystyle, getDefensivePlaystyle } from '../constants';
 import { FileDown, FileUp, SlidersHorizontal } from 'lucide-react';
+import { DualPlaystyles } from '../components/DualPlaystyles';
 
 const parseEfDate = (dateStr) => {
     if (!dateStr) return null;
@@ -300,9 +301,11 @@ const MySquadDB = ({ players, onBack, onImport, onPlayerClick, isSidebarOpen }) 
 
         if (filters.playstyle !== 'all') {
             result = result.filter(p => {
-                const playstyleVal = p.playstyle || '';
-                const playerPlaystyle = (typeof playstyleVal === 'object' ? (playstyleVal.name || playstyleVal.label || '') : String(playstyleVal)).toLowerCase();
-                return playerPlaystyle === filters.playstyle.toLowerCase();
+                const offStyle = getOffensivePlaystyle(p).toLowerCase();
+                const defStyle = getDefensivePlaystyle(p).toLowerCase();
+                const legacyStyle = (typeof p.playstyle === 'object' ? (p.playstyle.name || p.playstyle.label || '') : String(p.playstyle || '')).toLowerCase();
+                const target = filters.playstyle.toLowerCase();
+                return offStyle === target || defStyle === target || legacyStyle === target;
             });
         }
 
@@ -1038,8 +1041,8 @@ const MySquadDB = ({ players, onBack, onImport, onPlayerClick, isSidebarOpen }) 
                                             </td>
                                         )}
                                         {visibleCols.playstyle && (
-                                            <td className={`px-4 ${conciseMode ? 'py-0.5' : 'py-3'} whitespace-nowrap text-[10px] font-bold opacity-60 uppercase`}>
-                                                {player.playstyle || 'None'}
+                                            <td className={`px-4 ${conciseMode ? 'py-0.5' : 'py-2'} whitespace-nowrap`}>
+                                                <DualPlaystyles player={player} size="compact" />
                                             </td>
                                         )}
                                         {visibleCols.club && (

@@ -1,5 +1,21 @@
-import { useState } from 'react';
-import { POSITIONS } from '../constants';
+import { useState, useEffect, useRef } from 'react';
+import { POSITIONS, SPECIAL_SKILLS } from '../constants';
+
+const getProgressionIcon = (key) => {
+    const filenameMap = {
+        shooting: 'shooting.png',
+        passing: 'passing.png',
+        dribbling: 'dribbling.png',
+        dexterity: 'dexterity.png',
+        lowerBody: 'lower-body-strength.png',
+        aerial: 'aerial-strength.png',
+        defending: 'defending.png',
+        gk1: 'gk1.png',
+        gk2: 'gk2.png',
+        gk3: 'gk3.png'
+    };
+    return `https://efhub.com/icons/progression/${filenameMap[key] || (key + '.png')}`;
+};
 
 const ALL_SKILLS = [
     "Acrobatic Finishing", "Chip Shot Control", "Dipping Shot", "First-time Shot", "Heading", "Knuckle Shot", "Long-Range Curler", "Long-Range Shooting", "Rising Shot", "Outside Curler",
@@ -44,6 +60,61 @@ const SavedProgressionsModal = ({ player, onClose, onUpdatePlayer, settings, sho
             skill5: ''
         };
     });
+
+    // Skill Selector Additions
+    const [isSkillDropdownOpen, setIsSkillDropdownOpen] = useState(false);
+    const [skillSearchQuery, setSkillSearchQuery] = useState('');
+    const skillDropdownRef = useRef(null);
+
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (skillDropdownRef.current && !skillDropdownRef.current.contains(e.target)) {
+                setIsSkillDropdownOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    const currentSkills = [
+        newBuild.skill1,
+        newBuild.skill2,
+        newBuild.skill3,
+        newBuild.skill4,
+        newBuild.skill5
+    ].filter(Boolean);
+
+    const coreSkills = Array.isArray(player.skills || player.Skills)
+        ? (player.skills || player.Skills).filter(Boolean)
+        : [];
+
+    const availableSkills = ALL_SKILLS.filter(
+        (skill) => !coreSkills.includes(skill) && !currentSkills.includes(skill)
+    ).filter(
+        (skill) => !skillSearchQuery || skill.toLowerCase().includes(skillSearchQuery.toLowerCase())
+    );
+
+    const handleAddSkill = (skillName) => {
+        let updatedObj = { ...newBuild };
+        for (let i = 1; i <= 5; i++) {
+            if (!updatedObj[`skill${i}`]) {
+                updatedObj[`skill${i}`] = skillName;
+                break;
+            }
+        }
+        setNewBuild(updatedObj);
+        setIsSkillDropdownOpen(false);
+        setSkillSearchQuery('');
+    };
+
+    const handleRemoveSkill = (skillIndex) => {
+        const updated = currentSkills.filter((_, idx) => idx !== skillIndex);
+        const updatedObj = { ...newBuild };
+        for (let i = 1; i <= 5; i++) {
+            updatedObj[`skill${i}`] = updated[i - 1] || '';
+        }
+        setNewBuild(updatedObj);
+    };
 
     // Save changes to the main player object in backend
     const saveToBackend = (updatedProgressions) => {
@@ -133,88 +204,52 @@ const SavedProgressionsModal = ({ player, onClose, onUpdatePlayer, settings, sho
     const statFields = [
         {
             key: 'shooting', label: 'Shooting', icon: (
-                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="12" cy="12" r="10" />
-                    <line x1="12" y1="8" x2="12" y2="16" />
-                    <line x1="8" y1="12" x2="16" y2="12" />
-                </svg>
+                <img src={getProgressionIcon('shooting')} alt="" className="w-4 h-4 object-contain" />
             )
         },
         {
             key: 'passing', label: 'Passing', icon: (
-                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="12" cy="12" r="10" />
-                    <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" />
-                    <path d="M2 12h20" />
-                </svg>
+                <img src={getProgressionIcon('passing')} alt="" className="w-4 h-4 object-contain" />
             )
         },
         {
             key: 'dribbling', label: 'Dribbling', icon: (
-                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M12 2L2 22h20L12 2z" />
-                    <path d="M12 6l-4 10" />
-                    <path d="M12 6l4 10" />
-                </svg>
+                <img src={getProgressionIcon('dribbling')} alt="" className="w-4 h-4 object-contain" />
             )
         },
         {
             key: 'dexterity', label: 'Dexterity', icon: (
-                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M4 12h16" />
-                    <path d="M10 6l-4 6 4 6" />
-                    <path d="M14 18l4-6-4-6" />
-                </svg>
+                <img src={getProgressionIcon('dexterity')} alt="" className="w-4 h-4 object-contain" />
             )
         },
         {
             key: 'lowerBody', label: 'Lower Body Strength', icon: (
-                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M4 22h14a2 2 0 0 0 2-2V7.5L14.5 2H6a2 2 0 0 0-2 2v4" />
-                    <path d="M14 2v6h6" />
-                    <path d="M4 14h16" />
-                </svg>
+                <img src={getProgressionIcon('lowerBody')} alt="" className="w-4 h-4 object-contain" />
             )
         },
         {
             key: 'aerial', label: 'Aerial Strength', icon: (
-                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M12 19V5" />
-                    <path d="M5 12l7-7 7 7" />
-                    <path d="M5 17l7-7 7 7" transform="translate(0, 5)" />
-                </svg>
+                <img src={getProgressionIcon('aerial')} alt="" className="w-4 h-4 object-contain" />
             )
         },
         {
             key: 'defending', label: 'Defending', icon: (
-                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                    <path d="M12 22V5" />
-                </svg>
+                <img src={getProgressionIcon('defending')} alt="" className="w-4 h-4 object-contain" />
             )
         },
         {
             key: 'gk1', label: 'GK 1', icon: (
-                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M12 2a5 5 0 0 0-5 5v2a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5a2 2 0 0 0-2-2v-2a5 5 0 0 0-5-5z" />
-                    <text x="12" y="15" textAnchor="middle" fill="currentColor" stroke="none" fontSize="8" fontWeight="bold">1</text>
-                </svg>
+                <img src={getProgressionIcon('gk1')} alt="" className="w-4 h-4 object-contain" />
             )
         },
         {
             key: 'gk2', label: 'GK 2', icon: (
-                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M12 2a5 5 0 0 0-5 5v2a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5a2 2 0 0 0-2-2v-2a5 5 0 0 0-5-5z" />
-                    <text x="12" y="15" textAnchor="middle" fill="currentColor" stroke="none" fontSize="8" fontWeight="bold">2</text>
-                </svg>
+                <img src={getProgressionIcon('gk2')} alt="" className="w-4 h-4 object-contain" />
             )
         },
         {
             key: 'gk3', label: 'GK 3', icon: (
-                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M12 2a5 5 0 0 0-5 5v2a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5a2 2 0 0 0-2-2v-2a5 5 0 0 0-5-5z" />
-                    <text x="12" y="15" textAnchor="middle" fill="currentColor" stroke="none" fontSize="8" fontWeight="bold">3</text>
-                </svg>
+                <img src={getProgressionIcon('gk3')} alt="" className="w-4 h-4 object-contain" />
             )
         },
     ];
@@ -329,38 +364,81 @@ const SavedProgressionsModal = ({ player, onClose, onUpdatePlayer, settings, sho
                         <h4 className="font-bold text-sm opacity-80 flex items-center gap-2">
                             <span>✨</span> Additional Skills
                         </h4>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                            {[1, 2, 3, 4, 5].map(i => (
-                                <div key={i} className="relative group/skill">
-                                    <input
-                                        type="text"
-                                        placeholder={`Added Skill ${i}`}
-                                        value={newBuild[`skill${i}`]}
-                                        onChange={e => setNewBuild({ ...newBuild, [`skill${i}`]: e.target.value })}
-                                        onFocus={() => setActiveSkillInput(i)}
-                                        onBlur={() => setTimeout(() => setActiveSkillInput(null), 200)}
-                                        className="w-full bg-white/5 border border-white/10 rounded p-2 text-sm focus:border-ef-accent outline-none text-white placeholder-white/20 font-medium"
-                                    />
-                                    {/* Suggestions Dropdown */}
-                                    {activeSkillInput === i && newBuild[`skill${i}`] && (
-                                        <div className="absolute bottom-full left-0 right-0 mb-1 max-h-40 overflow-y-auto bg-[#1a1a1c] border border-white/10 rounded-lg shadow-xl z-50 scroller-thin">
-                                            {ALL_SKILLS.filter(s => s.toLowerCase().includes(newBuild[`skill${i}`].toLowerCase()) && s !== newBuild[`skill${i}`]).map(skill => (
-                                                <button
-                                                    key={skill}
-                                                    type="button"
-                                                    onClick={() => {
-                                                        setNewBuild({ ...newBuild, [`skill${i}`]: skill });
-                                                        setActiveSkillInput(null);
-                                                    }}
-                                                    className="w-full text-left px-3 py-2 text-xs hover:bg-white/10 text-white/80 hover:text-ef-accent transition-colors block"
-                                                >
-                                                    {skill}
-                                                </button>
-                                            ))}
+                        <div className="flex items-center gap-2 flex-wrap relative" ref={skillDropdownRef}>
+                            {currentSkills.map((skill, index) => {
+                                const displayClean = skill.replace('⚡', '').trim();
+                                const isSpecial = SPECIAL_SKILLS.includes(displayClean) || skill.includes('⚡');
+                                return (
+                                    <div
+                                        key={index}
+                                        className={`flex items-center h-[28px] gap-1.5 px-[12px] rounded-full transition-all font-inter text-[12px] font-bold tracking-tight border ${
+                                            isSpecial
+                                                ? 'bg-red-500/10 border-red-500/30 text-red-300'
+                                                : 'bg-blue-500/10 border-blue-500/30 text-blue-300'
+                                        }`}
+                                    >
+                                        <span>{displayClean}</span>
+                                        {isSpecial && <span className="text-red-400">⚡</span>}
+                                        <button
+                                            type="button"
+                                            onClick={() => handleRemoveSkill(index)}
+                                            className="text-white/40 hover:text-white text-xs leading-none ml-1 flex-shrink-0 active:scale-90 transition-all font-bold"
+                                            title="Remove skill"
+                                        >
+                                            ✕
+                                        </button>
+                                    </div>
+                                );
+                            })}
+
+                            {currentSkills.length < 5 && (
+                                <div className="relative">
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setIsSkillDropdownOpen(!isSkillDropdownOpen);
+                                            setSkillSearchQuery('');
+                                        }}
+                                        className="flex items-center h-[28px] gap-1 px-[12px] bg-white/[0.03] border border-dashed border-white/20 rounded-full hover:bg-white/[0.08] hover:border-white/40 transition-all text-white/50 text-[12px] font-bold tracking-tight font-inter"
+                                    >
+                                        <span className="text-xs font-black">+</span>
+                                        <span>Add skill</span>
+                                    </button>
+
+                                    {isSkillDropdownOpen && (
+                                        <div className="absolute left-0 top-full mt-1.5 bg-[#18181c] border border-white/15 rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.8)] z-[80] overflow-hidden min-w-[220px]">
+                                            <div className="p-2 border-b border-white/5">
+                                                <input
+                                                    autoFocus
+                                                    type="text"
+                                                    value={skillSearchQuery}
+                                                    onChange={(e) => setSkillSearchQuery(e.target.value)}
+                                                    placeholder="Search skills..."
+                                                    className="w-full bg-white/5 border border-white/10 rounded-lg px-[10px] h-[26px] text-xs font-medium tracking-tight font-inter text-white placeholder-white/20 focus:outline-none focus:border-blue-400/40"
+                                                />
+                                            </div>
+                                            <div className="overflow-y-auto max-h-[160px] custom-scrollbar">
+                                                {availableSkills.map((skill) => (
+                                                    <button
+                                                        key={skill}
+                                                        type="button"
+                                                        onClick={() => handleAddSkill(skill)}
+                                                        className="w-full text-left px-[10px] h-[28px] text-xs font-medium tracking-tight font-inter text-white/60 hover:text-white hover:bg-white/5 flex items-center gap-2 border-b border-white/5 last:border-0 transition-all"
+                                                    >
+                                                        <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-ef-accent/40"></span>
+                                                        {skill}
+                                                    </button>
+                                                ))}
+                                                {availableSkills.length === 0 && (
+                                                    <div className="px-3 py-4 text-center text-xs font-medium tracking-tight text-white/30 font-inter">
+                                                        No skills found
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
                                     )}
                                 </div>
-                            ))}
+                            )}
                         </div>
                     </div>
 
@@ -427,7 +505,7 @@ const SavedProgressionsModal = ({ player, onClose, onUpdatePlayer, settings, sho
                                             if (!value || value === 0) return null;
                                             return (
                                                 <div key={stat.key} className="relative group/tooltip flex items-center gap-1.5 flex-shrink-0 bg-black/20 px-1.5 py-0.5 rounded border border-white/5 cursor-help hover:bg-white/10 transition-colors">
-                                                    <span className="w-2.5 h-2.5 text-ef-accent opacity-60">{stat.icon}</span>
+                                                    <span className="w-4 h-4 flex-shrink-0 flex items-center justify-center">{stat.icon}</span>
                                                     <span className="text-[15px] px-2 font-mono font-black">{value}</span>
 
                                                     {/* Tooltip */}

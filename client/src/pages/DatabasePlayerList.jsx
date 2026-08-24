@@ -1,7 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { RotateCcw, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { getDatabasePlayers, invalidatePlayerCache } from '../services/footballApi';
 import { deleteFromGlobalDatabase } from '../services/playerService';
 import ScrapeDataModal from '../components/ScrapeDataModal';
+import { getOffensivePlaystyle, getDefensivePlaystyle } from '../constants';
+import { DualPlaystyles } from '../components/DualPlaystyles';
 
 const DatabasePlayerList = ({ onAddPlayers, onBack, settings, ownersPlayers = [], showAlert, showConfirm }) => {
     const [players, setPlayers] = useState([]);
@@ -35,19 +38,25 @@ const DatabasePlayerList = ({ onAddPlayers, onBack, settings, ownersPlayers = []
             q: currentSearch,
             ...currentFilters,
             page: currentPage,
-            limit: 40 // Optimized for speed + smooth scrolling
+            limit: 50 // Exactly 50 cards per page
         });
 
-        if (currentPage === 1) {
-            setPlayers(data.players || []);
-        } else {
-            setPlayers(prev => [...prev, ...(data.players || [])]);
-        }
-
+        setPlayers(data.players || []);
         setTotal(data.total || 0);
         setTotalPages(data.totalPages || 1);
         setLoading(false);
     }, []);
+
+    const [refreshing, setRefreshing] = useState(false);
+
+    const handleRefresh = async () => {
+        setRefreshing(true);
+        invalidatePlayerCache();
+        setPage(1);
+        await fetchPlayers(1, search, filters);
+        setRefreshing(false);
+        if (showAlert) showAlert('Refreshed', 'Player database reloaded!', 'success');
+    };
 
     useEffect(() => {
         const timeoutId = setTimeout(() => {
@@ -57,15 +66,38 @@ const DatabasePlayerList = ({ onAddPlayers, onBack, settings, ownersPlayers = []
         return () => clearTimeout(timeoutId);
     }, [search, filters, fetchPlayers]);
 
-    const handleScroll = () => {
-        if (!scrollRef.current || loading || page >= totalPages) return;
+    const handlePageChange = (newPage) => {
+        if (newPage < 1 || newPage > totalPages || newPage === page || loading) return;
+        setPage(newPage);
+        fetchPlayers(newPage, search, filters);
+        scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+    };
 
-        const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
-        if (scrollTop + clientHeight >= scrollHeight - 300) {
-            const nextPage = page + 1;
-            setPage(nextPage);
-            fetchPlayers(nextPage, search, filters);
+    const getPageNumbers = () => {
+        const delta = 2;
+        const range = [];
+        const rangeWithDots = [];
+        let l;
+
+        for (let i = 1; i <= totalPages; i++) {
+            if (i === 1 || i === totalPages || (i >= page - delta && i <= page + delta)) {
+                range.push(i);
+            }
         }
+
+        for (let i of range) {
+            if (l) {
+                if (i - l === 2) {
+                    rangeWithDots.push(l + 1);
+                } else if (i - l !== 1) {
+                    rangeWithDots.push('...');
+                }
+            }
+            rangeWithDots.push(i);
+            l = i;
+        }
+
+        return rangeWithDots;
     };
 
     const toggleSelect = (player) => {
@@ -97,7 +129,9 @@ const DatabasePlayerList = ({ onAddPlayers, onBack, settings, ownersPlayers = []
             club: p.club_original || p.club,
             league: p.league,
             position: p.position,
-            playstyle: p.playstyle || 'None',
+            offensivePlaystyle: p.offensivePlaystyle || getOffensivePlaystyle(p),
+            defensivePlaystyle: p.defensivePlaystyle || getDefensivePlaystyle(p),
+            playstyle: p.playstyle || p.offensivePlaystyle || 'None',
             cardType: p.card_type || 'Normal',
             pesdb_id: p.id,
             playerId: p.id,
@@ -188,6 +222,14 @@ const DatabasePlayerList = ({ onAddPlayers, onBack, settings, ownersPlayers = []
                             onChange={(e) => setSearch(e.target.value)}
                         />
                     </div>
+                    <button
+                        onClick={handleRefresh}
+                        disabled={refreshing || loading}
+                        className={`h-full aspect-square bg-white/5 hover:bg-white/10 text-white rounded-2xl transition-all shadow-inner border border-white/10 flex items-center justify-center group shrink-0 ${refreshing ? 'opacity-50' : 'hover:border-ef-accent/40'}`}
+                        title="Reload / Refresh Player Database"
+                    >
+                        <RotateCcw className={`w-4 h-4 text-ef-accent transition-transform duration-500 ${refreshing ? 'animate-spin' : 'group-hover:rotate-180'}`} />
+                    </button>
                     <button
                         onClick={() => setShowScrapeModal(true)}
                         className="h-full bg-white/5 hover:bg-white/10 text-white px-4 rounded-2xl transition-all shadow-inner font-bold uppercase tracking-wider text-[10px] whitespace-nowrap border border-white/10 shrink-0 flex items-center gap-2 relative group"
@@ -300,7 +342,6 @@ const DatabasePlayerList = ({ onAddPlayers, onBack, settings, ownersPlayers = []
             {/* Grid Container */}
             <div
                 ref={scrollRef}
-                onScroll={handleScroll}
                 className="flex-1 overflow-y-auto p-4 md:p-6 custom-scrollbar bg-[radial-gradient(circle_at_top,_#1a1f26_0%,_#0a0f16_100%)]"
             >
                 <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 2xl:grid-cols-12 gap-2 md:gap-3">
@@ -314,7 +355,7 @@ const DatabasePlayerList = ({ onAddPlayers, onBack, settings, ownersPlayers = []
                                 onClick={() => !isAlreadyOwned && toggleSelect(player)}
                                 className={`
                                     relative group transition-all duration-300
-                                    ${isAlreadyOwned ? 'opacity-40 grayscale cursor-not-allowed scale-[0.98]' : isSelected ? 'scale-90 cursor-pointer' : 'hover:scale-105 active:scale-95 cursor-pointer'}
+                                    ${isAlreadyOwned ? 'opacity-40 grayscale cursor-not-allowed' : isSelected ? 'scale-90 cursor-pointer' : 'active:scale-95 cursor-pointer'}
                                 `}
                             >
                                 {/* Already Added Label */}
@@ -329,52 +370,41 @@ const DatabasePlayerList = ({ onAddPlayers, onBack, settings, ownersPlayers = []
                                 {/* Selection Checkbox Overlay */}
                                 {!isAlreadyOwned && (
                                     <div className={`
-                                        absolute top-1.5 right-1.5 z-20 w-4 h-4 rounded-full border flex items-center justify-center transition-all
+                                        absolute top-1 right-1 z-20 w-3.5 h-3.5 border flex items-center justify-center transition-all
                                         ${isSelected
                                             ? 'bg-ef-accent border-ef-accent text-ef-dark scale-110 shadow-lg'
-                                            : 'bg-black/40 border-white/20 text-transparent group-hover:border-white/40'
+                                            : 'bg-black/60 border-white/20 text-transparent group-hover:border-white/40'
                                         }
                                     `}>
-                                        <span className="text-[8px] font-black">✓</span>
+                                        <span className="text-[7px] font-black leading-none">✓</span>
                                     </div>
                                 )}
 
-                                {/* Card Visual */}
+                                {/* Card Visual (Sharp Edges, Clean - No overlays) */}
                                 <div className={`
-                                    aspect-[2/3] rounded-xl overflow-hidden border transition-all shadow-xl relative
-                                    ${isSelected ? 'border-ef-accent ring-2 ring-ef-accent/20' : 'border-white/5'}
+                                    aspect-[2/3] rounded-none overflow-hidden border transition-all shadow-xl relative bg-[#0e131b]
+                                    ${isSelected ? 'border-ef-accent ring-2 ring-ef-accent/30' : 'border-white/10 hover:border-white/30'}
                                 `}>
-                                    {/* Background Glow */}
-                                    <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/10 to-black/90 z-0"></div>
-
+                                    {/* EFHub Player Card Image with fallback */}
                                     <img
-                                        src={player.image}
+                                        src={`https://efimg.com/efootballhub22/images/player_cards/${player.id}_l.png`}
                                         alt={player.name}
-                                        className={`w-full h-full object-cover object-top transition-all duration-500 ${isSelected || isAlreadyOwned ? 'brightness-50 grayscale-[0.5]' : 'group-hover:scale-110'}`}
+                                        onError={(e) => {
+                                            if (e.target.dataset.triedOriginal !== 'true') {
+                                                e.target.dataset.triedOriginal = 'true';
+                                                e.target.src = player.image || `https://pesdb.net/efootball/images/players/2026/${player.id}.png`;
+                                            }
+                                        }}
+                                        className={`w-full h-full object-cover object-top transition-all duration-500 ${isSelected || isAlreadyOwned ? 'brightness-50 grayscale-[0.5]' : ''}`}
                                         loading="lazy"
                                     />
+                                </div>
 
-                                    {/* Card Info Overlay */}
-                                    <div className="absolute bottom-0 inset-x-0 p-1.5 z-10">
-                                        <div className="flex items-center gap-1 mb-0.5">
-                                            <span className="text-[7px] font-black px-1 py-0.5 rounded bg-ef-accent text-ef-dark uppercase leading-none">
-                                                {player.position}
-                                            </span>
-                                            {player.playstyle && (
-                                                <span className={`text-[6px] font-black uppercase tracking-tighter truncate max-w-[60px] ${isAlreadyOwned ? 'text-white/20' : 'text-white/40'}`}>
-                                                    {player.playstyle}
-                                                </span>
-                                            )}
-                                        </div>
-                                        <h3 className={`text-[9px] font-black uppercase tracking-tight truncate drop-shadow-lg ${isAlreadyOwned ? 'text-white/40' : 'text-white'}`}>{player.name}</h3>
-                                        <div className="flex items-center justify-between mt-0.5">
-                                            <div className="flex items-center gap-0.5">
-                                                {player.club_badge_url && <img src={player.club_badge_url} className={`w-2.5 h-2.5 object-contain ${isAlreadyOwned ? 'opacity-20' : ''}`} alt="" />}
-                                                <span className={`text-[6px] font-bold truncate max-w-[40px] ${isAlreadyOwned ? 'text-white/20' : 'opacity-50'}`}>{player.club_original || player.club}</span>
-                                            </div>
-                                            {player.nationality_flag_url && <img src={player.nationality_flag_url} className={`w-3 h-2 object-cover rounded-[1px] ${isAlreadyOwned ? 'opacity-20' : ''}`} alt="" />}
-                                        </div>
-                                    </div>
+                                {/* Only Player Name Below Card */}
+                                <div className="mt-1 px-0.5 text-center">
+                                    <h3 className={`text-[10px] font-bold uppercase tracking-tight truncate ${isAlreadyOwned ? 'text-white/40' : 'text-white/90'}`}>
+                                        {player.name}
+                                    </h3>
                                 </div>
                             </div>
                         );
@@ -394,6 +424,87 @@ const DatabasePlayerList = ({ onAddPlayers, onBack, settings, ownersPlayers = []
                     </div>
                 )}
             </div>
+
+            {/* Pagination Controls (50 Cards Per Page) */}
+            {totalPages > 1 && (
+                <footer className="px-4 py-3 border-t border-white/10 bg-[#0a0a0c]/95 backdrop-blur-xl flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0 z-20">
+                    <div className="text-xs font-bold text-white/50 flex items-center gap-1.5">
+                        <span>Showing</span>
+                        <span className="text-white font-black">{Math.min((page - 1) * 50 + 1, total)}</span>
+                        <span>–</span>
+                        <span className="text-white font-black">{Math.min(page * 50, total)}</span>
+                        <span>of</span>
+                        <span className="text-ef-accent font-black">{total.toLocaleString()}</span>
+                        <span>players</span>
+                    </div>
+
+                    <div className="flex items-center gap-1.5">
+                        {/* First Page */}
+                        <button
+                            onClick={() => handlePageChange(1)}
+                            disabled={page === 1 || loading}
+                            className="p-2 rounded-xl bg-white/5 hover:bg-white/10 disabled:opacity-20 disabled:hover:bg-white/5 text-white transition-all border border-white/10 shrink-0"
+                            title="First Page"
+                        >
+                            <ChevronsLeft className="w-4 h-4" />
+                        </button>
+
+                        {/* Previous Page */}
+                        <button
+                            onClick={() => handlePageChange(page - 1)}
+                            disabled={page === 1 || loading}
+                            className="p-2 rounded-xl bg-white/5 hover:bg-white/10 disabled:opacity-20 disabled:hover:bg-white/5 text-white transition-all border border-white/10 shrink-0"
+                            title="Previous Page"
+                        >
+                            <ChevronLeft className="w-4 h-4" />
+                        </button>
+
+                        {/* Page Numbers */}
+                        <div className="flex items-center gap-1 mx-1 overflow-x-auto max-w-[280px] sm:max-w-none no-scrollbar">
+                            {getPageNumbers().map((pNum, idx) => {
+                                if (pNum === '...') {
+                                    return <span key={`dots-${idx}`} className="px-1 text-xs text-white/30 font-black">…</span>;
+                                }
+                                const isCurrent = pNum === page;
+                                return (
+                                    <button
+                                        key={`page-${pNum}`}
+                                        onClick={() => handlePageChange(pNum)}
+                                        disabled={loading}
+                                        className={`min-w-[32px] h-8 px-2 rounded-xl text-xs font-black transition-all border ${
+                                            isCurrent
+                                                ? 'bg-ef-accent text-ef-dark border-ef-accent shadow-[0_0_12px_rgba(0,255,136,0.3)]'
+                                                : 'bg-white/5 hover:bg-white/10 text-white/70 hover:text-white border-white/10'
+                                        }`}
+                                    >
+                                        {pNum}
+                                    </button>
+                                );
+                            })}
+                        </div>
+
+                        {/* Next Page */}
+                        <button
+                            onClick={() => handlePageChange(page + 1)}
+                            disabled={page === totalPages || loading}
+                            className="p-2 rounded-xl bg-white/5 hover:bg-white/10 disabled:opacity-20 disabled:hover:bg-white/5 text-white transition-all border border-white/10 shrink-0"
+                            title="Next Page"
+                        >
+                            <ChevronRight className="w-4 h-4" />
+                        </button>
+
+                        {/* Last Page */}
+                        <button
+                            onClick={() => handlePageChange(totalPages)}
+                            disabled={page === totalPages || loading}
+                            className="p-2 rounded-xl bg-white/5 hover:bg-white/10 disabled:opacity-20 disabled:hover:bg-white/5 text-white transition-all border border-white/10 shrink-0"
+                            title="Last Page"
+                        >
+                            <ChevronsRight className="w-4 h-4" />
+                        </button>
+                    </div>
+                </footer>
+            )}
 
             <ScrapeDataModal
                 isOpen={showScrapeModal}

@@ -124,9 +124,12 @@ async function scrapeSinglePlayer(url) {
         league: 'Other',
         position: '',
         card_type: 'Normal',
+        offensivePlaystyle: 'Basic',
+        defensivePlaystyle: 'Basic',
         playstyle: 'None',
         rating: 0,
         skills: [],
+        aiPlayingStyles: [],
         height: '',
         weight: '',
         age: '',
@@ -139,75 +142,124 @@ async function scrapeSinglePlayer(url) {
         'Injury Resistance': ''
     };
 
-    // Extract basic info from table.player
-    $('table.player th').each((idx, th) => {
+    // Extract basic info from table
+    $('tr').each((idx, tr) => {
+        const th = $(tr).find('th').first();
+        const nextTd = $(tr).find('td').first();
+        if (!th.length || !nextTd.length) return;
+
         // Strip trailing colon — PESDB emits "Height:", "Age:", "Foot:" etc.
-        const headerText = $(th).text().trim().toLowerCase().replace(/:$/, '').trim();
-        const nextTd = $(th).next('td');
+        const headerText = th.text().trim().toLowerCase().replace(/:$/, '').trim();
         const val = nextTd.text().trim();
 
-        if (headerText.includes('player name')) player.name = val;
-        if (headerText.includes('nationality')) player.nationality = val;
-        if (headerText.includes('team name')) player.club = val;
-        if (headerText.includes('league')) player.league = val;
-        if (headerText.includes('position')) player.position = val;
-        if (headerText.includes('overall rating')) player.rating = parseInt(val) || 0;
+        if (headerText === 'player name') player.name = val;
+        if (headerText === 'nationality') player.nationality = val;
+        if (headerText === 'team name' || headerText === 'team') player.club = val;
+        if (headerText === 'league') player.league = val;
+        if (headerText === 'position') player.position = val;
+        if (headerText === 'overall rating') player.rating = parseInt(val, 10) || 0;
 
         // Physical Attributes
-        if (headerText.includes('height')) player.height = parseInt(val) || val;
-        if (headerText.includes('weight')) player.weight = parseInt(val) || val;
-        if (headerText.includes('age') && !headerText.includes('usage')) player.age = parseInt(val) || val;
-        if (headerText.includes('foot') && !headerText.includes('weak')) player.strongFoot = val;
+        if (headerText === 'height') player.height = parseInt(val, 10) || val;
+        if (headerText === 'weight') player.weight = parseInt(val, 10) || val;
+        // Exact match on 'age' to prevent false positive matches
+        if (headerText === 'age') player.age = parseInt(val, 10) || val;
+        if (headerText === 'foot') player.strongFoot = val;
 
         // Card / Pack Info
-        if (headerText.includes('date added') || headerText.includes('release date')) player['Date Added'] = val;
-        if (headerText.includes('featured') || headerText.includes('pack')) player['Featured Players'] = val;
+        if (headerText === 'date added' || headerText === 'release date') player['Date Added'] = val;
+        if (headerText === 'featured players' || headerText === 'featured' || headerText === 'pack') player['Featured Players'] = val;
 
         // Technical Attributes
-        if (headerText.includes('weak foot usage') || headerText === 'weak foot use') player['Weak Foot Usage'] = val;
-        if (headerText.includes('weak foot accuracy') || headerText === 'weak foot acc') player['Weak Foot Accuracy'] = val;
-        if (headerText === 'form' || headerText.includes('condition') || headerText.includes('player form')) player['Form'] = val;
-        if (headerText.includes('injury')) player['Injury Resistance'] = val;
-        
-        // ── Player Playing Style (exact match — must NOT match "ai playing style") ──
-        if (headerText === 'playing style') {
-            // PESDB: value is sometimes in the sibling td, sometimes in the next row
-            if (val && val !== 'None' && val.length > 1) {
-                player.playstyle = val;
-            } else {
-                const nextRowVal = $(th).parent().next('tr').find('td').first().text().trim();
-                if (nextRowVal && nextRowVal.length > 1) player.playstyle = nextRowVal;
+        if (headerText === 'weak foot usage' || headerText === 'weak foot use') player['Weak Foot Usage'] = val;
+        if (headerText === 'weak foot accuracy' || headerText === 'weak foot acc') player['Weak Foot Accuracy'] = val;
+        if (headerText === 'form' || headerText === 'player form' || headerText === 'condition') player['Form'] = val;
+        if (headerText === 'injury resistance' || headerText === 'injury') player['Injury Resistance'] = val;
+    });
+
+    // ── Playing Styles (Offensive & Defensive) ──
+    // 1. Scan rows in table.playing_styles or any table for "Att:" and "Def:"
+    $('table.playing_styles tr, tr').each((_, tr) => {
+        const trText = $(tr).text().trim();
+        if (/Att:\s*/i.test(trText)) {
+            const match = trText.match(/Att:\s*([^\n\r\t]+)/i);
+            if (match && match[1]) {
+                const val = match[1].trim();
+                if (val && val !== '-' && val !== 'None') {
+                    player.offensivePlaystyle = val;
+                }
+            }
+        }
+        if (/Def:\s*/i.test(trText)) {
+            const match = trText.match(/Def:\s*([^\n\r\t]+)/i);
+            if (match && match[1]) {
+                const val = match[1].trim();
+                if (val && val !== '-' && val !== 'None') {
+                    player.defensivePlaystyle = val;
+                }
+            }
+        }
+    });
+
+    // 2. Scan column headers / TH tags for "Playing Style" and "Playing Style (Def)"
+    $('th').each((i, th) => {
+        const headerText = $(th).text().trim().toLowerCase().replace(/:$/, '').trim();
+
+        if (headerText === 'playing style' || headerText === 'offensive playing style' || headerText === 'playing style (att)') {
+            const nextTd = $(th).next('td').text().trim();
+            if (nextTd && nextTd !== 'None' && nextTd !== 'Basic' && nextTd !== '-') {
+                if (/Att:\s*/i.test(nextTd)) {
+                    player.offensivePlaystyle = nextTd.replace(/^att:\s*/i, '').trim();
+                } else if (/Def:\s*/i.test(nextTd)) {
+                    player.defensivePlaystyle = nextTd.replace(/^def:\s*/i, '').trim();
+                } else if (!player.offensivePlaystyle || player.offensivePlaystyle === 'Basic') {
+                    player.offensivePlaystyle = nextTd;
+                }
             }
         }
 
-        // ── Featured Pack / Players ──
-        if (headerText === 'featured players' || headerText === 'featured' || headerText === 'pack') {
-            // Value is sometimes in sibling td, sometimes in the next row
-            if (val && val.length > 1) {
-                player['Featured Players'] = val;
-            } else {
-                const nextRowVal = $(th).parent().next('tr').find('td').first().text().trim();
-                if (nextRowVal && nextRowVal.length > 1) player['Featured Players'] = nextRowVal;
+        if (headerText === 'playing style (def)' || headerText === 'defensive playing style') {
+            const nextTd = $(th).next('td').text().trim();
+            if (nextTd && nextTd !== 'None' && nextTd !== 'Basic' && nextTd !== '-') {
+                if (/Def:\s*/i.test(nextTd)) {
+                    player.defensivePlaystyle = nextTd.replace(/^def:\s*/i, '').trim();
+                } else {
+                    player.defensivePlaystyle = nextTd;
+                }
             }
         }
 
-        // ── Player Skills ──
-        if (headerText.includes('player skills') || headerText === 'skills') {
+        // ── Player Skills (never confuse with AI Playing Styles) ──
+        if (headerText === 'player skills' || headerText === 'skills') {
             $(th).parent().nextAll('tr').each((j, row) => {
-                const rowText = $(row).text().trim().toLowerCase();
-                // Stop if we hit a new section (header or AI Playing Style)
-                if ($(row).find('th').length > 0 || rowText.includes('ai playing style')) return false;
-                
-                // On PESDB, skills are in td. Some rows might have 2 tds (label: value) or just 1 (skill name)
+                if ($(row).find('th').length > 0) return false;
                 $(row).find('td').each((k, td) => {
                     const skill = $(td).text().trim();
-                    if (skill && skill.length > 2 && !player.skills.includes(skill) && player.skills.length < 20) {
+                    if (skill && skill !== '-' && skill.length > 2 && !player.skills.includes(skill) && player.skills.length < 20) {
                         player.skills.push(skill);
                     }
                 });
             });
         }
+
+        // ── AI Playing Styles (isolated from Player Playing Styles) ──
+        if (headerText === 'ai playing styles' || headerText === 'ai playing style') {
+            $(th).parent().nextAll('tr').each((j, row) => {
+                if ($(row).find('th').length > 0) return false;
+                $(row).find('td').each((k, td) => {
+                    const aiStyle = $(td).text().trim();
+                    if (aiStyle && aiStyle !== '-' && aiStyle.length > 2 && !player.aiPlayingStyles.includes(aiStyle)) {
+                        player.aiPlayingStyles.push(aiStyle);
+                    }
+                });
+            });
+        }
     });
+
+    // Fallback sync for primary playstyle
+    player.playstyle = (player.offensivePlaystyle && player.offensivePlaystyle !== 'Basic') 
+        ? player.offensivePlaystyle 
+        : (player.defensivePlaystyle || 'None');
 
     // Final check for skills in any table that looks like skills
     if (player.skills.length === 0) {
@@ -217,7 +269,7 @@ async function scrapeSinglePlayer(url) {
                 $(el).parent().nextAll('tr').slice(0, 15).each((j, row) => {
                     if ($(row).find('th').length > 0) return false;
                     const skill = $(row).find('td').first().text().trim();
-                    if (skill && !player.skills.includes(skill)) player.skills.push(skill);
+                    if (skill && skill !== '-' && !player.skills.includes(skill)) player.skills.push(skill);
                 });
             }
         });
@@ -283,6 +335,18 @@ async function scrapePesdb(url) {
     const $ = cheerio.load(data);
     const scrapedPlayers = [];
 
+    // Detect outside table column headers for Playing Style and Playing Style (Def)
+    let offColIdx = -1;
+    let defColIdx = -1;
+    $('table.players tr').first().find('th').each((i, el) => {
+        const text = $(el).text().trim().toLowerCase();
+        if (text.includes('def') && (text.includes('style') || text.includes('playing'))) {
+            defColIdx = i;
+        } else if (text.includes('playing style') || text.includes('style (att)') || text.includes('offensive') || text === 'playing style' || text === 'style') {
+            offColIdx = i;
+        }
+    });
+
     // PESDB list page has table.players
     $('table.players tr').each((i, el) => {
         if (i === 0) return; // skip header
@@ -299,6 +363,12 @@ async function scrapePesdb(url) {
             const position = tds.eq(0).text().trim();
             const club = tds.eq(2).text().trim();
             const nationality = tds.eq(3).text().trim();
+
+            // Extract outside table playstyles if available
+            let outsideOff = offColIdx !== -1 ? tds.eq(offColIdx).text().trim() : 'Basic';
+            let outsideDef = defColIdx !== -1 ? tds.eq(defColIdx).text().trim() : 'Basic';
+            if (!outsideOff || outsideOff === '-' || outsideOff === 'None') outsideOff = 'Basic';
+            if (!outsideDef || outsideDef === '-' || outsideDef === 'None') outsideDef = 'Basic';
 
             // Infer Card Type based on URL structure or fallback to "Featured" if it's a pack
             let card_type = 'Normal';
@@ -333,8 +403,11 @@ async function scrapePesdb(url) {
                 nationality_flag_url: flagUrl,
                 club_original: club,
                 club_badge_url: '',
-                playstyle: 'None', // Requires individual page scraping
+                offensivePlaystyle: outsideOff,
+                defensivePlaystyle: outsideDef,
+                playstyle: outsideOff !== 'Basic' ? outsideOff : (outsideDef || 'None'),
                 skills: [],
+                aiPlayingStyles: [],
                 height: '', weight: '', age: '', strongFoot: '',
                 'Date Added': dateAdded,
                 'Featured Players': featuredPack,
@@ -348,119 +421,167 @@ async function scrapePesdb(url) {
     const baseUrl = urlObj.origin + urlObj.pathname;
 
     console.log(`[Scraper] Found ${scrapedPlayers.length} players. Fetching details using base: ${baseUrl}`);
- 
-     const BATCH_SIZE = 5;
-     for (let i = 0; i < scrapedPlayers.length; i += BATCH_SIZE) {
-         if (i > 0) {
-             console.log(`[Scraper] Waiting 1.5s before next batch to avoid 429...`);
-             await new Promise(r => setTimeout(r, 1500));
-         }
-         const batch = scrapedPlayers.slice(i, i + BATCH_SIZE);
-         await Promise.all(batch.map(async (player) => {
-             try {
-                 const detailUrl = `${baseUrl}?id=${player.id}`;
-                 const { data: detailData } = await axios.get(detailUrl, {
-                     headers: {
-                         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                     },
-                     timeout: 8000
-                 });
-                 const detail$ = cheerio.load(detailData);
- 
-                 detail$('table.player th').each((idx, th) => {
-                     // Strip trailing colon — PESDB emits "Height:", "Age:", "Foot:" etc.
-                     const headerText = detail$(th).text().trim().toLowerCase().replace(/:$/, '').trim();
-                     const val = detail$(th).next('td').text().trim();
- 
-                     // ── Player Playing Style (exact — excludes "ai playing style") ──
-                     if (headerText === 'playing style') {
-                        if (val && val !== 'None' && val.length > 1) {
-                            player.playstyle = val;
-                        } else {
-                            const nextRowVal = detail$(th).parent().next('tr').find('td').first().text().trim();
-                            if (nextRowVal && nextRowVal.length > 1) player.playstyle = nextRowVal;
+
+    const BATCH_SIZE = 5;
+    for (let i = 0; i < scrapedPlayers.length; i += BATCH_SIZE) {
+        if (i > 0) {
+            console.log(`[Scraper] Waiting 1.5s before next batch to avoid 429...`);
+            await new Promise(r => setTimeout(r, 1500));
+        }
+        const batch = scrapedPlayers.slice(i, i + BATCH_SIZE);
+        await Promise.all(batch.map(async (player) => {
+            try {
+                const detailUrl = `${baseUrl}?id=${player.id}`;
+                const { data: detailData } = await axios.get(detailUrl, {
+                    headers: {
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                    },
+                    timeout: 8000
+                });
+                const detail$ = cheerio.load(detailData);
+
+                detail$('tr').each((idx, tr) => {
+                    const th = detail$(tr).find('th').first();
+                    const nextTd = detail$(tr).find('td').first();
+                    if (!th.length || !nextTd.length) return;
+
+                    const headerText = th.text().trim().toLowerCase().replace(/:$/, '').trim();
+                    const val = nextTd.text().trim();
+
+                    if (headerText === 'league') player.league = val || 'Other';
+
+                    // Physical
+                    if (headerText === 'height') player.height = parseInt(val, 10) || val;
+                    if (headerText === 'weight') player.weight = parseInt(val, 10) || val;
+                    // Exact age check
+                    if (headerText === 'age') player.age = parseInt(val, 10) || val;
+                    if (headerText === 'foot') player.strongFoot = val;
+
+                    // Card / Pack
+                    if (headerText === 'date added' || headerText === 'release date') player['Date Added'] = val;
+                    if (headerText === 'featured players' || headerText === 'featured' || headerText === 'pack') {
+                        player['Featured Players'] = val;
+                    }
+
+                    // Technical
+                    if (headerText === 'weak foot usage' || headerText === 'weak foot use') player['Weak Foot Usage'] = val;
+                    if (headerText === 'weak foot accuracy' || headerText === 'weak foot acc') player['Weak Foot Accuracy'] = val;
+                    if (headerText === 'form' || headerText === 'player form' || headerText === 'condition') player['Form'] = val;
+                    if (headerText === 'injury resistance' || headerText === 'injury') player['Injury Resistance'] = val;
+                });
+
+                // 1. Scan rows in table.playing_styles or any table for "Att:" and "Def:"
+                detail$('table.playing_styles tr, tr').each((_, tr) => {
+                    const trText = detail$(tr).text().trim();
+                    if (/Att:\s*/i.test(trText)) {
+                        const match = trText.match(/Att:\s*([^\n\r\t]+)/i);
+                        if (match && match[1]) {
+                            const styleVal = match[1].trim();
+                            if (styleVal && styleVal !== '-' && styleVal !== 'None') {
+                                player.offensivePlaystyle = styleVal;
+                            }
+                        }
+                    }
+                    if (/Def:\s*/i.test(trText)) {
+                        const match = trText.match(/Def:\s*([^\n\r\t]+)/i);
+                        if (match && match[1]) {
+                            const styleVal = match[1].trim();
+                            if (styleVal && styleVal !== '-' && styleVal !== 'None') {
+                                player.defensivePlaystyle = styleVal;
+                            }
+                        }
+                    }
+                });
+
+                // 2. Playing styles and skills parsing via TH tags
+                detail$('th').each((j, th) => {
+                    const headerText = detail$(th).text().trim().toLowerCase().replace(/:$/, '').trim();
+                    
+                    if (headerText === 'playing style' || headerText === 'offensive playing style' || headerText === 'playing style (att)') {
+                        const val = detail$(th).next('td').text().trim();
+                        if (val && val !== 'None' && val !== 'Basic' && val !== '-') {
+                            if (/Att:\s*/i.test(val)) {
+                                player.offensivePlaystyle = val.replace(/^att:\s*/i, '').trim();
+                            } else if (/Def:\s*/i.test(val)) {
+                                player.defensivePlaystyle = val.replace(/^def:\s*/i, '').trim();
+                            } else if (!player.offensivePlaystyle || player.offensivePlaystyle === 'Basic') {
+                                player.offensivePlaystyle = val;
+                            }
                         }
                     }
 
-                     if (headerText.includes('league')) player.league = val || 'Other';
+                    if (headerText === 'playing style (def)' || headerText === 'defensive playing style') {
+                        const val = detail$(th).next('td').text().trim();
+                        if (val && val !== 'None' && val !== 'Basic' && val !== '-') {
+                            if (/Def:\s*/i.test(val)) {
+                                player.defensivePlaystyle = val.replace(/^def:\s*/i, '').trim();
+                            } else {
+                                player.defensivePlaystyle = val;
+                            }
+                        }
+                    }
 
-                     // Physical
-                     if (headerText.includes('height')) player.height = parseInt(val) || val;
-                     if (headerText.includes('weight')) player.weight = parseInt(val) || val;
-                     if (headerText.includes('age') && !headerText.includes('usage')) player.age = parseInt(val) || val;
-                     if (headerText.includes('foot') && !headerText.includes('weak')) player.strongFoot = val;
+                    // Skills (strictly excluding AI Playing Styles)
+                    if (headerText === 'player skills' || headerText === 'skills') {
+                        detail$(th).parent().nextAll('tr').each((k, row) => {
+                            if (detail$(row).find('th').length > 0) return false;
+                            detail$(row).find('td').each((l, td) => {
+                                const skill = detail$(td).text().trim();
+                                if (skill && skill !== '-' && skill.length > 2 && !player.skills.includes(skill) && player.skills.length < 20) {
+                                    player.skills.push(skill);
+                                }
+                            });
+                        });
+                    }
 
-                     // Card / Pack
-                     if (headerText.includes('date added') || headerText.includes('release date')) player['Date Added'] = val;
+                    // AI Playing Styles
+                    if (headerText === 'ai playing styles' || headerText === 'ai playing style') {
+                        detail$(th).parent().nextAll('tr').each((k, row) => {
+                            if (detail$(row).find('th').length > 0) return false;
+                            detail$(row).find('td').each((l, td) => {
+                                const aiStyle = detail$(td).text().trim();
+                                if (aiStyle && aiStyle !== '-' && aiStyle.length > 2 && !player.aiPlayingStyles.includes(aiStyle)) {
+                                    player.aiPlayingStyles.push(aiStyle);
+                                }
+                            });
+                        });
+                    }
+                });
 
-                     // ── Featured Pack (exact — avoid matching random rows with 'featured') ──
-                     if (headerText === 'featured players' || headerText === 'featured' || headerText === 'pack') {
-                         if (val && val.length > 1) {
-                             player['Featured Players'] = val;
-                         } else {
-                             const nextRowVal = detail$(th).parent().next('tr').find('td').first().text().trim();
-                             if (nextRowVal && nextRowVal.length > 1) player['Featured Players'] = nextRowVal;
-                         }
-                     }
+                player.playstyle = (player.offensivePlaystyle && player.offensivePlaystyle !== 'Basic')
+                    ? player.offensivePlaystyle
+                    : (player.defensivePlaystyle || 'None');
 
-                     // Technical
-                     if (headerText.includes('weak foot usage') || headerText === 'weak foot use') player['Weak Foot Usage'] = val;
-                     if (headerText.includes('weak foot accuracy') || headerText === 'weak foot acc') player['Weak Foot Accuracy'] = val;
-                     if (headerText === 'form' || headerText.includes('condition') || headerText.includes('player form')) player['Form'] = val;
-                     if (headerText.includes('injury')) player['Injury Resistance'] = val;
-                 });
+                // Fallback: derive Date Added from player ID if not found on page
+                if (!player['Date Added']) {
+                    player['Date Added'] = extractDateFromId(player.id);
+                }
 
-
-                 // Fallback: derive Date Added from player ID if not found on page
-                 if (!player['Date Added']) {
-                     player['Date Added'] = extractDateFromId(player.id);
-                 }
-
-                 // Extract Skills in batch fetch
-                 if (player.skills.length === 0) {
-                     detail$('th, td').each((i, el) => {
-                         const txt = detail$(el).text().trim().toLowerCase();
-                         if (txt === 'player skills' || txt === 'skills' || txt.includes('player skills')) {
-                             detail$(el).parent().nextAll('tr').each((j, row) => {
-                                 const rowText = detail$(row).text().trim().toLowerCase();
-                                 if (detail$(row).find('th').length > 0 || rowText.includes('ai playing style')) return false;
-                                 
-                                 detail$(row).find('td').each((k, td) => {
-                                     const skill = detail$(td).text().trim();
-                                     if (skill && skill.length > 2 && !player.skills.includes(skill) && player.skills.length < 20) {
-                                         player.skills.push(skill);
-                                     }
-                                 });
-                             });
-                         }
-                     });
-                 }
- 
-                 // Extract accurate image
-                 detail$('img').each((i, img) => {
-                     const src = detail$(img).attr('src');
-                     if (src && (src.includes('img/card/') || src.includes('assets/img/card/'))) {
-                         let realImageUrl = src;
-                         if (!realImageUrl.startsWith('http')) {
-                             realImageUrl = realImageUrl.replace(/^\.\//, '');
-                             if (!realImageUrl.startsWith('/')) {
-                                 realImageUrl = '/' + realImageUrl;
-                             }
-                             realImageUrl = 'https://pesdb.net' + realImageUrl;
-                         }
-                         
-                         // Prioritize front card image
-                         if (realImageUrl.includes('/f') || !player.image) {
-                            player.image = realImageUrl;
-                            if (realImageUrl.includes('/f')) return false;
-                         }
-                     }
-                 });
-             } catch (err) {
-                 console.error(`[Scraper] Warning: Failed to fetch detail for ${player.name}:`, err.message);
-             }
-         }));
-     }
+                // Extract accurate image
+                detail$('img').each((i, img) => {
+                    const src = detail$(img).attr('src');
+                    if (src && (src.includes('img/card/') || src.includes('assets/img/card/'))) {
+                        let realImageUrl = src;
+                        if (!realImageUrl.startsWith('http')) {
+                            realImageUrl = realImageUrl.replace(/^\.\//, '');
+                            if (!realImageUrl.startsWith('/')) {
+                                realImageUrl = '/' + realImageUrl;
+                            }
+                            realImageUrl = 'https://pesdb.net' + realImageUrl;
+                        }
+                        
+                        // Prioritize front card image
+                        if (realImageUrl.includes('/f') || !player.image) {
+                           player.image = realImageUrl;
+                           if (realImageUrl.includes('/f')) return false;
+                        }
+                    }
+                });
+            } catch (err) {
+                console.error(`[Scraper] Warning: Failed to fetch detail for ${player.name}:`, err.message);
+            }
+        }));
+    }
 
     return scrapedPlayers;
 }
@@ -552,6 +673,27 @@ router.post('/', async (req, res) => {
             // Write to Client Public Data (if possible)
             if (fs.existsSync(path.dirname(dataPathClient))) {
                 fs.writeFileSync(dataPathClient, JSON.stringify(currentPlayers, null, 2));
+            }
+
+            // Sync to Firestore Cloud Database (if admin is initialized)
+            try {
+                const admin = require('firebase-admin');
+                if (admin.apps && admin.apps.length > 0) {
+                    const db = admin.firestore();
+                    const batch = db.batch();
+                    scrapedPlayers.forEach(p => {
+                        const docRef = db.collection('global_database').doc(String(p.id));
+                        batch.set(docRef, {
+                            ...p,
+                            search_name: (p.name || '').toLowerCase(),
+                            lastUpdated: new Date().toISOString()
+                        }, { merge: true });
+                    });
+                    await batch.commit();
+                    console.log(`[Scraper] Synced ${scrapedPlayers.length} players to Firestore!`);
+                }
+            } catch (dbErr) {
+                console.warn('[Scraper] Firestore Cloud sync note:', dbErr.message);
             }
         } catch (fsError) {
             console.warn('[Scraper] Could not save to local filesystem (likely Vercel/Read-only):', fsError.message);

@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import API_URL from '../config/api';
 import { saveToGlobalDatabase, deleteFromGlobalDatabase } from '../services/playerService';
+import { getOffensivePlaystyle, getDefensivePlaystyle } from '../constants';
+import { DualPlaystyles } from './DualPlaystyles';
 
 // ─── Special Skills ─────────────────────────────────────────────────────────────
 const SPECIAL_SKILLS_SET = new Set([
@@ -85,12 +87,10 @@ const ExpandablePlayerRow = ({ player, index, forceExpand }) => {
                     <span className="text-[8px] opacity-35 truncate">{player.club_original || player.club}</span>
                 </div>
 
-                {/* Playstyle */}
-                {player.playstyle && player.playstyle !== 'None' && (
-                    <span className="text-[7px] font-black px-1.5 py-0.5 rounded-full bg-pink-500/10 text-pink-400 border border-pink-500/20 shrink-0 hidden md:inline truncate max-w-[90px]">
-                        {player.playstyle}
-                    </span>
-                )}
+                {/* Playstyles */}
+                <div className="hidden md:flex shrink-0">
+                    <DualPlaystyles player={player} size="compact" />
+                </div>
 
                 {/* Featured Pack */}
                 {player['Featured Players'] && (
@@ -126,7 +126,8 @@ const ExpandablePlayerRow = ({ player, index, forceExpand }) => {
                         <StatPill label="WF Use"   value={player['Weak Foot Usage']} />
                         <StatPill label="WF Acc"   value={player['Weak Foot Accuracy']} />
                         <StatPill label="League"   value={player.league} />
-                        <StatPill label="Playstyle" value={player.playstyle !== 'None' ? player.playstyle : null} accent />
+                        <StatPill label="Att Style" value={player.offensivePlaystyle || getOffensivePlaystyle(player)} accent />
+                        <StatPill label="Def Style" value={player.defensivePlaystyle || getDefensivePlaystyle(player)} accent />
                         <StatPill label="Date Added" value={player['Date Added']} accent />
                         <StatPill label="Featured"   value={player['Featured Players']} accent />
                     </div>

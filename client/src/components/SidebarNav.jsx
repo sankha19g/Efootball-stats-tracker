@@ -15,7 +15,9 @@ import {
     LogOut,
     X,
     GitCompare,
-    Shuffle
+    Shuffle,
+    Wrench,
+    Puzzle
 } from 'lucide-react';
 
 const SidebarNav = ({
@@ -53,6 +55,12 @@ const SidebarNav = ({
             view: 'squad-builder'
         },
         {
+            label: 'Builds',
+            icon: Wrench,
+            onClick: () => { setView('builds'); },
+            view: 'builds'
+        },
+        {
             label: 'Quick stats update',
             icon: Zap,
             onClick: () => { setView('quick-stats'); },
@@ -75,12 +83,6 @@ const SidebarNav = ({
             icon: BarChart3,
             onClick: () => { setView('profile-stats'); },
             view: 'profile-stats'
-        },
-        {
-            label: 'Activity log',
-            icon: History,
-            onClick: () => { setView('activity-log'); },
-            view: 'activity-log'
         },
         {
             label: 'Brochure',
@@ -117,6 +119,12 @@ const SidebarNav = ({
             icon: Shuffle,
             onClick: () => { setView('random-chooser'); },
             view: 'random-chooser'
+        },
+        {
+            label: 'Extensions',
+            icon: Puzzle,
+            onClick: () => { setView('extensions'); },
+            view: 'extensions'
         },
         {
             label: 'Settings',

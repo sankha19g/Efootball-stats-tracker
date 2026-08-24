@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useTransition } from 'react';
 import { Shuffle, Filter, AlertCircle, Users, ChevronDown, ChevronUp, X, Sparkles, PlusSquare, Search } from 'lucide-react';
 import PlayerCard from '../components/PlayerCard';
-import { PLAYSTYLES, ALL_SKILLS } from '../constants';
+import { PLAYSTYLES, ALL_SKILLS, getOffensivePlaystyle, getDefensivePlaystyle } from '../constants';
 
 const RandomChooser = ({ players, settings, onPlayerClick }) => {
     const [isPending, startTransition] = useTransition();
@@ -26,9 +26,15 @@ const RandomChooser = ({ players, settings, onPlayerClick }) => {
 
     const filteredPlayers = useMemo(() => {
         return players.filter(p => {
+            const offStyle = getOffensivePlaystyle(p).toLowerCase();
+            const defStyle = getDefensivePlaystyle(p).toLowerCase();
             const playstyleVal = p.playstyle || '';
             const playerPlaystyle = (typeof playstyleVal === 'object' ? (playstyleVal.name || playstyleVal.label || '') : String(playstyleVal)).toLowerCase();
-            const matchesPlaystyle = filters.playstyle === 'All' || playerPlaystyle === filters.playstyle.toLowerCase();
+            const target = filters.playstyle.toLowerCase();
+            const matchesPlaystyle = filters.playstyle === 'All' || 
+                                     playerPlaystyle === target ||
+                                     offStyle === target ||
+                                     defStyle === target;
             
             const playerPos = (p.position || '').toUpperCase();
             const matchesPos = filters.position === 'All' || 

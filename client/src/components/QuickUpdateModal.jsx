@@ -1,6 +1,6 @@
-import { useState, useMemo, useEffect } from 'react';
-import { PLAYSTYLES } from '../constants';
-import { ChartSpline, Image, Calendar, Cake, ImageUp, Star,Pencil } from 'lucide-react';
+import { useState, useMemo, useEffect, useRef } from 'react';
+import { PLAYSTYLES, PLAYER_SKILLS, SPECIAL_SKILLS } from '../constants';
+import { ChartSpline, Image, Calendar, Cake, ImageUp, Star, Pencil, Search, ArrowUpDown, SlidersHorizontal, Sparkles } from 'lucide-react';
 
 const PlayerThumbnail = ({ player, settings }) => {
     const pid = player.playerId || player.pesdb_id || player.id || player.ID;
@@ -47,8 +47,6 @@ const PlayerThumbnail = ({ player, settings }) => {
 
 const QuickStatsView = ({ players, onUpdate, onClose, user, activeSquad, isSidebarOpen, settings }) => {
     const [search, setSearch] = useState('');
-    const [isManualMode, setIsManualMode] = useState(false);
-    const [isRatingsUnlocked, setIsRatingsUnlocked] = useState(false);
     const [filterInactive, setFilterInactive] = useState(false);
     const [filterSpecialChars, setFilterSpecialChars] = useState(false);
     const [sortBy, setSortBy] = useState('date');
@@ -67,6 +65,38 @@ const QuickStatsView = ({ players, onUpdate, onClose, user, activeSquad, isSideb
     const [isEditAllMode, setIsEditAllMode] = useState(false);
     const [currentPaginationPage, setCurrentPaginationPage] = useState(1);
     const ITEMS_PER_PAGE = 15;
+
+    // Redesign Popups State
+    const [isSearchOpen, setIsSearchOpen] = useState(false);
+    const [isSortOpen, setIsSortOpen] = useState(false);
+    const [isFilterOpen, setIsFilterOpen] = useState(false);
+
+    const searchPopupRef = useRef(null);
+    const sortPopupRef = useRef(null);
+    const filterPopupRef = useRef(null);
+
+    // Handle outside clicks to close the popups
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (isSearchOpen && searchPopupRef.current && !searchPopupRef.current.contains(e.target)) {
+                if (!e.target.closest('.search-toggle-btn')) {
+                    setIsSearchOpen(false);
+                }
+            }
+            if (isSortOpen && sortPopupRef.current && !sortPopupRef.current.contains(e.target)) {
+                if (!e.target.closest('.sort-toggle-btn')) {
+                    setIsSortOpen(false);
+                }
+            }
+            if (isFilterOpen && filterPopupRef.current && !filterPopupRef.current.contains(e.target)) {
+                if (!e.target.closest('.filter-toggle-btn')) {
+                    setIsFilterOpen(false);
+                }
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [isSearchOpen, isSortOpen, isFilterOpen]);
 
     const categories = useMemo(() => {
         return {
@@ -165,224 +195,278 @@ const QuickStatsView = ({ players, onUpdate, onClose, user, activeSquad, isSideb
             transition-all duration-500 ease-in-out
             ${isSidebarOpen ? 'ml-[200px] w-[calc(100%-200px)]' : 'ml-0 w-full'}
         `}>
-            <div className="w-full h-full bg-[#0a0a0c] overflow-hidden flex relative">
+            <div className="w-full h-full bg-[#0a0a0c] overflow-hidden flex flex-col relative">
 
-                {/* Sidebar Navigation */}
-                <div className="w-16 md:w-20 bg-white/5 border-r border-white/5 flex flex-col items-center py-6 gap-6 z-20">
-                    <button
-                        onClick={() => { setActivePage(0); setEditingPlayerId(null); }}
-                        className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${activePage === 0 ? 'bg-ef-accent text-ef-dark shadow-lg shadow-ef-accent/20 scale-110' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
-                        title="Match Stats & Ratings"
-                    >
-                        <span className="text-xl"><ChartSpline /></span>
-                    </button>
-                    <button
-                        onClick={() => { setActivePage(2); setEditingPlayerId(null); }}
-                        className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${activePage === 2 ? 'bg-purple-500 text-white shadow-lg shadow-purple-500/20 scale-110' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
-                        title="Photo Upload"
-                    >
-                        <span className="text-xl"><Image /></span>
-                    </button>
-                    <button
-                        onClick={() => { setActivePage(3); setEditingPlayerId(null); }}
-                        className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${activePage === 3 ? 'bg-ef-blue text-ef-dark shadow-lg shadow-ef-blue/20 scale-110' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
-                        title="Secondary Positions"
-                    >
-                        <span className="text-xl">🏃‍♂️</span>
-                    </button>
-                    <button
-                        onClick={() => { setActivePage(4); setEditingPlayerId(null); }}
-                        className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${activePage === 4 ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/20 scale-110' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
-                        title="Rename"
-                    >
-                        <span className="text-xl">   <Pencil /></span>
-                    </button>
-                    <button
-                        onClick={() => { setActivePage(5); setEditingPlayerId(null); }}
-                        className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${activePage === 5 ? 'bg-cyan-500 text-white shadow-lg shadow-cyan-500/20 scale-110' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
-                        title="Date Added"
-                    >
-                        <span className="text-xl">   <Calendar /></span>
-                    </button>
-                    <button
-                        onClick={() => { setActivePage(6); setEditingPlayerId(null); }}
-                        className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${activePage === 6 ? 'bg-ef-accent text-ef-dark shadow-lg shadow-ef-accent/20 scale-110' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
-                        title="Image Source 2 URL"
-                    >
-                        <span className="text-xl"> <ImageUp /></span>
-                    </button>
-                    <button
-                        onClick={() => { setActivePage(7); setEditingPlayerId(null); }}
-                        className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${activePage === 7 ? 'bg-ef-blue text-white shadow-lg shadow-ef-blue/20 scale-110' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
-                        title="Update Age"
-                    >
-                        <span className="text-xl">  <Cake /></span>
-                    </button>
-                    <button
-                        onClick={() => { setActivePage(8); setEditingPlayerId(null); }}
-                        className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${activePage === 8 ? 'bg-yellow-500 text-ef-dark shadow-lg shadow-yellow-500/20 scale-110' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
-                        title="Featured Players"
-                    >
-                        <span className="text-xl"><Star /></span>
-                    </button>
-                </div>
+                {/* Header */}
+                <div className="p-4 border-b border-white/5 bg-[#0e0e11] flex justify-between items-center relative shrink-0 z-40">
+                    <div className="flex items-center gap-4">
+                        <button
+                            onClick={onClose}
+                            className="p-2.5 bg-white/5 hover:bg-white/10 text-white/40 hover:text-white rounded-xl transition-all flex items-center justify-center border border-white/10 group cursor-pointer"
+                            title="Go back to list"
+                        >
+                            <span className="text-xl group-hover:-translate-x-1 transition-transform">←</span>
+                        </button>
+                        <div>
+                            <h3 className="text-lg font-black bg-gradient-to-r from-ef-accent to-ef-blue bg-clip-text text-transparent uppercase italic tracking-tighter">
+                                Quick Stats Update
+                            </h3>
+                            <p className="text-[9px] font-black uppercase tracking-widest opacity-40">Update match details instantly</p>
+                        </div>
+                    </div>
 
-                {/* Main Content Area */}
-                <div className="flex-1 flex flex-col relative overflow-hidden">
+                    {/* Top-Right Toggle Buttons Group */}
+                    <div className="flex items-center gap-2 relative">
+                        {/* Search Toggle Button */}
+                        <button
+                            onClick={() => {
+                                setIsSearchOpen(!isSearchOpen);
+                                setIsSortOpen(false);
+                                setIsFilterOpen(false);
+                            }}
+                            className={`search-toggle-btn w-9 h-9 rounded-xl transition-all flex items-center justify-center border cursor-pointer ${isSearchOpen ? 'bg-ef-accent border-ef-accent text-ef-dark shadow-lg shadow-ef-accent/20 scale-105' : 'bg-white/5 hover:bg-white/10 text-white border-white/10'}`}
+                            title="Search & Rating Filter"
+                        >
+                            <Search className="w-4 h-4" />
+                        </button>
 
-                    {/* Header */}
-                    <div className="p-6 border-b border-white/5 bg-white/5 flex flex-col gap-4">
-                        <div className="flex justify-between items-center">
-                            <div className="flex items-center gap-4">
-                                <button
-                                    onClick={onClose}
-                                    className="p-3 bg-white/5 hover:bg-white/10 text-white/40 hover:text-white rounded-xl transition-all flex items-center justify-center border border-white/10 group"
-                                    title="Go back to list"
-                                >
-                                    <span className="text-xl group-hover:-translate-x-1 transition-transform">←</span>
-                                </button>
+                        {/* Sort Toggle Button */}
+                        <button
+                            onClick={() => {
+                                setIsSortOpen(!isSortOpen);
+                                setIsSearchOpen(false);
+                                setIsFilterOpen(false);
+                            }}
+                            className={`sort-toggle-btn w-9 h-9 rounded-xl transition-all flex items-center justify-center border cursor-pointer ${isSortOpen ? 'bg-ef-accent border-ef-accent text-ef-dark shadow-lg shadow-ef-accent/20 scale-105' : 'bg-white/5 hover:bg-white/10 text-white border-white/10'}`}
+                            title="Sort Players"
+                        >
+                            <ArrowUpDown className="w-4 h-4" />
+                        </button>
+
+                        {/* Filter Toggle Button */}
+                        <button
+                            onClick={() => {
+                                setIsFilterOpen(!isFilterOpen);
+                                setIsSearchOpen(false);
+                                setIsSortOpen(false);
+                            }}
+                            className={`filter-toggle-btn w-9 h-9 rounded-xl transition-all flex items-center justify-center border cursor-pointer ${isFilterOpen ? 'bg-ef-accent border-ef-accent text-ef-dark shadow-lg shadow-ef-accent/20 scale-105' : 'bg-white/5 hover:bg-white/10 text-white border-white/10'}`}
+                            title="Filters & Modes"
+                        >
+                            <SlidersHorizontal className="w-4 h-4" />
+                        </button>
+
+                        {/* Close Button */}
+                        <button
+                            onClick={onClose}
+                            className="w-9 h-9 rounded-xl bg-white/5 hover:bg-white/10 text-white transition-all flex items-center justify-center border border-white/10 cursor-pointer"
+                            title="Close"
+                        >✕</button>
+
+                        {/* FLOATING POPUPS */}
+
+                        {/* Search Popup */}
+                        {isSearchOpen && (
+                            <div ref={searchPopupRef} className="absolute right-0 top-11 bg-[#0d0d11] border border-white/10 rounded-2xl p-4 shadow-2xl z-50 w-72 animate-fade-in flex flex-col gap-3">
+                                <div className="text-[9px] font-black uppercase tracking-widest text-white/40">Search Squad</div>
+                                <div className="relative">
+                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 opacity-35 text-[10px]">🔍</span>
+                                    <input
+                                        type="text"
+                                        placeholder="Filter your squad..."
+                                        value={search}
+                                        onChange={(e) => setSearch(e.target.value)}
+                                        className="w-full bg-black/40 border border-white/10 rounded-xl pl-9 pr-4 py-2 text-xs font-bold text-white outline-none focus:border-ef-accent/40 placeholder:text-white/10"
+                                        autoFocus
+                                    />
+                                </div>
+                                <div className="relative">
+                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 opacity-35 text-[9px] font-black uppercase text-ef-accent">RTG</span>
+                                    <input
+                                        type="number"
+                                        placeholder="Exact Rating"
+                                        value={searchRating}
+                                        onChange={(e) => setSearchRating(e.target.value)}
+                                        className="w-full bg-black/40 border border-white/10 rounded-xl pl-12 pr-4 py-2 text-xs font-black text-ef-accent outline-none focus:border-ef-accent/40 placeholder:text-white/10"
+                                    />
+                                </div>
+                                {(search || searchRating) && (
+                                    <button
+                                        onClick={() => { setSearch(''); setSearchRating(''); }}
+                                        className="w-full py-2 bg-white/5 hover:bg-white/10 rounded-xl text-[9px] font-black uppercase text-white/50 hover:text-white transition-colors cursor-pointer"
+                                    >
+                                        Clear Search
+                                    </button>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Sort Popup */}
+                        {isSortOpen && (
+                            <div ref={sortPopupRef} className="absolute right-0 top-11 bg-[#0d0d11] border border-white/10 rounded-2xl p-4 shadow-2xl z-50 w-56 animate-fade-in flex flex-col gap-2">
+                                <div className="text-[9px] font-black uppercase tracking-widest text-white/40 mb-1">Sort Players By</div>
+                                {[
+                                    { value: 'rating', label: 'Rating' },
+                                    { value: 'name', label: 'Name' },
+                                    { value: 'dateAdded_desc', label: 'Date Added (Newest)' },
+                                    { value: 'dateAdded_asc', label: 'Date Added (Oldest)' }
+                                ].map(opt => (
+                                    <button
+                                        key={opt.value}
+                                        onClick={() => {
+                                            setSortBy(opt.value);
+                                            setIsSortOpen(false);
+                                        }}
+                                        className={`w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${sortBy === opt.value ? 'bg-ef-accent/10 border border-ef-accent/20 text-ef-accent' : 'bg-white/5 border border-white/5 text-white/60 hover:text-white hover:bg-white/10'}`}
+                                    >
+                                        <span>{opt.label}</span>
+                                        {sortBy === opt.value && <span className="text-[10px] text-ef-accent">✓</span>}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* Filter Popup */}
+                        {isFilterOpen && (
+                            <div ref={filterPopupRef} className="absolute right-0 top-11 bg-[#0d0d11] border border-white/10 rounded-2xl p-4 shadow-2xl z-50 w-[400px] max-w-[calc(100vw-2rem)] animate-fade-in flex flex-col gap-4">
+                                {/* Section 1: Mode Switches */}
                                 <div>
-                                    <h3 className="text-xl font-black bg-gradient-to-r from-ef-accent to-ef-blue bg-clip-text text-transparent uppercase italic tracking-tighter">
-                                        Quick Stats Update
-                                    </h3>
-                                    <div className="flex items-center gap-2 mt-1">
-                                        <p className="text-[10px] font-black uppercase tracking-widest opacity-40">Update match details instantly</p>
-                                        <select
-                                            value={showMy11 ? 'my11' : filterSpecialChars ? 'special' : filterInactive ? 'inactive' : 'all'}
-                                            onChange={(e) => {
-                                                const val = e.target.value;
-                                                setShowMy11(val === 'my11');
-                                                setFilterSpecialChars(val === 'special');
-                                                setFilterInactive(val === 'inactive');
-                                            }}
-                                            className="text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded border transition-all bg-[#0a0a0c] border-white/10 text-white/70 hover:text-white outline-none cursor-pointer appearance-none text-center"
-                                            title="Filter Players"
-                                        >
-                                            <option value="all">👥 ALL PLAYERS</option>
-                                            <option value="inactive">🎯 0 GAMES</option>
-                                            <option value="special">✨ SPECIAL CHARS</option>
-                                            <option value="my11">⭐ MY 11</option>
-                                        </select>
-                                        <span className="w-1 h-1 rounded-full bg-white/20"></span>
-                                        <button
-                                            onClick={() => setIsManualMode(!isManualMode)}
-                                            className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded border transition-all ${isManualMode ? 'bg-ef-blue/20 border-ef-blue text-ef-blue' : 'bg-white/5 border-white/10 text-white/40 hover:text-white'}`}
-                                        >
-                                            {isManualMode ? '⌨️ Manual' : '🖱️ Arrow'}
-                                        </button>
-                                        <span className="w-1 h-1 rounded-full bg-white/20"></span>
-                                        <button
-                                            onClick={() => setIsRatingsUnlocked(!isRatingsUnlocked)}
-                                            className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded border transition-all ${isRatingsUnlocked ? 'bg-yellow-500/20 border-yellow-500 text-yellow-500' : 'bg-white/5 border-white/10 text-white/40 hover:text-white'}`}
-                                        >
-                                            {isRatingsUnlocked ? '🔓 Ratings' : '🔒 Ratings'}
-                                        </button>
-                                        <span className="w-1 h-1 rounded-full bg-white/20"></span>
-                                        <button
-                                            onClick={() => {
-                                                setIsEditAllMode(!isEditAllMode);
-                                                if (!isEditAllMode) setEditingPlayerId(null);
-                                            }}
-                                            className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded border transition-all ${isEditAllMode ? 'bg-red-500/20 border-red-500 text-red-500' : 'bg-white/5 border-white/10 text-white/40 hover:text-white'}`}
-                                        >
-                                            {isEditAllMode ? '🛑 Stop Edit All' : '📝 Edit All Mode'}
-                                        </button>
-                                        <span className="w-1 h-1 rounded-full bg-white/20"></span>
-                                        <div className="flex items-center gap-1.5">
-                                            <span className="text-[7px] font-black uppercase tracking-widest opacity-40 leading-none">Sort:</span>
+                                    <div className="text-[9px] font-black uppercase tracking-widest text-white/40 mb-2">Player Status & Edit Mode</div>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        {/* Player Status Selector */}
+                                        <div className="flex flex-col gap-1">
+                                            <label className="text-[8px] font-black text-white/40 uppercase tracking-wider ml-1">View Group</label>
                                             <select
-                                                value={sortBy}
-                                                onChange={(e) => setSortBy(e.target.value)}
-                                                className="text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded border transition-all bg-[#0a0a0c] border-white/10 text-white/70 hover:text-white outline-none cursor-pointer appearance-none text-center"
-                                                title="Sort Players"
+                                                value={showMy11 ? 'my11' : filterSpecialChars ? 'special' : filterInactive ? 'inactive' : 'all'}
+                                                onChange={(e) => {
+                                                    const val = e.target.value;
+                                                    setShowMy11(val === 'my11');
+                                                    setFilterSpecialChars(val === 'special');
+                                                    setFilterInactive(val === 'inactive');
+                                                }}
+                                                className="w-full text-[10px] font-black uppercase tracking-wider p-2 rounded-xl border bg-black/40 border-white/10 text-white/80 outline-none cursor-pointer hover:border-white/20 transition-all"
                                             >
-                                                <option value="rating">🔽 Rating</option>
-                                                <option value="name">🅰️ Name</option>
-                                                <option value="dateAdded_desc">🔽 Date Added</option>
-                                                <option value="dateAdded_asc">🔼 Date Added</option>
+                                                <option value="all">ALL PLAYERS</option>
+                                                <option value="inactive">0 GAMES ONLY</option>
+                                                <option value="special">SPECIAL CHARS</option>
+                                                <option value="my11">MY 11 SQUAD</option>
                                             </select>
+                                        </div>
+
+                                        {/* Edit All Mode Toggle */}
+                                        <div className="flex flex-col gap-1">
+                                            <label className="text-[8px] font-black text-white/40 uppercase tracking-wider ml-1">Edit All Mode</label>
+                                            <button
+                                                onClick={() => {
+                                                    setIsEditAllMode(!isEditAllMode);
+                                                    if (!isEditAllMode) setEditingPlayerId(null);
+                                                }}
+                                                className={`w-full text-[10px] font-black uppercase tracking-wider p-2 rounded-xl border text-center cursor-pointer transition-all ${isEditAllMode ? 'bg-red-500/15 border-red-500 text-red-500 font-bold' : 'bg-white/5 border-white/10 text-white/60 hover:text-white'}`}
+                                            >
+                                                {isEditAllMode ? '🛑 Active' : '📝 Inactive'}
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                            <button
-                                onClick={onClose}
-                                className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 text-white transition-all flex items-center justify-center border border-white/10"
-                            >✕</button>
-                        </div>
 
-                        <div className="flex gap-3">
-                            <div className="relative flex-1">
-                                <span className="absolute left-4 top-1/2 -translate-y-1/2 opacity-20 text-sm">🔍</span>
-                                <input
-                                    type="text"
-                                    placeholder="Filter your squad..."
-                                    value={search}
-                                    onChange={(e) => setSearch(e.target.value)}
-                                    className="w-full bg-black/40 border border-white/10 rounded-2xl pl-12 pr-6 py-3.5 text-sm font-bold text-white outline-none focus:border-ef-accent/40 transition-all placeholder:text-white/10"
-                                />
-                            </div>
-                            <div className="relative w-32">
-                                <span className="absolute left-4 top-1/2 -translate-y-1/2 opacity-20 text-[10px] font-black uppercase">RTG</span>
-                                <input
-                                    type="number"
-                                    placeholder="Rating"
-                                    value={searchRating}
-                                    onChange={(e) => setSearchRating(e.target.value)}
-                                    className="w-full bg-black/40 border border-white/10 rounded-2xl pl-12 pr-4 py-3.5 text-sm font-black text-ef-accent outline-none focus:border-ef-accent/40 transition-all placeholder:text-white/10 appearance-none"
-                                />
-                            </div>
-                        </div>
+                                {/* Divider */}
+                                <div className="h-px bg-white/5"></div>
 
-                        {/* Filter Dropdowns Bar */}
-                        <div className="flex gap-2 overflow-x-auto no-scrollbar py-1">
-                            <FilterSelect
-                                label="Pos"
-                                value={activeFilters.position}
-                                options={categories.positions}
-                                onChange={(val) => setActiveFilters(prev => ({ ...prev, position: val }))}
-                            />
-                            <FilterSelect
-                                label="Club"
-                                value={activeFilters.club}
-                                options={categories.clubs}
-                                onChange={(val) => setActiveFilters(prev => ({ ...prev, club: val }))}
-                            />
-                            <FilterSelect
-                                label="League"
-                                value={activeFilters.league}
-                                options={categories.leagues}
-                                onChange={(val) => setActiveFilters(prev => ({ ...prev, league: val }))}
-                            />
-                            <FilterSelect
-                                label="Nat"
-                                value={activeFilters.nationality}
-                                options={categories.nationalities}
-                                onChange={(val) => setActiveFilters(prev => ({ ...prev, nationality: val }))}
-                            />
-                            <FilterSelect
-                                label="Card"
-                                value={activeFilters.cardType}
-                                options={categories.cardTypes}
-                                onChange={(val) => setActiveFilters(prev => ({ ...prev, cardType: val }))}
-                            />
-                            <FilterSelect
-                                label="Style"
-                                value={activeFilters.playstyle}
-                                options={PLAYSTYLES}
-                                onChange={(val) => setActiveFilters(prev => ({ ...prev, playstyle: val }))}
-                            />
+                                {/* Section 2: Dropdowns */}
+                                <div>
+                                    <div className="text-[9px] font-black uppercase tracking-widest text-white/40 mb-2">Attribute Filters</div>
+                                    <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto pr-1 custom-scrollbar">
+                                        <FilterSelect
+                                            label="Pos"
+                                            value={activeFilters.position}
+                                            options={categories.positions}
+                                            onChange={(val) => setActiveFilters(prev => ({ ...prev, position: val }))}
+                                        />
+                                        <FilterSelect
+                                            label="Club"
+                                            value={activeFilters.club}
+                                            options={categories.clubs}
+                                            onChange={(val) => setActiveFilters(prev => ({ ...prev, club: val }))}
+                                        />
+                                        <FilterSelect
+                                            label="League"
+                                            value={activeFilters.league}
+                                            options={categories.leagues}
+                                            onChange={(val) => setActiveFilters(prev => ({ ...prev, league: val }))}
+                                        />
+                                        <FilterSelect
+                                            label="Nat"
+                                            value={activeFilters.nationality}
+                                            options={categories.nationalities}
+                                            onChange={(val) => setActiveFilters(prev => ({ ...prev, nationality: val }))}
+                                        />
+                                        <FilterSelect
+                                            label="Card"
+                                            value={activeFilters.cardType}
+                                            options={categories.cardTypes}
+                                            onChange={(val) => setActiveFilters(prev => ({ ...prev, cardType: val }))}
+                                        />
+                                        <FilterSelect
+                                            label="Style"
+                                            value={activeFilters.playstyle}
+                                            options={PLAYSTYLES}
+                                            onChange={(val) => setActiveFilters(prev => ({ ...prev, playstyle: val }))}
+                                        />
+                                    </div>
+                                </div>
 
-                            {(activeFilters.position || activeFilters.club || activeFilters.league || activeFilters.nationality || activeFilters.cardType || activeFilters.playstyle) && (
-                                <button
-                                    onClick={() => setActiveFilters({ position: '', club: '', league: '', nationality: '', cardType: '', playstyle: '' })}
-                                    className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-[9px] font-black uppercase text-white/40 hover:text-white hover:bg-white/10 transition-all shrink-0"
-                                >
-                                    Reset
-                                </button>
-                            )}
-                        </div>
+                                {/* Reset Button */}
+                                {(activeFilters.position || activeFilters.club || activeFilters.league || activeFilters.nationality || activeFilters.cardType || activeFilters.playstyle) && (
+                                    <button
+                                        onClick={() => setActiveFilters({ position: '', club: '', league: '', nationality: '', cardType: '', playstyle: '' })}
+                                        className="w-full py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-[10px] font-black uppercase text-white transition-all cursor-pointer"
+                                    >
+                                        Reset Filters
+                                    </button>
+                                )}
+                            </div>
+                        )}
                     </div>
+                </div>
+
+                {/* Top Tab Navigation Bar */}
+                <div className="bg-[#0b0b0e] border-b border-white/5 flex items-center justify-start overflow-x-auto no-scrollbar gap-1.5 px-6 py-2.5 z-20 shrink-0">
+                    {[
+                        { id: 0, label: 'Stats', icon: ChartSpline, colorClass: 'text-ef-accent' },
+                        { id: 2, label: 'Photo', icon: Image, colorClass: 'text-purple-400' },
+                        { id: 3, label: 'Positions', icon: null, emoji: '🏃‍♂️', colorClass: 'text-ef-blue' },
+                        { id: 9, label: 'Skills', icon: Sparkles, colorClass: 'text-emerald-400' },
+                        { id: 4, label: 'Rename', icon: Pencil, colorClass: 'text-orange-400' },
+                        { id: 5, label: 'Date Added', icon: Calendar, colorClass: 'text-cyan-400' },
+                        { id: 6, label: 'Image URL 2', icon: ImageUp, colorClass: 'text-pink-400' },
+                        { id: 7, label: 'Age', icon: Cake, colorClass: 'text-indigo-400' },
+                        { id: 8, label: 'Featured', icon: Star, colorClass: 'text-yellow-400' }
+                    ].map((tab) => {
+                        const Icon = tab.icon;
+                        const isActive = activePage === tab.id;
+                        return (
+                            <button
+                                key={tab.id}
+                                onClick={() => {
+                                    setActivePage(tab.id);
+                                    setEditingPlayerId(null);
+                                }}
+                                className={`flex items-center gap-2 h-9 px-4 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-200 border whitespace-nowrap cursor-pointer ${
+                                    isActive
+                                        ? 'bg-white/5 border-white/15 text-white shadow-lg'
+                                        : 'bg-transparent border-transparent text-white/40 hover:text-white/80 hover:bg-white/[0.02]'
+                                }`}
+                            >
+                                {Icon ? (
+                                    <Icon className={`w-3.5 h-3.5 ${isActive ? tab.colorClass : 'opacity-60'}`} />
+                                ) : (
+                                    <span className="text-sm leading-none opacity-80">{tab.emoji}</span>
+                                )}
+                                <span>{tab.label}</span>
+                            </button>
+                        );
+                    })}
+                </div>
 
                     {/* Content Pages */}
                     <div className="flex-1 relative overflow-hidden">
@@ -421,8 +505,8 @@ const QuickStatsView = ({ players, onUpdate, onClose, user, activeSquad, isSideb
                                                             <StatControl
                                                                 label="OVR"
                                                                 value={player.rating || 0}
-                                                                isManual={isManualMode}
-                                                                isDisabled={!isRatingsUnlocked}
+                                                                isManual={true}
+                                                                isDisabled={false}
                                                                 onUp={() => handleStep(player, 'rating', 1)}
                                                                 onDown={() => handleStep(player, 'rating', -1)}
                                                                 onManual={(val) => handleManualUpdate(player, 'rating', val)}
@@ -432,7 +516,7 @@ const QuickStatsView = ({ players, onUpdate, onClose, user, activeSquad, isSideb
                                                             <StatControl
                                                                 label="MT"
                                                                 value={player.matches || 0}
-                                                                isManual={isManualMode}
+                                                                isManual={true}
                                                                 onUp={() => handleStep(player, 'matches', 1)}
                                                                 onDown={() => handleStep(player, 'matches', -1)}
                                                                 onManual={(val) => handleManualUpdate(player, 'matches', val)}
@@ -441,7 +525,7 @@ const QuickStatsView = ({ players, onUpdate, onClose, user, activeSquad, isSideb
                                                             <StatControl
                                                                 label="GL"
                                                                 value={player.goals || 0}
-                                                                isManual={isManualMode}
+                                                                isManual={true}
                                                                 onUp={() => handleStep(player, 'goals', 1)}
                                                                 onDown={() => handleStep(player, 'goals', -1)}
                                                                 onManual={(val) => handleManualUpdate(player, 'goals', val)}
@@ -450,7 +534,7 @@ const QuickStatsView = ({ players, onUpdate, onClose, user, activeSquad, isSideb
                                                             <StatControl
                                                                 label="AS"
                                                                 value={player.assists || 0}
-                                                                isManual={isManualMode}
+                                                                isManual={true}
                                                                 onUp={() => handleStep(player, 'assists', 1)}
                                                                 onDown={() => handleStep(player, 'assists', -1)}
                                                                 onManual={(val) => handleManualUpdate(player, 'assists', val)}
@@ -554,6 +638,45 @@ const QuickStatsView = ({ players, onUpdate, onClose, user, activeSquad, isSideb
                                                         SEC POS
                                                     </div>
                                                 </div>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Page 9: Additional Skills */}
+                        <div className={`absolute inset-0 flex flex-col transition-all duration-500 transform ${activePage === 9 ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-100 pointer-events-none'}`}>
+                            <div className="flex-1 overflow-y-auto custom-scrollbar p-2 md:p-4 pb-32 space-y-2">
+                                {paginatedPlayers.length === 0 ? (
+                                    <div className="h-60 flex flex-col items-center justify-center opacity-20">
+                                        <span className="text-4xl mb-2">👤</span>
+                                        <p className="text-xs font-black uppercase tracking-widest">No players found</p>
+                                    </div>
+                                ) : (
+                                    paginatedPlayers.map(player => (
+                                        <div key={player._id} className="group bg-white/5 hover:bg-white/10 border border-white/5 rounded-2xl p-[3px] flex items-center justify-between gap-4 transition-all hover:border-white/10">
+                                            {/* Photo & Info */}
+                                            <div className="flex items-center gap-3 w-1/3 min-w-0">
+                                                <div className="h-10 w-auto min-w-[30px] flex-shrink-0  overflow-hidden border border-white/10 bg-black/40 flex items-center justify-center">
+                                                    <PlayerThumbnail player={player} settings={settings} />
+                                                </div>
+                                                <div className="truncate">
+                                                    <h4 className="text-xs font-black text-white truncate uppercase tracking-tight">{player.name}</h4>
+                                                    <div className="flex items-center gap-1.5 mt-0.5">
+                                                        <span className="text-[8px] opacity-40 font-black uppercase tracking-widest leading-none">{player.position}</span>
+                                                        <span className="text-[9px] opacity-20 font-black">•</span>
+                                                        <span className="text-[9px] opacity-20 font-bold uppercase truncate leading-none">{player.club}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Additional Skills Input */}
+                                            <div className="flex-1 flex justify-end pr-2">
+                                                <AdditionalSkillsInput
+                                                    player={player}
+                                                    onUpdate={(val) => onUpdate(player._id, { additionalSkills: val })}
+                                                />
                                             </div>
                                         </div>
                                     ))
@@ -815,7 +938,6 @@ const QuickStatsView = ({ players, onUpdate, onClose, user, activeSquad, isSideb
                             </div>
                         )}
                     </div>
-                </div>
             </div>
         </div>
     );
@@ -878,12 +1000,12 @@ const StatControl = ({ label, value, onUp, onDown, onManual, isManual, isDisable
 };
 
 const FilterSelect = ({ label, value, options, onChange }) => (
-    <div className="flex items-center bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 shrink-0 transition-all hover:bg-white/10">
+    <div className="flex items-center justify-between w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 transition-all hover:bg-white/10">
         <span className="text-[9px] font-black opacity-30 uppercase mr-2">{label}</span>
         <select
             value={value}
             onChange={(e) => onChange(e.target.value)}
-            className="bg-transparent border-none outline-none text-[10px] font-bold text-white/80 cursor-pointer min-w-[60px]"
+            className="bg-transparent border-none outline-none text-[10px] font-bold text-white/80 cursor-pointer text-right min-w-[80px]"
         >
             <option value="" className="bg-[#1a1a1e]">All</option>
             {options.map(opt => (
@@ -1219,6 +1341,122 @@ const FeaturedInput = ({ value, onUpdate }) => {
             onKeyDown={(e) => e.key === 'Enter' && e.target.blur()}
             className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2 text-xs font-bold text-yellow-500 outline-none focus:border-yellow-500/40 transition-all placeholder:text-white/5"
         />
+    );
+};
+
+const AdditionalSkillsInput = ({ player, onUpdate }) => {
+    const rawSkills = player.additionalSkills || player.AdditionalSkills || [];
+    const currentSkills = Array.isArray(rawSkills) ? rawSkills.filter(Boolean) : [];
+    const coreSkills = Array.isArray(player.skills || player.Skills) ? (player.skills || player.Skills).filter(Boolean) : [];
+
+    const [isOpen, setIsOpen] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
+    const dropdownRef = useRef(null);
+
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+                setIsOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    const handleAddSkill = (skillName) => {
+        const updated = [...currentSkills, skillName];
+        onUpdate(updated);
+        setIsOpen(false);
+        setSearchQuery('');
+    };
+
+    const handleRemoveSkill = (skillIndex) => {
+        const updated = currentSkills.filter((_, idx) => idx !== skillIndex);
+        onUpdate(updated);
+    };
+
+    const availableSkills = PLAYER_SKILLS.filter(
+        (skill) => !coreSkills.includes(skill) && !currentSkills.includes(skill)
+    ).filter(
+        (skill) => !searchQuery || skill.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+    return (
+        <div className="flex items-center gap-2 flex-wrap relative" ref={dropdownRef}>
+            {currentSkills.map((skill, index) => {
+                const displayClean = skill.replace('⚡', '').trim();
+                const isSpecial = SPECIAL_SKILLS.includes(displayClean) || skill.includes('⚡');
+                return (
+                    <div
+                        key={index}
+                        className={`flex items-center h-[26px] gap-1 px-[10px] rounded-md transition-all font-inter text-[11px] font-bold tracking-tight border ${isSpecial
+                                ? 'bg-red-500/10 border-red-500/30 text-red-300'
+                                : 'bg-blue-500/10 border-blue-500/30 text-blue-300'
+                            }`}
+                    >
+                        <span>{displayClean}</span>
+                        {isSpecial && <span className="text-red-400">⚡</span>}
+                        <button
+                            type="button"
+                            onClick={() => handleRemoveSkill(index)}
+                            className="text-white/20 hover:text-white text-[10px] leading-none ml-1.5 flex-shrink-0 active:scale-90 transition-all font-bold"
+                            title="Remove skill"
+                        >
+                            ✕
+                        </button>
+                    </div>
+                );
+            })}
+
+            {currentSkills.length < 5 && (
+                <div className="relative">
+                    <button
+                        type="button"
+                        onClick={() => {
+                            setIsOpen(!isOpen);
+                            setSearchQuery('');
+                        }}
+                        className="flex items-center h-[26px] gap-1 px-[10px] bg-white/[0.03] border border-dashed border-white/20 rounded-md hover:bg-white/[0.08] hover:border-white/40 transition-all text-white/50 text-[11px] font-bold tracking-tight font-inter"
+                    >
+                        <span className="text-xs font-black">+</span>
+                        <span>Add skill</span>
+                    </button>
+
+                    {isOpen && (
+                        <div className="absolute right-0 top-full mt-1 bg-[#18181c] border border-white/15 rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.8)] z-[80] overflow-hidden min-w-[200px]">
+                            <div className="p-2 border-b border-white/5">
+                                <input
+                                    autoFocus
+                                    type="text"
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    placeholder="Search skills..."
+                                    className="w-full bg-white/5 border border-white/10 rounded-lg px-[10px] h-[26px] text-xs font-medium tracking-tight font-inter text-white placeholder-white/20 focus:outline-none focus:border-blue-400/40"
+                                />
+                            </div>
+                            <div className="overflow-y-auto max-h-[160px] custom-scrollbar">
+                                {availableSkills.map((skill) => (
+                                    <button
+                                        key={skill}
+                                        type="button"
+                                        onClick={() => handleAddSkill(skill)}
+                                        className="w-full text-left px-[10px] h-[26px] text-xs font-medium tracking-tight font-inter text-white/60 hover:text-white hover:bg-white/5 flex items-center gap-2 border-b border-white/5 last:border-0 transition-all"
+                                    >
+                                        <span className="w-1 h-1 rounded-full flex-shrink-0 bg-ef-accent/40"></span>
+                                        {skill}
+                                    </button>
+                                ))}
+                                {availableSkills.length === 0 && (
+                                    <div className="px-3 py-4 text-center text-xs font-medium tracking-tight text-white/30 font-inter">
+                                        No skills found
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
+        </div>
     );
 };
 

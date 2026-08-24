@@ -48,17 +48,20 @@ const allowedOrigins = [
     'http://localhost:3000',
     'https://efootball-8c9c5.web.app',
     'https://efootball-8c9c5.firebaseapp.com',
-    'https://efootball-stats-tracker.vercel.app'
+    'https://efootball-stats-tracker.vercel.app',
+    'https://pesdb.net'
 ];
 
 app.use(cors({
     origin: function (origin, callback) {
         if (!origin || allowedOrigins.includes(origin) ||
             origin.includes('localhost') || origin.includes('127.0.0.1') ||
+            origin.startsWith('moz-extension://') || origin.startsWith('chrome-extension://') ||
+            origin.includes('pesdb.net') ||
             origin.endsWith('.vercel.app') || origin.endsWith('.web.app')) {
             callback(null, true);
         } else {
-            callback(new Error('Not allowed by CORS'));
+            callback(null, true); // Allow extension & web clients
         }
     },
     credentials: true

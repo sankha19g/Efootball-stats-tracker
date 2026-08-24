@@ -1,6 +1,8 @@
 import { useState, useMemo, useEffect } from 'react';
 import PlayerCard from '../components/PlayerCard';
 import { Search, X, GitCompare, Shield, Activity, Zap, Star, Plus, User, Info } from 'lucide-react';
+import { getOffensivePlaystyle, getDefensivePlaystyle } from '../constants';
+import { DualPlaystyles } from '../components/DualPlaystyles';
 
 const ComparePlayers = ({ players, onPlayerClick, settings, initialSelectedIds, onIdsChange }) => {
     const [selectedIds, setSelectedIds] = useState(initialSelectedIds || [null, null]);
@@ -103,6 +105,8 @@ const ComparePlayers = ({ players, onPlayerClick, settings, initialSelectedIds, 
             assistsPerGame,
             gaPerGame,
             rating: p.rating || p.Rating || 0,
+            offensivePlaystyle: getOffensivePlaystyle(p),
+            defensivePlaystyle: getDefensivePlaystyle(p),
             playstyle: p.playstyle || p.Playstyle || 'None',
             age: p.age || p.Age || '??',
             height: p.height || p.Height || '???',
@@ -338,14 +342,14 @@ const ComparePlayers = ({ players, onPlayerClick, settings, initialSelectedIds, 
                                             </button>
                                         </div>
 
-                                        {/* Player details */}
-                                        <div className="text-center space-y-1.5 w-full">
+                                            {/* Player details */}
+                                        <div className="text-center space-y-1.5 w-full flex flex-col items-center">
                                             <h3 className="text-[18px] font-black uppercase tracking-tight text-red-500 truncate px-2">
                                                 {player.name}
                                             </h3>
-                                            <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider truncate px-2">
-                                                {player.playstyle || player.Playstyle || 'None'}
-                                            </p>
+                                            <div className="flex justify-center w-full my-1">
+                                                <DualPlaystyles player={player} size="compact" />
+                                            </div>
 
                                             {/* Logos row (Club/League & Nationality) */}
                                             <div className="flex items-center justify-center gap-3 pt-1">
@@ -454,7 +458,8 @@ const ComparePlayers = ({ players, onPlayerClick, settings, initialSelectedIds, 
                             },
                             {
                                 title: 'Tactical Profiling', icon: <Activity size={10} />, rows: [
-                                    { label: 'Main Playstyle', key: 'playstyle', isNumeric: false, showWinner: false }
+                                    { label: 'Offensive Playstyle', key: 'offensivePlaystyle', isNumeric: false, showWinner: false },
+                                    { label: 'Defensive Playstyle', key: 'defensivePlaystyle', isNumeric: false, showWinner: false }
                                 ]
                             }
                         ].map((section, sIdx) => (
